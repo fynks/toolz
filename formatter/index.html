@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Markdown to LibreOffice Writer Converter</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --border-color: #ccc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+        }
+
+        textarea, .output-area {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .output-area {
+            background-color: #fff;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Markdown to LibreOffice Writer Converter</h1>
+
+        <label for="markdown">Paste your Markdown here:</label>
+        <textarea id="markdown" rows="10" placeholder="Paste ChatGPT Markdown..."></textarea>
+
+        <button class="btn" id="convertBtn">Convert to LibreOffice Format</button>
+        <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+
+        <h2>Converted Text:</h2>
+        <div class="output-area" id="output"></div>
+    </div>
+
+    <script>
+        const markdownTextarea = document.getElementById('markdown');
+        const outputDiv = document.getElementById('output');
+        const convertBtn = document.getElementById('convertBtn');
+        const copyBtn = document.getElementById('copyBtn');
+
+        const markdownRules = [
+            // Headers with LibreOffice styles
+            { regex: /^###### (.*$)/gim, replacement: '<h6 style="font-size: 0.67em; margin-top: 2.33em; margin-bottom: 2.33em;">$1</h6>' },
+            { regex: /^##### (.*$)/gim, replacement: '<h5 style="font-size: 0.83em; margin-top: 1.67em; margin-bottom: 1.67em;">$1</h5>' },
+            { regex: /^#### (.*$)/gim, replacement: '<h4 style="font-size: 1em; margin-top: 1.33em; margin-bottom: 1.33em;">$1</h4>' },
+            { regex: /^### (.*$)/gim, replacement: '<h3 style="font-size: 1.17em; margin-top: 1em; margin-bottom: 1em;">$1</h3>' },
+            { regex: /^## (.*$)/gim, replacement: '<h2 style="font-size: 1.5em; margin-top: 0.83em; margin-bottom: 0.83em;">$1</h2>' },
+            { regex: /^# (.*$)/gim, replacement: '<h1 style="font-size: 2em; margin-top: 0.67em; margin-bottom: 0.67em;">$1</h1>' },
+            
+            // Text formatting
+            { regex: /\*\*(.*?)\*\*/g, replacement: '<span style="font-weight: bold;">$1</span>' },
+            { regex: /\*(.*?)\*/g, replacement: '<span style="font-style: italic;">$1</span>' },
+            { regex: /~~(.*?)~~/g, replacement: '<span style="text-decoration: line-through;">$1</span>' },
+            { regex: /__(.*?)__/g, replacement: '<span style="text-decoration: underline;">$1</span>' },
+            
+            // Links
+            { regex: /\[([^\]]+)\]\(([^)]+)\)/g, replacement: '<a href="$2" style="color: #0000FF; text-decoration: underline;">$1</a>' },
+            
+            // Code blocks
+            { regex: /
+
+([\s\S]*?)
+
+/g, replacement: '<pre style="font-family: monospace; background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc;">$1</pre>' },
+            { regex: /([^]+)/g, replacement: '<code style="font-family: monospace; background-color: #f0f0f0; padding: 2px 4px;">$1</code>' },
+            
+            // Lists
+            { regex: /^\s*\-\s*(.*)/gm, replacement: '<ul style="margin-left: 20px;"><li style="list-style-type: disc;">$1</li></ul>' },
+            { regex: /^\s*\d+\.\s*(.*)/gm, replacement: '<ol style="margin-left: 20px;"><li style="list-style-type: decimal;">$1</li></ol>' },
+            
+            // Horizontal rule
+            { regex: /^---$/gm, replacement: '<hr style="border: none; border-top: 1px solid #cccccc; margin: 1em 0;">' },
+            
+            // Blockquotes
+            { regex: /^> (.*$)/gim, replacement: '<blockquote style="border-left: 4px solid #cccccc; margin-left: 0; padding-left: 1em; color: #666666;">$1</blockquote>' },
+        ];
+
+        function convertMarkdown() {
+            let formattedText = markdownTextarea.value;
+
+            markdownRules.forEach(rule => {
+                formattedText = formattedText.replace(rule.regex, rule.replacement);
+            });
+
+            // Convert tables
+            formattedText = formattedText.replace(/\n\|(.*)\|\n/g, (match, p1) => {
+                const headers = p1.split('|').map(header => <th style="background-color: #f2f2f2; font-weight: bold; border: 1px solid #ddd; padding: 8px;">${header.trim()}</th>).join('');
+                return <table style="border-collapse: collapse; width: 100%; margin: 10px 0;"><thead><tr>${headers}</tr></thead><tbody>;
+            });
+
+            formattedText = formattedText.replace(/\|(.*)\|/g, (match, p1) => {
+                const cells = p1.split('|').map(cell => <td style="border: 1px solid #ddd; padding: 8px;">${cell.trim()}</td>).join('');
+                return <tr>${cells}</tr>;
+            });
+
+            formattedText = formattedText.replace(/(<\/tr>)\s*(?!<tr>)/g, '$1</tbody></table>');
+
+            // Wrap the entire content in a div with default paragraph styling
+            formattedText = <div style="font-family: 'Liberation Serif'; font-size: 12pt; line-height: 1.5;">${formattedText}</div>;
+
+            outputDiv.innerHTML = formattedText;
+        }
+
+        function copyToClipboard() {
+            const range = document.createRange();
+            range.selectNodeContents(outputDiv);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+            alert('Converted text copied to clipboard!');
+        }
+
+        convertBtn.addEventListener('click', convertMarkdown);
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        // Debounce function for live preview
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Live preview with debounce
+        markdownTextarea.addEventListener('input', debounce(convertMarkdown, 300));
+    </script>
+</body>
+</html>
