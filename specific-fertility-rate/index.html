@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <title>Specific Fertility Rate Calculator</title>
+  <style>
+    /* Inline CSS */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      font-weight: bold;
+    }
+    
+    input[type="number"] {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Specific Fertility Rate Calculator</h2>
+    <div class="form-group">
+      <label for="births">Number of Births to Women of Childbearing Age:</label>
+      <input type="number" id="births" min="0">
+    </div>
+    <div class="form-group">
+      <label for="women">Number of Women of Childbearing Age:</label>
+      <input type="number" id="women" min="0">
+    </div>
+    <button onclick="calculateSpecificFertilityRate()">Calculate</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    // Inline JavaScript
+    function calculateSpecificFertilityRate() {
+      var births = parseInt(document.getElementById('births').value);
+      var women = parseInt(document.getElementById('women').value);
+      
+      if (isNaN(births) || isNaN(women) || women === 0) {
+        document.getElementById('result').textContent = "Please enter valid values.";
+        return;
+      }
+      
+      var specificFertilityRate = (births / women) * 1000;
+      document.getElementById('result').textContent = "Specific Fertility Rate: " + specificFertilityRate.toFixed(2);
+    }
+  </script>
+</body>
+</html>
