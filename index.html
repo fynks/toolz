@@ -1,13 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toolz</title>
-    <style>
-        :root{ --primary-color: #2d3436; --hover-color: #0984e3; --bg-color: #f7f9fc; --card-bg: #ffffff; --card-border: #e1e8f0;} *{ margin: 0; padding: 0; box-sizing: border-box;} body{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--primary-color); line-height: 1.6; padding: 2rem 1rem; min-height: 100vh;} .container{ max-width: 1200px; margin: 0 auto;} h1{ font-size: 2.5rem; font-weight: 700; margin-bottom: 3rem; text-align: center; color: var(--primary-color);} .bookmarks-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; padding: 1rem;} .bookmark-card{ background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; position: relative;} .bookmark-card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1); border-color: var(--hover-color);} .card-content{ padding: 2rem; text-align: center;} .icon{ font-size: 2.5rem; margin-bottom: 1rem; display: block;} .icon-calendar::before{ content: "📅";} .icon-link::before{ content: "🔗";} .icon-document::before{ content: "📄";} .icon-code::before{ content: "👨‍💻";} .icon-tool::before{ content: "🛠";} .icon-web::before{ content: "🌐";} .icon-app::before{ content: "📱";} .icon-game::before{ content: "🎮";} .icon-book::before{ content: "📚";} .icon-video::before{ content: "🎥";} .icon-music::before{ content: "🎵";} .icon-chart::before{ content: "📊";} .icon-folder::before{ content: "📁";} .icon-download::before{ content: "⬇️";} .icon-upload::before{ content: "⬆️";} a{ color: var(--primary-color); text-decoration: none; font-size: 1.25rem; font-weight: 600;} .card-footer{ padding: 0.75rem; background: rgba(9, 132, 227, 0.05); text-align: center; font-size: 0.85rem; color: var(--hover-color); font-weight: 500;} @media (max-width: 768px){ .bookmarks-grid{ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;} h1{ font-size: 2rem; margin-bottom: 2rem;}} @media (max-width: 480px){ body{ padding: 1rem;} .bookmarks-grid{ grid-template-columns: 1fr;}}
-    </style>
+ <style>:root{ --primary-color: #2d3436; --hover-color: #0984e3; --bg-color: #f7f9fc; --card-bg: #ffffff; --card-border: #e1e8f0;} *{ margin: 0; padding: 0; box-sizing: border-box;} body{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--primary-color); line-height: 1.6; padding: 2rem 1rem; min-height: 100vh;} .container{ max-width: 1200px; margin: 0 auto;} h1{ font-size: 2.5rem; font-weight: 700; margin-bottom: 3rem; text-align: center; color: var(--primary-color);} .bookmarks-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; padding: 1rem;} .bookmark-card{ background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; position: relative;} .bookmark-card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1); border-color: var(--hover-color);} .card-content{ padding: 2rem; text-align: center;} .icon{ font-size: 2.5rem; margin-bottom: 1rem; display: block;}
+
+
+
+
+
+
+
+
+
+
+
+        
+
+        
+
+
+
+/* Development Tools */
+.icon-calculator::before { content: "🧮"; }
+.icon-terminal::before { content: "⌨️"; }
+.icon-coding::before { content: "💻"; }
+.icon-css::before { content: "🎨"; }
+.icon-javascript::before { content: "⚡"; }
+.icon-html::before { content: "📝"; }
+.icon-database::before { content: "🗄️"; }
+.icon-config::before { content: "⚙️"; }
+.icon-settings::before { content: "🔧"; }
+
+/* Documentation & Files */
+.icon-document::before {content: "📄";}
+.icon-folder::before {content: "📁";}
+.icon-book::before {content: "📚"; }
+.icon-file::before { content: "📋"; }
+.icon-edit::before { content: "✏️"; }
+.icon-save::before { content: "💾"; }
+
+/* Development Status */
+.icon-test::before { content: "🧪"; }
+.icon-success::before { content: "✅"; }
+.icon-error::before { content: "❌"; }
+.icon-warning::before { content: "⚠️"; }
+
+/* Additional Tools */
+.icon-link::before {content: "🔗";}
+.icon-tool::before {content: "🛠";}
+.icon-web::before {content: "🌐";}
+.icon-calendar::before {content: "📅";}
+.icon-chart::before {content: "📊";}
+.icon-search::before { content: "🔍"; }
+.icon-lock::before { content: "🔒"; }
+.icon-download::before {content: "⬇️";}
+.icon-upload::before {content: "⬆️";}
+
+ a{ color: var(--primary-color); text-decoration: none; font-size: 1.25rem; font-weight: 600;} .card-footer{ padding: 0.75rem; background: rgba(9, 132, 227, 0.05); text-align: center; font-size: 0.85rem; color: var(--hover-color); font-weight: 500;} @media (max-width: 768px){ .bookmarks-grid{ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;} h1{ font-size: 2rem; margin-bottom: 2rem;}} @media (max-width: 480px){ body{ padding: 1rem;} .bookmarks-grid{ grid-template-columns: 1fr;}} </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Toolz</h1>
@@ -55,7 +109,17 @@
 
             <div class="bookmark-card">
                 <div class="card-content">
-                    <span class="icon icon-chart"></span>
+                    <span class="icon icon-css"></span>
+                    <a href="./px-to-rem/">px to rem</a>
+                </div>
+                <div class="card-footer">
+                    CSS converter
+                </div>
+            </div>
+
+            <div class="bookmark-card">
+                <div class="card-content">
+                    <span class="icon icon-calculator"></span>
                     <a href="./crude-birth-rate/">Crude Birth Rate</a>
                 </div>
                 <div class="card-footer">
@@ -65,7 +129,7 @@
 
             <div class="bookmark-card">
                 <div class="card-content">
-                    <span class="icon icon-chart"></span>
+                    <span class="icon icon-calculator"></span>
                     <a href="./specific-fertility-rate/">Specific Fertility Rate</a>
                 </div>
                 <div class="card-footer">
@@ -73,8 +137,8 @@
                 </div>
             </div>
 
-            
         </div>
     </div>
 </body>
+
 </html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.ico" sizes="any">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>REM Converter – Instantly Convert PX to REM for Responsive Web Design</title>
+<meta name="description" content="Free px to rem converter. Ensure your website looks great on all screens with easy, accurate unit conversions.">
+<meta name="keywords" content="rem converter, px to rem, css unit converter, responsive design, web development, front-end tools, rem calculator">
+<meta property="og:title" content="REM Converter – Instantly Convert PX to REM for Responsive Web Design">
+<meta property="og:description" content="Free px to rem converter. Ensure your website looks great on all screens with easy, accurate unit conversions.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://remconverter.netlify.app/">
+<meta property="og:image" content="https://remconverter.netlify.app/images/converter-screenshot.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="REM Converter – Instantly Convert PX to REM for Responsive Web Design">
+<meta name="twitter:description" content="Free px to rem converter. Ensure your website looks great on all screens with easy, accurate unit conversions.">
+<meta name="twitter:image" content="https://remconverter.netlify.app/images/converter-screenshot.jpg">
+<link rel="canonical" href="https://remconverter.netlify.app/">
+<meta name="robots" content="index, follow">
+<meta name="google-site-verification" content="nlH9UKmiZsYOuMXXnRc9pKL-AW5rECWikqcUqzri-yQ" />
+ <style>
+ :root{ --primary-color: #007bff; --secondary-color: #fff; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.1);} body{ font-family: Arial, sans-serif; margin: 0; display: flex; min-height: 100vh; flex-direction: column;} header{ background-color: var(--primary-color); color: var(--secondary-color);font-size: 12px; padding: 0.5rem; text-align: center;} main{ flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem;} textarea{ width: 96%; margin: auto; min-height: 25rem; padding: 0.7rem; border: 0.06rem solid var(--border-color); border-radius: 0.3rem; resize: vertical;} button{ background-color: var(--primary-color); color: var(--secondary-color); padding: 0.7rem 1.25rem; border: none; border-radius: 0.3125rem; cursor: pointer; transition: background-color 0.3s ease;} button:hover{ background-color: #0056b3;} footer{ text-align: center; padding: 0.5rem; background-color: var(--border-color); color: #333;}
+ </style>
+<script type="application/ld+json">{ "@context": "https://schema.org/", "@type": "WebSite", "name": "REM Converter – Instantly Convert PX to REM for Responsive Web Design", "url": "https://remconverter.netlify.app/", "potentialAction":{ "@type": "SearchAction", "target": "{search_term_string}", "query-input": "required name=search_term_string"}} </script>
+</head>
+<body>
+<header>
+<h1>Convert CSS from <code>px</code> to <code>rem</code></h1>
+</header>
+<main>
+<textarea id="input" placeholder="Enter CSS code with px units..."></textarea>
+<textarea id="output" placeholder="Converted CSS with rem units will appear here..." readonly></textarea>
+<button id="convert">Convert to REM</button>
+<button id="copy">Copy</button>
+</main>
+<footer>&copy; 2024 PX to REM Converter</footer>
+<script>
+ const inputTextArea=document.getElementById('input'); const outputTextArea=document.getElementById('output'); const convertButton=document.getElementById('convert'); const copyButton=document.getElementById('copy'); const rootFontSize=parseFloat(getComputedStyle(document.documentElement).fontSize); convertButton.addEventListener('click', ()=>{ const cssCode=inputTextArea.value; const convertedCode=convertPXtoREM(cssCode); outputTextArea.value=convertedCode || "Error: Invalid CSS code";}); copyButton.addEventListener('click', ()=>{ outputTextArea.select(); document.execCommand('copy');}); function convertPXtoREM(css){ const rootFontSize=parseFloat(getComputedStyle(document.documentElement).fontSize); const regex=/((?:var\(--[\w-]+--\))|[\d.]+)px(?=[^\d]|$)|(?:@media\s*\([^)]+\)\s*{\s*([^}]+?)\s*})/g; return css.replace(regex, (match, pxValue, mediaQueryContent)=>{ if (mediaQueryContent){ return `@media ${match.split('{')[0].trim()}{ ${convertPXtoREM(mediaQueryContent)}}`;} if (pxValue.startsWith("var(")){ const varName=pxValue.slice(4, -2); const varValue=getComputedStyle(document.documentElement) .getPropertyValue(varName) .trim(); if (varValue.endsWith("px")){ return convertPXtoREM(varValue);} else{ return pxValue;}} const remValue=parseFloat(pxValue) / rootFontSize; if (remValue===0){ return "0";} else{ return `${remValue.toFixed(2)}rem`;}})}
+</script>
+</body>
+</html>
+
