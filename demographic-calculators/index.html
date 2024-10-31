@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demographic Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        main {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 480px;
+            width: 100%;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        select, input[type="number"], button {
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 98%;
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        button {
+            background-color: #0066cc;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #00509d;
+        }
+        .calculator {
+            display: none;
+            margin-top: 15px;
+        }
+        .result {
+            font-weight: bold;
+            color: #0f0f0fde;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 1.1em;
+        }
+        .visible {
+            display: block;
+        }
+        .result[aria-live="polite"] {
+            padding-top: 10px;
+        }
+        .label,
+        select, input[type="number"], button {
+            outline: none;
+        }
+        select:focus,
+        input[type="number"]:focus,
+        button:focus {
+            outline: 2px solid #0066cc;
+        }
+        @media (max-width: 600px) {
+            main {
+                padding: 15px;
+            }
+            select, input[type="number"], button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<main aria-labelledby="pageTitle">
+    <h2 id="pageTitle">Demographic Calculator</h2>
+    <label for="calculatorSelect">Choose Calculator:</label>
+    <select id="calculatorSelect" onchange="showCalculator()" aria-label="Select a calculator">
+        <option value="">Select a Calculator</option>
+        <option value="popGrowthCalc">Population Growth</option>
+        <option value="birthRateCalc">Birth Rate</option>
+        <option value="deathRateCalc">Death Rate</option>
+        <option value="popDensityCalc">Population Density</option>
+        <option value="migrationRateCalc">Migration Rate</option>
+        <option value="dependencyRatioCalc">Dependency Ratio</option>
+        <option value="lifeExpectancyCalc">Life Expectancy</option>
+    </select>
+
+    <!-- Population Growth Calculator -->
+    <div class="calculator" id="popGrowthCalc">
+        <label for="initialPopulation">Initial Population:</label>
+        <input type="number" id="initialPopulation" placeholder="e.g., 1000">
+        <label for="growthRate">Growth Rate (%):</label>
+        <input type="number" id="growthRate" step="0.1" placeholder="e.g., 2.5">
+        <label for="timePeriod">Time Period (years):</label>
+        <input type="number" id="timePeriod" placeholder="e.g., 5">
+        <button onclick="calculate('popGrowth')" aria-label="Calculate Population Growth">Calculate</button>
+        <div class="result" id="popGrowthResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Birth Rate Calculator -->
+    <div class="calculator" id="birthRateCalc">
+        <label for="totalBirths">Total Births:</label>
+        <input type="number" id="totalBirths" placeholder="e.g., 50">
+        <label for="totalPopulationForBirthRate">Total Population:</label>
+        <input type="number" id="totalPopulationForBirthRate" placeholder="e.g., 1000">
+        <button onclick="calculate('birthRate')" aria-label="Calculate Birth Rate">Calculate</button>
+        <div class="result" id="birthRateResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Death Rate Calculator -->
+    <div class="calculator" id="deathRateCalc">
+        <label for="totalDeaths">Total Deaths:</label>
+        <input type="number" id="totalDeaths" placeholder="e.g., 20">
+        <label for="totalPopulationForDeathRate">Total Population:</label>
+        <input type="number" id="totalPopulationForDeathRate" placeholder="e.g., 1000">
+        <button onclick="calculate('deathRate')" aria-label="Calculate Death Rate">Calculate</button>
+        <div class="result" id="deathRateResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Population Density Calculator -->
+    <div class="calculator" id="popDensityCalc">
+        <label for="population">Population:</label>
+        <input type="number" id="population" placeholder="e.g., 1000">
+        <label for="landArea">Land Area (sq km):</label>
+        <input type="number" id="landArea" placeholder="e.g., 500">
+        <button onclick="calculate('popDensity')" aria-label="Calculate Population Density">Calculate</button>
+        <div class="result" id="popDensityResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Migration Rate Calculator -->
+    <div class="calculator" id="migrationRateCalc">
+        <label for="immigrants">Immigrants:</label>
+        <input type="number" id="immigrants" placeholder="e.g., 200">
+        <label for="emigrants">Emigrants:</label>
+        <input type="number" id="emigrants" placeholder="e.g., 50">
+        <label for="totalPopulationForMigration">Total Population:</label>
+        <input type="number" id="totalPopulationForMigration" placeholder="e.g., 1000">
+        <button onclick="calculate('migrationRate')" aria-label="Calculate Migration Rate">Calculate</button>
+        <div class="result" id="migrationRateResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Dependency Ratio Calculator -->
+    <div class="calculator" id="dependencyRatioCalc">
+        <label for="youthPopulation">Youth Population (0-14):</label>
+        <input type="number" id="youthPopulation" placeholder="e.g., 200">
+        <label for="elderlyPopulation">Elderly Population (65+):</label>
+        <input type="number" id="elderlyPopulation" placeholder="e.g., 100">
+        <label for="workingAgePopulation">Working-age Population (15-64):</label>
+        <input type="number" id="workingAgePopulation" placeholder="e.g., 500">
+        <button onclick="calculate('dependencyRatio')" aria-label="Calculate Dependency Ratio">Calculate</button>
+        <div class="result" id="dependencyRatioResult" aria-live="polite"></div>
+    </div>
+
+    <!-- Life Expectancy Calculator -->
+    <div class="calculator" id="lifeExpectancyCalc">
+        <label for="totalYearsLived">Total Years Lived:</label>
+        <input type="number" id="totalYearsLived" placeholder="e.g., 75000">
+        <label for="totalPopulationForLifeExpectancy">Total Population:</label>
+        <input type="number" id="totalPopulationForLifeExpectancy" placeholder="e.g., 1000">
+        <button onclick="calculate('lifeExpectancy')" aria-label="Calculate Life Expectancy">Calculate</button>
+        <div class="result" id="lifeExpectancyResult" aria-live="polite"></div>
+    </div>
+
+</main>
+
+<script>
+    // Display selected calculator
+    const showCalculator = () => {
+        document.querySelectorAll('.calculator').forEach(calc => calc.classList.remove('visible'));
+        document.getElementById(document.getElementById('calculatorSelect').value)?.classList.add('visible');
+    };
+
+    // Calculation functions by type
+    const calculate = (type) => {
+        const calculations = {
+            popGrowth: () => {
+                const initialPop = parseFloat(document.getElementById('initialPopulation').value) || 0;
+                const growthRate = parseFloat(document.getElementById('growthRate').value) / 100 || 0;
+                const timePeriod = parseFloat(document.getElementById('timePeriod').value) || 0;
+                const finalPop = initialPop * Math.pow((1 + growthRate), timePeriod);
+                return `After ${timePeriod} years, the population is estimated to be ${finalPop.toFixed(2)}.`;
+            },
+            birthRate: () => {
+                const totalBirths = parseFloat(document.getElementById('totalBirths').value) || 0;
+                const totalPopulation = parseFloat(document.getElementById('totalPopulationForBirthRate').value) || 0;
+                const rate = (totalBirths / totalPopulation) * 1000;
+                return `The birth rate is ${rate.toFixed(2)} births per 1,000 individuals.`;
+            },
+            deathRate: () => {
+                const totalDeaths = parseFloat(document.getElementById('totalDeaths').value) || 0;
+                const totalPopulation = parseFloat(document.getElementById('totalPopulationForDeathRate').value) || 0;
+                const rate = (totalDeaths / totalPopulation) * 1000;
+                return `The death rate is ${rate.toFixed(2)} deaths per 1,000 individuals.`;
+            },
+            popDensity: () => {
+                const population = parseFloat(document.getElementById('population').value) || 0;
+                const area = parseFloat(document.getElementById('landArea').value) || 0;
+                const density = population / area;
+                return `The population density is ${density.toFixed(2)} people per square kilometer.`;
+            },
+            migrationRate: () => {
+                const immigrants = parseFloat(document.getElementById('immigrants').value) || 0;
+                const emigrants = parseFloat(document.getElementById('emigrants').value) || 0;
+                const population = parseFloat(document.getElementById('totalPopulationForMigration').value) || 0;
+                const rate = ((immigrants - emigrants) / population) * 1000;
+                return `The migration rate is ${rate.toFixed(2)} per 1,000 people, showing net migration impact.`;
+            },
+            dependencyRatio: () => {
+                const youth = parseFloat(document.getElementById('youthPopulation').value) || 0;
+                const elderly = parseFloat(document.getElementById('elderlyPopulation').value) || 0;
+                const workingAge = parseFloat(document.getElementById('workingAgePopulation').value) || 0;
+                const ratio = ((youth + elderly) / workingAge) * 100;
+                return `The dependency ratio is ${ratio.toFixed(2)}%, indicating economic burden on the working population.`;
+            },
+            lifeExpectancy: () => {
+                const totalYears = parseFloat(document.getElementById('totalYearsLived').value) || 0;
+                const population = parseFloat(document.getElementById('totalPopulationForLifeExpectancy').value) || 0;
+                const expectancy = totalYears / population;
+                return `The average life expectancy is ${expectancy.toFixed(2)} years.`;
+            }
+        };
+        const result = calculations[type]();
+        document.getElementById(`${type}Result`).textContent = result;
+        document.getElementById(`${type}Result`).classList.add('visible');
+    };
+</script>
+
+</body>
+</html>
