@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Table Creator & Editor</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #388E3C;
+            --background-color: #f5f5f5;
+            --border-color: #ddd;
+            --danger-color: #f44336;
+            --success-color: #4CAF50;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--background-color);
+        }
+
+        header, footer {
+            text-align: center;
+            padding: 8px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        footer {
+            margin-top: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            background: white;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+            cursor: move;
+        }
+
+        .cell-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--secondary-color);
+        }
+
+        .danger-btn {
+            background: var(--danger-color);
+        }
+
+        .danger-btn:hover {
+            background: #d32f2f;
+        }
+
+        .success-btn {
+            background: var(--success-color);
+        }
+
+        .success-btn:hover {
+            background: #388E3C;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--success-color);
+            color: white;
+            border-radius: 4px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        @media (max-width: 768px) {
+            .controls { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Markdown Table Creator & Editor</h1>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <label for="rows">Rows:</label>
+                <input type="number" id="rows" min="1" value="3" title="Number of rows">
+            </div>
+            <div class="input-group">
+                <label for="cols">Columns:</label>
+                <input type="number" id="cols" min="1" value="3" title="Number of columns">
+            </div>
+            <button onclick="createNewTable()" class="success-btn" title="Create a new table with specified rows and columns">Create New Table</button>
+        </div>
+
+        <div id="tableContainer" class="table-container"></div>
+
+        <div class="controls">
+            <button onclick="addRow()" title="Add a new row to the table">Add Row</button>
+            <button onclick="addColumn()" title="Add a new column to the table">Add Column</button>
+            <button onclick="removeSelectedRow()" class="danger-btn" title="Remove the last row from the table">Remove Row</button>
+            <button onclick="removeSelectedColumn()" class="danger-btn" title="Remove the last column from the table">Remove Column</button>
+        </div>
+
+        <h3>Markdown Output:</h3>
+        <textarea id="markdownOutput" readonly></textarea>
+
+        <h3>Input Existing Markdown Table:</h3>
+        <textarea id="markdownInput" placeholder="Paste your Markdown table here"></textarea>
+        <button onclick="parseMarkdown()" class="success-btn" title="Parse the Markdown table from the input">Parse Markdown</button>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <footer>
+        <p>&copy; 2023 Markdown Table Creator & Editor</p>
+    </footer>
+
+    <script>
+        let tableData = {
+            headers: [],
+            rows: [],
+            alignments: []
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTable();
+        });
+
+        const createNewTable = () => {
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
+
+            if (rows < 1 || cols < 1) {
+                showNotification('Please enter valid dimensions', 'error');
+                return;
+            }
+
+            tableData.headers = Array(cols).fill('Header');
+            tableData.alignments = Array(cols).fill('left');
+            tableData.rows = Array(rows).fill().map(() => Array(cols).fill('Cell'));
+
+            renderTable();
+            showNotification('New table created!');
+        };
+
+        const renderTable = () => {
+            const container = document.getElementById('tableContainer');
+            const table = document.createElement('table');
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            tableData.headers.forEach((header, colIndex) => {
+                const th = document.createElement('th');
+                th.draggable = true;
+                th.dataset.colIndex = colIndex;
+
+                const input = document.createElement('input');
+                input.className = 'cell-input';
+                input.value = header;
+                input.addEventListener('input', (e) => updateHeader(colIndex, e.target.value));
+
+                th.appendChild(input);
+                th.addEventListener('dragstart', handleColumnDragStart);
+                th.addEventListener('dragover', handleColumnDragOver);
+                th.addEventListener('drop', handleColumnDrop);
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create body
+            const tbody = document.createElement('tbody');
+            tableData.rows.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.draggable = true;
+                tr.dataset.rowIndex = rowIndex;
+
+                row.forEach((cell, colIndex) => {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.className = 'cell-input';
+                    input.value = cell;
+                    input.addEventListener('input', (e) => updateCell(rowIndex, colIndex, e.target.value));
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+
+                tr.addEventListener('dragstart', handleRowDragStart);
+                tr.addEventListener('dragover', handleRowDragOver);
+                tr.addEventListener('drop', handleRowDrop);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            container.innerHTML = '';
+            container.appendChild(table);
+
+            generateMarkdown();
+            saveTable();
+        };
+
+        const updateHeader = (colIndex, value) => {
+            tableData.headers[colIndex] = value;
+            generateMarkdown();
+            saveTable();
+        };
+
+        const updateCell = (rowIndex, colIndex, value) => {
+            tableData.rows[rowIndex][colIndex] = value;
+            generateMarkdown();
+            saveTable();
+        };
+
+        const addRow = () => {
+            const cols = tableData.headers.length;
+            tableData.rows.push(Array(cols).fill('Cell'));
+            renderTable();
+            showNotification('Row added');
+        };
+
+        const addColumn = () => {
+            tableData.headers.push('Header');
+            tableData.alignments.push('left');
+            tableData.rows.forEach(row => row.push('Cell'));
+            renderTable();
+            showNotification('Column added');
+        };
+
+        const removeSelectedRow = () => {
+            if (tableData.rows.length <= 1) {
+                showNotification('Cannot remove last row', 'error');
+                return;
+            }
+            tableData.rows.pop();
+            renderTable();
+            showNotification('Row removed');
+        };
+
+        const removeSelectedColumn = () => {
+            if (tableData.headers.length <= 1) {
+                showNotification('Cannot remove last column', 'error');
+                return;
+            }
+            tableData.headers.pop();
+            tableData.alignments.pop();
+            tableData.rows.forEach(row => row.pop());
+            renderTable();
+            showNotification('Column removed');
+        };
+
+        const generateMarkdown = () => {
+            let markdown = '';
+            
+            // Header row
+            markdown += `| ${tableData.headers.join(' | ')} |\n`;
+            
+            // Alignment row
+            markdown += `| ${tableData.alignments.map(align => {
+                switch(align) {
+                    case 'center': return ':---:';
+                    case 'right': return '---:';
+                    default: return '---';
+                }
+            }).join(' | ')} |\n`;
+            
+            // Data rows
+            tableData.rows.forEach(row => {
+                markdown += `| ${row.join(' | ')} |\n`;
+            });
+            
+            document.getElementById('markdownOutput').value = markdown;
+        };
+
+        const copyMarkdown = () => {
+            const output = document.getElementById('markdownOutput');
+            output.select();
+            document.execCommand('copy');
+            showNotification('Markdown copied to clipboard!');
+        };
+
+        const clearTable = () => {
+            if (!confirm('Are you sure you want to clear the table?')) return;
+            tableData = {
+                headers: [],
+                rows: [],
+                alignments: []
+            };
+            document.getElementById('markdownOutput').value = '';
+            document.getElementById('tableContainer').innerHTML = '';
+            showNotification('Table cleared');
+            saveTable();
+        };
+
+        const showNotification = (message, type = 'success') => {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            notification.style.background = type === 'error' ? getComputedStyle(document.documentElement).getPropertyValue('--danger-color') : getComputedStyle(document.documentElement).getPropertyValue('--success-color');
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        };
+
+        const parseMarkdown = () => {
+            const markdown = document.getElementById('markdownInput').value;
+            const lines = markdown.split('\n').filter(line => line.trim() !== '');
+
+            if (lines.length < 2) {
+                showNotification('Invalid markdown table', 'error');
+                return;
+            }
+
+            tableData.headers = lines[0].split('|').map(header => header.trim()).filter(header => header !== '');
+            tableData.alignments = lines[1].split('|').map(align => {
+                align = align.trim();
+                if (align.startsWith(':') && align.endsWith(':')) return 'center';
+                if (align.endsWith(':')) return 'right';
+                return 'left';
+            }).filter(align => align !== '');
+
+            tableData.rows = lines.slice(2).map(line => line.split('|').map(cell => cell.trim()).filter(cell => cell !== ''));
+
+            renderTable();
+            showNotification('Markdown table parsed!');
+        };
+
+        const saveTable = () => {
+            localStorage.setItem('tableData', JSON.stringify(tableData));
+        };
+
+        const loadTable = () => {
+            const savedData = localStorage.getItem('tableData');
+            if (savedData) {
+                tableData = JSON.parse(savedData);
+                renderTable();
+                showNotification('Table loaded');
+            } else {
+                createNewTable();
+            }
+        };
+
+        // Drag and Drop Handlers
+        let draggedRowIndex = null;
+        let draggedColIndex = null;
+
+        const handleRowDragStart = (e) => {
+            draggedRowIndex = e.target.dataset.rowIndex;
+            e.dataTransfer.effectAllowed = 'move';
+        };
+
+        const handleRowDragOver = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        };
+
+        const handleRowDrop = (e) => {
+            e.preventDefault();
+            const targetRowIndex = e.target.closest('tr').dataset.rowIndex;
+            if (draggedRowIndex !== null && targetRowIndex !== null) {
+                const temp = tableData.rows[draggedRowIndex];
+                tableData.rows[draggedRowIndex] = tableData.rows[targetRowIndex];
+                tableData.rows[targetRowIndex] = temp;
+                renderTable();
+                showNotification('Row rearranged');
+            }
+            draggedRowIndex = null;
+        };
+
+        const handleColumnDragStart = (e) => {
+            draggedColIndex = e.target.dataset.colIndex;
+            e.dataTransfer.effectAllowed = 'move';
+        };
+
+        const handleColumnDragOver = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        };
+
+        const handleColumnDrop = (e) => {
+            e.preventDefault();
+            const targetColIndex = e.target.closest('th').dataset.colIndex;
+            if (draggedColIndex !== null && targetColIndex !== null) {
+                // Swap headers
+                [tableData.headers[draggedColIndex], tableData.headers[targetColIndex]] = [tableData.headers[targetColIndex], tableData.headers[draggedColIndex]];
+
+                // Swap alignments
+                [tableData.alignments[draggedColIndex], tableData.alignments[targetColIndex]] = [tableData.alignments[targetColIndex], tableData.alignments[draggedColIndex]];
+
+                // Swap each row's cells
+                tableData.rows.forEach(row => {
+                    [row[draggedColIndex], row[targetColIndex]] = [row[targetColIndex], row[draggedColIndex]];
+                });
+
+                renderTable();
+                showNotification('Column rearranged');
+            }
+            draggedColIndex = null;
+        };
+
+        // Initialize with empty table
+        createNewTable();
+    </script>
+</body>
+</html>
