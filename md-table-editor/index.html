@@ -1,51 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Re-order Markdown Table Editor</title>
     <style>
-        :root{ --primary-color: #2196F3; --secondary-color: #1976D2; --background-color: #f5f5f5; --border-color: #ddd;} body{ font-family: system-ui, -apple-system, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; background: var(--background-color);} .container{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);} .controls, .table-actions{ display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;} textarea{ width: 100%; min-height: 200px; margin: 10px 0; font-family: monospace; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; resize: vertical;} .table-container{ overflow-x: auto; margin: 20px 0; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; background: white;} table{ border-collapse: collapse; width: 100%;} th, td{ padding: 12px; border: 1px solid var(--border-color);} th{ background: #f8f9fa; cursor: move; user-select: none; position: relative;} th:hover::after{ content: '⇅'; position: absolute; right: 5px; opacity: 0.5;} .dragging{ opacity: 0.5; background: #e3f2fd;} button{ padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;} button:hover{ background: var(--secondary-color);} .save-list{ margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;} .saved-item{ padding: 10px; background: white; border: 1px solid var(--border-color); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;} .load-btn{ background: #007bff; padding: 8px 10px; margin-inline: 0.5rem;} .delete-btn{ background: #dc3545; padding: 8px 10px;} .delete-btn:hover{ background: #c82333;} .notification{ position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; background: #4CAF50; color: white; border-radius: 4px; display: none; animation: slideIn 0.3s ease-out;} @keyframes slideIn{ from{ transform: translateX(100%);} to{ transform: translateX(0);}} .copy-btn{ background: #28a745;} .copy-btn:hover{ background: #218838;} [contenteditable]{ outline: none;} [contenteditable]:hover{ background-color: rgba(33, 150, 243, 0.1);} [contenteditable]:focus{ background-color: rgba(33, 150, 243, 0.2); box-shadow: 0 0 0 2px var(--primary-color);} @media (max-width: 768px){ .controls, .table-actions{ flex-direction: column;} button{ width: 100%;}}
+        :root {
+            --color-primary: #3498db;
+            --color-secondary: #2980b9;
+            --color-background: #f4f6f7;
+            --color-surface: #ffffff;
+            --color-danger: #e74c3c;
+            --color-text: #333;
+            --color-text-muted: #666;
+            --color-border: #e0e0e0;
+            --border-radius: 0.5rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: var(--color-text);
+            background-color: var(--color-background);
+            padding: var(--spacing-md);
+        }
+
+        .container {
+            margin: 0 auto;
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-subtle);
+            padding: var(--spacing-lg);
+        }
+
+        .section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        h1 {
+            color: var(--color-text);
+            margin-bottom: var(--spacing-md);
+            font-weight: 600;
+        }
+
+        h3 {
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-text-muted);
+        }
+
+        .controls,
+        .table-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            margin-block: var(--spacing-md);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            resize: vertical;
+            font-family: 'Courier New', Courier, monospace;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-block: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border);
+        }
+
+        th {
+            background-color: var(--color-background);
+            font-weight: 600;
+        }
+
+        th::after {
+            content: '⇅';
+            position: absolute;
+            opacity: 0.5;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            background: #e3f2fd;
+        }
+
+        button {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background-color: var(--color-secondary);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-danger);
+        }
+
+        .btn-secondary:hover {
+            background-color: #c82333;
+        }
+
+        .load-btn {
+            background: var(--color-primary);
+            padding: 8px 10px;
+            margin-inline: 0.5rem;
+        }
+
+        .save-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-sm);
+        }
+
+        .saved-item {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .copy-btn {
+            background: #28a745;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        [contenteditable] {
+            outline: none;
+        }
+
+        [contenteditable]:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+
+        [contenteditable]:focus {
+            background-color: rgba(33, 150, 243, 0.2);
+            box-shadow: 0 0 0 2px var(--color-primary);
+        }
+
+        @media (max-width: 768px) {
+
+            .controls,
+            .table-actions {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <h1>Enhanced Markdown Table Editor</h1>
-        
-        <div>
-            <h3>Input Markdown Table:</h3>
+        <h1>Markdown Table Editor</h1>
+
+        <section class="section">
             <textarea id="input" placeholder="Paste your markdown table here..."></textarea>
             <div class="controls">
                 <button onclick="parseTable()">Parse Table</button>
                 <button onclick="saveCurrentTable()" class="save-btn">Save Table</button>
                 <button onclick="copyToClipboard()" class="copy-btn">Copy Output</button>
-                <button onclick="clearAll()">Clear All</button>
+                <button onclick="clearAll()" class="btn-secondary">Clear All</button>
             </div>
             <div class="table-actions">
                 <button onclick="addColumn()">Add Column</button>
                 <button onclick="addRow()">Add Row</button>
-                <button onclick="removeColumn()">Remove Column</button>
-                <button onclick="removeRow()">Remove Row</button>
+                <button onclick="removeColumn()" class="btn-secondary">Remove Column</button>
+                <button onclick="removeRow()" class="btn-secondary">Remove Row</button>
             </div>
-        </div>
-        
+        </section>
+
+        <section id="savedTables">
+            <h3>Saved Tables:</h3>
+            <div id="saveList" class="save-list"></div>
+        </section>
+
+
         <div id="savedTables">
             <h3>Saved Tables:</h3>
             <div id="saveList" class="save-list"></div>
         </div>
-        
-        <div id="tableContainer" class="table-container"></div>
-        
-        <div>
+        <section class="section">
+            <div id="tableContainer" class="table-container">
+            </div>
+        </section>
+
+        <section class="section">
             <h3>Output Markdown Table:</h3>
             <textarea id="output" readonly></textarea>
-        </div>
+        </section>
     </div>
 
     <div id="notification" class="notification"></div>
-    
+
+
+
     <script>
- "use strict";let tableData={headers:[],rows:[],alignments:[]};function initializeApp(){loadSavedTables()}function setupEventListeners(){document.getElementById("input").addEventListener("input",debounce(parseTable,300)),document.querySelectorAll("button").forEach((e=>{e.addEventListener("click",handleButtonClick)}))}function handleButtonClick(e){const t=e.target.getAttribute("data-action"),a={parse:parseTable,save:saveCurrentTable,copy:copyToClipboard,clear:clearAll,addColumn:addColumn,addRow:addRow,removeColumn:removeColumn,removeRow:removeRow};a[t]&&a[t]()}function parseTable(){const e=document.getElementById("input").value;if(!e.trim())return void showNotification("Please enter a markdown table","error");const t=e.trim().split("\n");if(t.length<3)showNotification("Invalid table format","error");else try{tableData.headers=t[0].split("|").filter((e=>e.trim())).map((e=>sanitizeInput(e.trim())));const e=t[1].split("|").filter((e=>e.trim()));tableData.alignments=e.map((e=>(e=e.trim()).startsWith(":")&&e.endsWith(":")?"center":e.endsWith(":")?"right":"left")),tableData.rows=t.slice(2).map((e=>e.split("|").filter((e=>e.trim())).map((e=>sanitizeInput(e.trim()))))),renderTable(),showNotification("Table parsed successfully!")}catch(e){showNotification("Error parsing table","error")}}function renderTable(){const e=document.getElementById("tableContainer"),t=document.createElement("table"),a=document.createElement("thead"),n=document.createElement("tr");tableData.headers.forEach(((e,t)=>{const a=createHeaderCell(e,t);n.appendChild(a)})),a.appendChild(n),t.appendChild(a);const o=document.createElement("tbody");tableData.rows.forEach(((e,t)=>{const a=document.createElement("tr");e.forEach(((e,n)=>{const o=createDataCell(e,t,n);a.appendChild(o)})),o.appendChild(a)})),t.appendChild(o),e.innerHTML="",e.appendChild(t),generateMarkdown()}function createHeaderCell(e,t){const a=document.createElement("th");return a.contentEditable=!0,a.textContent=e,a.draggable=!0,a.dataset.index=t,a.addEventListener("dragstart",handleDragStart),a.addEventListener("dragover",handleDragOver),a.addEventListener("drop",handleDrop),a.addEventListener("blur",(()=>{tableData.headers[t]=sanitizeInput(a.textContent),generateMarkdown()})),a}function createDataCell(e,t,a){const n=document.createElement("td");return n.contentEditable=!0,n.textContent=e,n.addEventListener("blur",(()=>{tableData.rows[t][a]=sanitizeInput(n.textContent),generateMarkdown()})),n}function handleDragStart(e){e.target.classList.add("dragging"),e.dataTransfer.setData("text/plain",e.target.dataset.index)}function handleDragOver(e){e.preventDefault()}function handleDrop(e){e.preventDefault();const t=parseInt(e.dataTransfer.getData("text/plain")),a=parseInt(e.target.dataset.index);t!==a&&(reorderColumns(t,a),renderTable())}function reorderColumns(e,t){const a=a=>{const n=a[e];a.splice(e,1),a.splice(t,0,n)};a(tableData.headers),a(tableData.alignments),tableData.rows.forEach((e=>a(e)))}function addColumn(){tableData.headers.push("New Column"),tableData.alignments.push("left"),tableData.rows.forEach((e=>e.push(""))),renderTable(),showNotification("Column added")}function addRow(){const e=Array(tableData.headers.length).fill("");tableData.rows.push(e),renderTable(),showNotification("Row added")}function removeColumn(){tableData.headers.length<=1?showNotification("Cannot remove last column","error"):(tableData.headers.pop(),tableData.alignments.pop(),tableData.rows.forEach((e=>e.pop())),renderTable(),showNotification("Column removed"))}function removeRow(){tableData.rows.length<=1?showNotification("Cannot remove last row","error"):(tableData.rows.pop(),renderTable(),showNotification("Row removed"))}function generateMarkdown(){const e={center:":---:",right:"---:",left:":---"},t=[`| ${tableData.headers.join(" | ")} |`,`| ${tableData.alignments.map((t=>e[t])).join(" | ")} |`,...tableData.rows.map((e=>`| ${e.join(" | ")} |`))].join("\n");return document.getElementById("output").value=t,t}async function saveCurrentTable(){const e=generateMarkdown();if(!e)return void showNotification("No table to save","error");const t=await promptAsync("Enter a name for this table:");if(t)try{const a=getSavedTables();a[t]={markdown:e,date:(new Date).toISOString()},localStorage.setItem("savedTables",JSON.stringify(a)),showNotification("Table saved successfully!"),loadSavedTables()}catch(e){showNotification("Error saving table","error")}}function getSavedTables(){try{return JSON.parse(localStorage.getItem("savedTables"))||{}}catch{return{}}}function loadSavedTables(){const e=getSavedTables(),t=document.getElementById("saveList");t.innerHTML="",Object.entries(e).forEach((([e,a])=>{const n=createSavedTableItem(e,a);t.appendChild(n)}))}function createSavedTableItem(e,t){const a=document.createElement("div");a.className="saved-item";const n=document.createElement("span");n.textContent=e;const o=document.createElement("div");o.className="item-actions";const r=createButton("Load",(()=>loadTable(t.markdown)));r.className="load-btn";const l=createButton("Delete",(()=>deleteTable(e)));return l.className="delete-btn",o.appendChild(r),o.appendChild(l),a.appendChild(n),a.appendChild(o),a}function createButton(e,t){const a=document.createElement("button");return a.textContent=e,a.addEventListener("click",t),a}async function copyToClipboard(){try{const e=document.getElementById("output").value;await navigator.clipboard.writeText(e),showNotification("Copied to clipboard!")}catch{document.getElementById("output").select(),document.execCommand("copy"),showNotification("Copied to clipboard!")}}function clearAll(){confirm("Are you sure you want to clear everything?")&&(document.getElementById("input").value="",document.getElementById("output").value="",document.getElementById("tableContainer").innerHTML="",tableData={headers:[],rows:[],alignments:[]},showNotification("All cleared"))}function showNotification(e,t="success"){const a=document.getElementById("notification");a.textContent=e,a.style.backgroundColor="error"===t?"#dc3545":"#4CAF50",a.style.display="block",setTimeout((()=>{a.style.display="none"}),3e3)}function sanitizeInput(e){return e.replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}function debounce(e,t){let a;return function(...n){clearTimeout(a),a=setTimeout((()=>{clearTimeout(a),e(...n)}),t)}}function promptAsync(e){return new Promise((t=>{t(prompt(e))}))}document.addEventListener("DOMContentLoaded",(()=>{initializeApp(),setupEventListeners()})),initializeApp();
+        'use strict';
+
+
+        let tableData = {
+            headers: [],
+            rows: [],
+            alignments: []
+        };
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+
+        function initializeApp() {
+            loadSavedTables();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('input').addEventListener('input', debounce(parseTable, 300));
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', handleButtonClick);
+            });
+        }
+
+        function handleButtonClick(e) {
+            const action = e.target.getAttribute('data-action');
+            const actions = {
+                'parse': parseTable,
+                'save': saveCurrentTable,
+                'copy': copyToClipboard,
+                'clear': clearAll,
+                'addColumn': addColumn,
+                'addRow': addRow,
+                'removeColumn': removeColumn,
+                'removeRow': removeRow
+            };
+            if (actions[action]) {
+                actions[action]();
+            }
+        }
+
+        function parseTable() {
+            const input = document.getElementById('input').value;
+            if (!input.trim()) {
+                showNotification('Please enter a markdown table', 'error');
+                return;
+            }
+
+            const lines = input.trim().split('\n');
+            if (lines.length < 3) {
+                showNotification('Invalid table format', 'error');
+                return;
+            }
+
+            try {
+
+                tableData.headers = lines[0]
+                    .split('|')
+                    .filter(cell => cell.trim())
+                    .map(cell => sanitizeInput(cell.trim()));
+
+
+                const alignmentRow = lines[1].split('|').filter(cell => cell.trim());
+                tableData.alignments = alignmentRow.map(cell => {
+                    cell = cell.trim();
+                    if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+                    if (cell.endsWith(':')) return 'right';
+                    return 'left';
+                });
+
+
+                tableData.rows = lines.slice(2).map(line =>
+                    line.split('|')
+                        .filter(cell => cell.trim())
+                        .map(cell => sanitizeInput(cell.trim()))
+                );
+
+                renderTable();
+                showNotification('Table parsed successfully!');
+            } catch (error) {
+                showNotification('Error parsing table', 'error');
+                console.error('Parse error:', error);
+            }
+        }
+
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+            const table = document.createElement('table');
+
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            tableData.headers.forEach((header, index) => {
+                const th = createHeaderCell(header, index);
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            tableData.rows.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, colIndex) => {
+                    const td = createDataCell(cell, rowIndex, colIndex);
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            container.innerHTML = '';
+            container.appendChild(table);
+
+            generateMarkdown();
+        }
+
+        function createHeaderCell(content, index) {
+            const th = document.createElement('th');
+            th.contentEditable = true;
+            th.textContent = content;
+            th.draggable = true;
+            th.dataset.index = index;
+
+            th.addEventListener('dragstart', handleDragStart);
+            th.addEventListener('dragover', handleDragOver);
+            th.addEventListener('drop', handleDrop);
+            th.addEventListener('blur', () => {
+                tableData.headers[index] = sanitizeInput(th.textContent);
+                generateMarkdown();
+            });
+
+            return th;
+        }
+
+        function createDataCell(content, rowIndex, colIndex) {
+            const td = document.createElement('td');
+            td.contentEditable = true;
+            td.textContent = content;
+
+            td.addEventListener('blur', () => {
+                tableData.rows[rowIndex][colIndex] = sanitizeInput(td.textContent);
+                generateMarkdown();
+            });
+
+            return td;
+        }
+
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'));
+            const dropIdx = parseInt(e.target.dataset.index);
+
+            if (draggedIdx === dropIdx) return;
+
+            reorderColumns(draggedIdx, dropIdx);
+            renderTable();
+        }
+
+        function reorderColumns(fromIndex, toIndex) {
+            const reorderArray = (arr) => {
+                const element = arr[fromIndex];
+                arr.splice(fromIndex, 1);
+                arr.splice(toIndex, 0, element);
+            };
+
+            reorderArray(tableData.headers);
+            reorderArray(tableData.alignments);
+            tableData.rows.forEach(row => reorderArray(row));
+        }
+
+        function addColumn() {
+            tableData.headers.push('New Column');
+            tableData.alignments.push('left');
+            tableData.rows.forEach(row => row.push(''));
+            renderTable();
+            showNotification('Column added');
+        }
+
+        function addRow() {
+            const newRow = Array(tableData.headers.length).fill('');
+            tableData.rows.push(newRow);
+            renderTable();
+            showNotification('Row added');
+        }
+
+        function removeColumn() {
+            if (tableData.headers.length <= 1) {
+                showNotification('Cannot remove last column', 'error');
+                return;
+            }
+            tableData.headers.pop();
+            tableData.alignments.pop();
+            tableData.rows.forEach(row => row.pop());
+            renderTable();
+            showNotification('Column removed');
+        }
+
+        function removeRow() {
+            if (tableData.rows.length <= 1) {
+                showNotification('Cannot remove last row', 'error');
+                return;
+            }
+            tableData.rows.pop();
+            renderTable();
+            showNotification('Row removed');
+        }
+
+        function generateMarkdown() {
+            const alignmentMap = {
+                'center': ':---:',
+                'right': '---:',
+                'left': ':---'
+            };
+
+            const markdown = [
+                `| ${tableData.headers.join(' | ')} |`,
+                `| ${tableData.alignments.map(a => alignmentMap[a]).join(' | ')} |`,
+                ...tableData.rows.map(row => `| ${row.join(' | ')} |`)
+            ].join('\n');
+
+            document.getElementById('output').value = markdown;
+            return markdown;
+        }
+
+
+        async function saveCurrentTable() {
+            const markdown = generateMarkdown();
+            if (!markdown) {
+                showNotification('No table to save', 'error');
+                return;
+            }
+
+            const name = await promptAsync('Enter a name for this table:');
+            if (!name) return;
+
+            try {
+                const savedTables = getSavedTables();
+                savedTables[name] = {
+                    markdown,
+                    date: new Date().toISOString()
+                };
+
+                localStorage.setItem('savedTables', JSON.stringify(savedTables));
+                showNotification('Table saved successfully!');
+                loadSavedTables();
+            } catch (error) {
+                showNotification('Error saving table', 'error');
+                console.error('Save error:', error);
+            }
+        }
+
+        function getSavedTables() {
+            try {
+                return JSON.parse(localStorage.getItem('savedTables')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function loadSavedTables() {
+            const savedTables = getSavedTables();
+            const container = document.getElementById('saveList');
+            container.innerHTML = '';
+
+            Object.entries(savedTables).forEach(([name, data]) => {
+                const item = createSavedTableItem(name, data);
+                container.appendChild(item);
+            });
+        }
+
+        function createSavedTableItem(name, data) {
+            const item = document.createElement('div');
+            item.className = 'saved-item';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = name;
+
+            const actions = document.createElement('div');
+            actions.className = 'item-actions';
+
+            const loadBtn = createButton('Load', () => loadTable(data.markdown));
+            loadBtn.className = 'load-btn';
+            const deleteBtn = createButton('Delete', () => deleteTable(name));
+            deleteBtn.className = 'delete-btn';
+
+            actions.appendChild(loadBtn);
+            actions.appendChild(deleteBtn);
+
+            item.appendChild(nameSpan);
+            item.appendChild(actions);
+
+            return item;
+        }
+
+        function createButton(text, onClick) {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.addEventListener('click', onClick);
+            return button;
+        }
+
+
+        async function copyToClipboard() {
+            try {
+                const output = document.getElementById('output').value;
+                await navigator.clipboard.writeText(output);
+                showNotification('Copied to clipboard!');
+            } catch {
+                const output = document.getElementById('output');
+                output.select();
+                document.execCommand('copy');
+                showNotification('Copied to clipboard!');
+            }
+        }
+
+        function clearAll() {
+            if (!confirm('Are you sure you want to clear everything?')) return;
+
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('tableContainer').innerHTML = '';
+            tableData = { headers: [], rows: [], alignments: [] };
+            showNotification('All cleared');
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.backgroundColor = type === 'error' ? '#dc3545' : '#4CAF50';
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function sanitizeInput(input) {
+            return input
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function promptAsync(message) {
+            return new Promise(resolve => {
+                resolve(prompt(message));
+            });
+        }
+
+
+        initializeApp();
     </script>
 </body>
+
 </html>
