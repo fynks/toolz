@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Table Sorter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .input-group, .output-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            min-height: 20rem;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .notification {
+            background-color: #e8f0fe;
+            color: #007bff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .notification.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Markdown Table Sorter</h2>
+
+        <div class="input-group">
+            <label for="markdownInput">Paste your GitHub flavored Markdown table here:</label>
+            <textarea id="markdownInput" class="input-area" placeholder="Example:\n| Header 1 | Header 2 |\n| -------- | -------- |\n| Value A  | Value X  |\n| Value C  | Value Z  |\n| Value B  | Value Y  |"></textarea>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="sortAndGenerateMarkdown()">Sort Table</button>
+        </div>
+
+        <div class="output-group">
+            <label for="markdownOutput">Sorted Markdown Output:</label>
+            <textarea id="markdownOutput" class="output-area" readonly placeholder="The alphabetically sorted markdown table will appear here (based on the first column)."></textarea>
+        </div>
+
+        <button class="btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <div id="copyNotification" class="notification">Copied to clipboard!</div>
+    </div>
+
+    <script>
+        function sortAndGenerateMarkdown() {
+            const markdownText = document.getElementById('markdownInput').value;
+            const lines = markdownText.trim().split('\n');
+
+            if (lines.length < 2) {
+                document.getElementById('markdownOutput').value = "Please provide a valid markdown table.";
+                return;
+            }
+
+            const headers = lines.slice(0, 1);
+            const separator = lines.slice(1, 2);
+            const dataRows = lines.slice(2).filter(line => line.trim());
+
+            // Sort rows alphabetically based on the first column
+            const sortedRows = [...dataRows].sort((a, b) => {
+                const cellsA = a.split('|').map(cell => cell.trim())[1];
+                const cellsB = b.split('|').map(cell => cell.trim())[1];
+
+                if (cellsA === undefined || cellsB === undefined) return 0;
+
+                return cellsA.localeCompare(cellsB);
+            });
+
+            const sortedTable = [...headers, ...separator, ...sortedRows].join('\n');
+            document.getElementById('markdownOutput').value = sortedTable;
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('markdownOutput');
+            if (output.value) {
+                output.select();
+                document.execCommand('copy');
+
+                const notification = document.getElementById('copyNotification');
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            } else {
+                alert("No output to copy!");
+            }
+        }
+    </script>
+</body>
+</html>
