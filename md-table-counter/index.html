@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Table Counter</title>
+    <style>
+ :root{ --primary: #2563eb; --primary-hover: #1d4ed8; --background: #f8fafc; --surface: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-secondary: #64748b; --error: #ef4444; --success: #22c55e;} *{ margin: 0; padding: 0; box-sizing: border-box;} body{ font-family: system-ui, -apple-system, sans-serif; background-color: var(--background); color: var(--text); line-height: 1.5; min-height: 100vh; display: grid; place-items: center; padding: 1rem;} .container{ width: 100%; max-width: 82rem; background: var(--surface); padding: 2rem; border-radius: 1rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);} .header{ text-align: center; margin-bottom: 2rem;} .header h1{ font-size: 1.875rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem;} .header p{ color: var(--text-secondary);} .input-container{ margin-bottom: 1.5rem;} textarea{ width: 100%; min-height: 12rem; padding: 1rem; background: var(--background); border: 2px solid var(--border); border-radius: 0.5rem; font-family: ui-monospace, monospace; font-size: 0.875rem; line-height: 1.5; resize: vertical; transition: all 0.2s ease;} textarea:focus{ outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);} button{ width: 100%; padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;} button:hover{ background: var(--primary-hover);} button:active{ transform: scale(0.98);} .result{ margin-top: 2rem; opacity: 0; transform: translateY(10px); transition: all 0.3s ease;} .result.visible{ opacity: 1; transform: translateY(0);} .result h2{ font-size: 1.25rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border);} .stats{ display: grid; gap: 1rem; margin-bottom: 2rem;} .stat-card{ background: var(--background); padding: 1rem; border-radius: 0.5rem;} .stat-label{ font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;} .stat-value{ font-size: 1.25rem; font-weight: 600;} table{ width: 100%; border-collapse: collapse; margin: 1rem 0;} th, td{ padding: 0.75rem 1rem; border: 1px solid var(--border); text-align: left;} th{ background: var(--background); font-weight: 600;} tr:hover{ background: var(--background);} .markdown-output{ background: var(--background); padding: 1rem; border-radius: 0.5rem; font-family: ui-monospace, monospace; font-size: 0.875rem; overflow-x: auto; white-space: pre-wrap;} @media (max-width: 640px){ .container{ padding: 1rem;}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Markdown Table Analyzer</h1>
+            <p>Analyze your GitHub-flavored markdown tables with ease</p>
+        </header>
+
+        <div class="input-container">
+            <textarea 
+                id="markdownInput" 
+                placeholder="Paste your GitHub-flavored markdown table here..."
+                spellcheck="false"
+            ></textarea>
+        </div>
+
+        <button id="analyzeBtn">Analyze Table</button>
+
+        <div id="result" class="result">
+            <section class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Rows</div>
+                    <div id="rowCount" class="stat-value">0</div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Column Analysis</h2>
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>Column Name</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section>
+                <h2>Markdown Summary</h2>
+                <div id="markdownOutput" class="markdown-output"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        class TableAnalyzer {
+            constructor() {
+                this.analyzeBtn = document.getElementById('analyzeBtn');
+                this.markdownInput = document.getElementById('markdownInput');
+                this.result = document.getElementById('result');
+                
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                this.analyzeBtn.addEventListener('click', () => this.analyzeTable());
+                this.markdownInput.addEventListener('input', () => {
+                    this.result.classList.remove('visible');
+                });
+            }
+
+            analyzeTable() {
+                try {
+                    const markdownText = this.markdownInput.value.trim();
+                    
+                    if (!markdownText) {
+                        throw new Error('Please paste a valid markdown table');
+                    }
+
+                    const lines = markdownText.split('\n');
+                    
+                    if (lines.length < 3) {
+                        throw new Error('Table must have a header and at least one data row');
+                    }
+
+                    const headers = this.parseHeaders(lines[0]);
+                    const rows = this.parseRows(lines.slice(2), headers.length);
+                    
+                    const analysis = this.analyzeData(headers, rows);
+                    this.displayResults(analysis);
+                    
+                    this.result.classList.add('visible');
+                } catch (error) {
+                    this.showError(error.message);
+                }
+            }
+
+            parseHeaders(headerLine) {
+                const headers = headerLine
+                    .split('|')
+                    .map(h => h.trim().replace(/^\*\*|\*\*$/g, '')) // Remove ** from start and end
+                    .filter(Boolean);
+                
+                if (headers.length < 2) {
+                    throw new Error('Table must have at least two columns');
+                }
+                
+                return headers;
+            }
+
+            parseRows(dataLines, expectedColumns) {
+                return dataLines.map(line => {
+                    const cells = line
+                        .split('|')
+                        .map(cell => cell.trim())
+                        .filter(Boolean);
+                    
+                    if (cells.length !== expectedColumns) {
+                        throw new Error('Inconsistent column count in rows');
+                    }
+                    
+                    return cells;
+                });
+            }
+
+            analyzeData(headers, rows) {
+                const analysis = {
+                    totalRows: rows.length,
+                    columns: headers.slice(1).map((name, index) => {
+                        const yesCount = rows.reduce((count, row) => 
+                            count + (row[index + 1].toLowerCase() === 'yes' ? 1 : 0), 0);
+                        
+                        return {
+                            name,
+                            count: yesCount
+                        };
+                    })
+                };
+
+                return analysis;
+            }
+
+            displayResults(analysis) {
+                // Update row count
+                document.getElementById('rowCount').textContent = analysis.totalRows;
+
+                // Update table
+                const tbody = document.querySelector('#resultTable tbody');
+                tbody.innerHTML = analysis.columns
+                    .map(col => `
+                        <tr>
+                            <td>${this.escapeHtml(col.name)}</td>
+                            <td>${col.count}/${analysis.totalRows}</td>
+                        </tr>
+                    `)
+                    .join('');
+
+                // Update markdown output
+                const markdownOutput = `| Total = ${analysis.totalRows} | ${
+                    analysis.columns
+                        .map(col => `${col.count}/${analysis.totalRows}`)
+                        .join(' | ')
+                } |`;
+                
+                document.getElementById('markdownOutput').textContent = markdownOutput;
+            }
+
+            showError(message) {
+                alert(message);
+                this.result.classList.remove('visible');
+            }
+
+            escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        }
+
+        // Initialize the analyzer when the DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new TableAnalyzer();
+        });
+    </script>
+</body>
+</html>
