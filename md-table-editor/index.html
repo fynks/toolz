@@ -1,26 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Table Editor</title>
+    <meta name="description" content="Markdown Table Editor & Analyzer with dark mode support">
+    <title>Markdown Table Editor & Analyzer</title>
     <style>
-        :root {
-            --color-primary: #3498db;
-            --color-secondary: #2980b9;
-            --color-background: #f4f6f7;
-            --color-surface: #ffffff;
-            --color-danger: #e74c3c;
-            --color-text: #333;
-            --color-text-muted: #666;
-            --color-border: #e0e0e0;
+           :root {
+            /* Design tokens */
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 0.625rem;
+            --spacing-md: 1.25rem;
+            --spacing-lg: 2rem;
             --border-radius: 0.5rem;
-            --spacing-sm: 0.5rem;
-            --spacing-md: 1rem;
-            --spacing-lg: 1.5rem;
-            --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.06);
+            --transition-speed: 0.2s;
+            
+            /* Light theme */
+            --color-primary: #2563eb;
+            --color-secondary: #1d4ed8;
+            --color-background: #f8fafc;
+            --color-surface: #ffffff;
+            --color-surface-hover: #f1f5f9;
+            --color-danger: #dc2626;
+            --color-text: #1e293b;
+            --color-text-muted: #475569;
+            --color-border: #e2e8f0;
+            --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
         }
+
+        [data-theme="dark"] {
+            --color-primary: #3b82f6;
+            --color-secondary: #2563eb;
+            --color-background: #0f172a;
+            --color-surface: #1e293b;
+            --color-surface-hover: #334155;
+            --color-danger: #ef4444;
+            --color-text: #f8fafc;
+            --color-text-muted: #94a3b8;
+            --color-border: #334155;
+            --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+            --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+        }
+
 
         * {
             margin: 0;
@@ -28,48 +52,199 @@
             box-sizing: border-box;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
+            font-family: var(--font-sans);
+            line-height: 1.75;
+            font-size: 16px;
             color: var(--color-text);
             background-color: var(--color-background);
-            padding: var(--spacing-md);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.5s ease;
+            min-height: 100vh;
         }
+
+               
+        .theme-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xs);
+            border-radius: var(--border-radius);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            margin-left: var(--spacing-md);
+        }
+
+        .theme-toggle:hover {
+            background: var(--color-surface-hover);
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2px;
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .theme-toggle:hover svg {
+            transform: scale(1.1);
+        }
+
+      
 
         .container {
-            margin: 0 auto;
+            margin: 2rem auto;
             background-color: var(--color-surface);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow-subtle);
+            box-shadow: var(--shadow-medium);
             padding: var(--spacing-lg);
             max-width: 1200px;
-            /* Limit container width for better readability */
+            border: 1px solid var(--color-border);
+            transition: background-color var(--transition-speed) ease,
+                        border-color var(--transition-speed) ease;
         }
 
-        .section {
-            margin-bottom: var(--spacing-lg);
+          @keyframes containerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-
-        h1 {
+ /* Typography */
+ h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
             color: var(--color-text);
-            margin-bottom: var(--spacing-md);
-            font-weight: 600;
-            text-align: center;
-            /* Center the main title */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--color-border);
+            transition: border-color 0.3s ease;
         }
 
         h3 {
-            margin-bottom: var(--spacing-sm);
+            font-size: 1.25rem;
+            font-weight: 600;
             color: var(--color-text-muted);
+            margin-bottom: var(--spacing-md);
+            transition: color 0.3s ease;
+        }
+        .section {
+            margin-bottom: var(--spacing-lg);
+            animation: sectionSlideIn 0.5s ease-out;
+            animation-fill-mode: both;
+        }
+        @keyframes sectionSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
-        .input-area {
-            margin-bottom: var(--spacing-lg);
+
+  /* Form elements */
+
+
+        textarea {
+            margin: 0;
+            width: 100%;
+            min-height: 150px;
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            resize: vertical;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.7;
+            background-color: var(--color-surface);
+            color: var(--color-text);
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+ /* Button styles */
+ button {
+            padding: 0.625rem 1rem;
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        button:hover {
+            background-color: var(--color-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.5s ease-out, opacity 0.3s ease-out;
+        }
+
+        button:hover::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .btn-secondary {
+            background-color: var(--color-danger);
+        }
+
+        .copy-btn {
+            background-color: #059669;
+        }
+
+        .copy-btn:hover {
+            background-color: #047857;
+        }
+
 
         .controls,
         .table-actions {
@@ -77,441 +252,569 @@
             gap: var(--spacing-sm);
             flex-wrap: wrap;
             margin-block: var(--spacing-md);
-            justify-content: flex-start;
-            /* Align buttons to the start */
         }
 
-        textarea {
-            width: 100%;
-            min-height: 150px;
-            /* Adjust initial height */
-            padding: var(--spacing-md);
-            /* Increase padding for better touch area */
-            border: 1px solid var(--color-border);
-            border-radius: var(--border-radius);
-            resize: vertical;
-            font-family: 'Courier New', Courier, monospace;
-            transition: border-color 0.2s ease;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--color-primary);
-        }
+ /* Table styles */
 
         .table-container {
             overflow-x: auto;
-            margin-block: var(--spacing-md);
+            margin: var(--spacing-md) 0;
             border: 1px solid var(--color-border);
             border-radius: var(--border-radius);
+            background-color: var(--color-surface);
+            transition: all 0.3s ease;
+            animation: tableAppear 0.5s ease-out;
+        }
+
+        @keyframes tableAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
-        th,
-        td {
+
+        th, td {
             padding: var(--spacing-md);
-            /* Increase padding for better touch area */
             border: 1px solid var(--color-border);
-            text-align: left;
-            /* Align text in cells to the left */
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
             background-color: var(--color-background);
+            box-shadow: 0 1px 0 var(--color-border);
             font-weight: 600;
-            position: relative;
-            /* For positioning the sort indicator */
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+       
+        th[draggable="true"] {
             cursor: grab;
-            /* Indicate draggable columns */
-            user-select: none;
-            /* Prevent text selection during drag */
         }
 
-        th::after {
-            content: '⇅';
-            position: absolute;
-            right: var(--spacing-sm);
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0.5;
-            font-size: 0.8rem;
+        th[draggable="true"]::before {
+            content: '⋮⋮';
+            margin-right: var(--spacing-sm);
+            color: var(--color-text-muted);
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
-        .dragging {
-            opacity: 0.6;
-            background: #e3f2fd;
+        th[draggable="true"]:hover::before {
+            opacity: 1;
         }
 
-        button {
-            padding: var(--spacing-sm) var(--spacing-md);
-            background-color: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
+        [contenteditable="true"] {
             transition: background-color 0.2s ease;
-            font-size: 1rem;
-            /* Slightly larger button text */
         }
 
-        button:hover {
-            background-color: var(--color-secondary);
+        [contenteditable="true"]:hover {
+            background-color: rgba(59, 130, 246, 0.05);
         }
 
-        .btn-secondary {
-            background-color: var(--color-danger);
+        [contenteditable="true"]:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -2px;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+  
+ /* Analysis section */
+ details#analysisSection {
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--color-border);
+            margin: var(--spacing-md) 0;
+            transition: all var(--transition-speed) ease;
         }
 
-        .btn-secondary:hover {
-            background-color: #c82333;
+       
+      
+        details#analysisSection summary {
+            padding: var(--spacing-md);
+            cursor: pointer;
+            font-weight: 600;
+            user-select: none;
+            transition: background-color 0.2s ease;
         }
 
-        .copy-btn {
-            background: #28a745;
+        details#analysisSection[open] summary {
+            border-bottom: 1px solid var(--color-border);
         }
 
-        .copy-btn:hover {
-            background: #218838;
+        details#analysisSection summary:hover {
+            background-color: var(--color-background);
+        }
+  
+        .analysis-section {
+            margin-top: 0;
+            padding: var(--spacing-md);
+            background-color: var(--color-surface);
         }
 
-        .notification {
+     
+        .analysis-markdown-output {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background-color: var(--color-background);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--color-border);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+               
+     /* Notification */
+     .notification {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: #4CAF50;
+            bottom: 24px;
+            right: 24px;
+            padding: var(--spacing-md);
             color: white;
-            border-radius: 4px;
-            display: none;
-            animation: slideIn 0.3s ease-out;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-medium);
             z-index: 1000;
-            /* Ensure notification is above other elements */
+            transform-origin: bottom right;
+            animation: notificationSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
-        @keyframes slideIn {
+        @keyframes notificationSlideIn {
             from {
-                transform: translateX(100%);
+                opacity: 0;
+                transform: translateX(100%) scale(0.8);
             }
-
             to {
-                transform: translateX(0);
+                opacity: 1;
+                transform: translateX(0) scale(1);
             }
         }
-
-        [contenteditable] {
-            outline: none;
-            border-bottom: 2px solid transparent;
-            /* Add a subtle indicator for editable cells */
-            transition: border-bottom-color 0.2s ease;
-        }
-
-        [contenteditable]:hover {
-            background-color: rgba(33, 150, 243, 0.1);
-        }
-
-        [contenteditable]:focus {
-            background-color: rgba(33, 150, 243, 0.2);
-            border-bottom-color: var(--color-primary);
-        }
-
-        @media (max-width: 768px) {
-            .controls,
-            .table-actions {
-                flex-direction: column;
+ 
+       /* Responsive */
+       @media (max-width: 768px) {
+            .container {
+                margin: var(--spacing-md);
+                padding: var(--spacing-md);
             }
 
             button {
                 width: 100%;
+            }
+
+            .theme-toggle {
+                position: static;
+                margin: 0;
+            }
+        }
+
+        /* Enhance accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Markdown Table Editor</h1>
+    <main class="container">
+        <h1>
+            Markdown Table Editor & Analyzer
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path class="sun" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" style="display:none"/>
+                    <path class="moon" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+            </button>
+        </h1>
 
-        <section class="section input-area">
-            <h3>Paste Markdown Table Here:</h3>
-            <textarea id="input" placeholder="Paste your markdown table here..."></textarea>
-            <div class="controls">
-                <button onclick="parseTable()">Parse Table</button>
-                <button onclick="copyToClipboard()" class="copy-btn">Copy Output</button>
-                <button onclick="clearAll()" class="btn-secondary">Clear All</button>
-            </div>
-        </section>
+        <article class="section input-area" aria-labelledby="input-section">
+            <h3 id="input-section">Paste Markdown Table Here:</h3>
+            <textarea id="input" aria-label="Markdown table input" placeholder="Paste your markdown table here..."
+                spellcheck="false"></textarea>
+            <nav class="controls" role="toolbar" aria-label="Table controls">
+                <button id="parseBtn" aria-label="Parse table">
+                    <span aria-hidden="true">Parse Table</span>
+                </button>
+                <button id="analyzeBtn" aria-label="Analyze table data">
+                    <span aria-hidden="true">Analyze Table</span>
+                </button>
+                <button id="copyBtn" class="copy-btn" aria-label="Copy output to clipboard">
+                    <span aria-hidden="true">Copy Output</span>
+                </button>
+                <button id="clearBtn" class="btn-secondary" aria-label="Clear all data">
+                    <span aria-hidden="true">Clear All</span>
+                </button>
+            </nav>
+        </article>
 
-        <section class="section">
-            <h3>Edit Table:</h3>
-            <div class="table-actions">
-                <button onclick="addColumn()">Add Column</button>
-                <button onclick="addRow()">Add Row</button>
-                <button onclick="sortRows()">Sort Rows</button>
-                <button onclick="removeColumn()" class="btn-secondary">Remove Column</button>
-                <button onclick="removeRow()" class="btn-secondary">Remove Row</button>
-            </div>
-            <div id="tableContainer" class="table-container">
+        <article class="section" aria-labelledby="edit-section">
+            <h3 id="edit-section">Edit Table:</h3>
+            <nav class="table-actions" role="toolbar" aria-label="Table editing controls">
+                <button id="addColumnBtn" aria-label="Add new column">
+                    <span aria-hidden="true">Add Column</span>
+                </button>
+                <button id="addRowBtn" aria-label="Add new row">
+                    <span aria-hidden="true">Add Row</span>
+                </button>
+                <button id="sortRowsBtn" aria-label="Sort rows alphabetically">
+                    <span aria-hidden="true">Sort Rows</span>
+                </button>
+                <button id="removeColumnBtn" class="btn-secondary" aria-label="Remove last column">
+                    <span aria-hidden="true">Remove Column</span>
+                </button>
+                <button id="removeRowBtn" class="btn-secondary" aria-label="Remove last row">
+                    <span aria-hidden="true">Remove Row</span>
+                </button>
+            </nav>
+
+            <details id="analysisSection">
+                <summary role="button" aria-expanded="false" tabindex="0">
+                    Table Analysis
+                </summary>
+                <div class="analysis-section">
+                   
+                    <output id="analysisMarkdownOutput" class="analysis-markdown-output" role="region"
+                        aria-label="Analysis results"></output>
+                </div>
+            </details>
+
+            <section id="tableContainer" class="table-container" role="region" aria-label="Editable table">
                 <!-- Table will be rendered here -->
-            </div>
-            
-        </section>
+            </section>
+        </article>
 
-        <section class="section">
-            <h3>Output Markdown Table:</h3>
-            <textarea id="output" readonly placeholder="Your generated markdown table will appear here."></textarea>
-        </section>
-    </div>
+        <article class="section" aria-labelledby="output-section">
+            <h3 id="output-section">Output Markdown Table:</h3>
+            <output>
+                <textarea id="output" readonly aria-label="Generated markdown table output"
+                    placeholder="Your generated markdown table will appear here."></textarea>
+            </output>
+        </article>
+    </main>
 
-    <div id="notification" class="notification"></div>
+    <aside id="notification" class="notification" role="alert" aria-live="polite"></aside>
 
     <script>
-        "use strict";
+        (() => { // Immediately invoked function expression (IIFE) for better scope management
+            "use strict";
+            const themeToggle = document.getElementById('themeToggle');
+            const sunPath = themeToggle.querySelector('.sun');
+            const moonPath = themeToggle.querySelector('.moon');
 
-        let tableData = {
-            headers: [],
-            rows: [],
-            alignments: []
-        };
-
-        function setupEventListeners() {
-            // The input event listener is still useful for live updates
-            document.getElementById("input").addEventListener("input", debounce(parseTable, 300));
-        }
-
-        function parseTable() {
-            console.log("parseTable function called"); // Debugging line
-            const inputText = document.getElementById("input").value;
-            if (!inputText.trim()) {
-                showNotification("Please enter a markdown table", "error");
-                return;
-            }
-
-            const lines = inputText.trim().split("\n");
-            if (lines.length < 2) {
-                showNotification("Invalid table format", "error");
-                return;
-            }
-
-            try {
-                tableData.headers = lines[0].split("|").filter(cell => cell.trim()).map(cell => sanitizeInput(cell.trim()));
-                const separatorLine = lines[1].split("|").filter(cell => cell.trim());
-                tableData.alignments = separatorLine.map(cell => {
-                    cell = cell.trim();
-                    if (cell.startsWith(":") && cell.endsWith(":")) {
-                        return "center";
-                    } else if (cell.endsWith(":")) {
-                        return "right";
-                    } else {
-                        return "left";
-                    }
-                });
-                tableData.rows = lines.slice(2).map(row => row.split("|").filter(cell => cell.trim()).map(cell => sanitizeInput(cell.trim())));
-                renderTable();
-                showNotification("Table parsed successfully!");
-            } catch (error) {
-                showNotification("Error parsing table", "error");
-                console.error("Parsing error:", error);
-            }
-        }
-
-        function renderTable() {
+            const inputTextArea = document.getElementById("input");
+            const outputTextArea = document.getElementById("output");
             const tableContainer = document.getElementById("tableContainer");
-            const table = document.createElement("table");
-            const thead = document.createElement("thead");
-            const headerRow = document.createElement("tr");
+            const notificationDiv = document.getElementById("notification");
+            const analysisSection = document.getElementById('analysisSection');
+            const analysisMarkdownOutput = document.getElementById('analysisMarkdownOutput');
 
-            tableData.headers.forEach((header, index) => {
-                const th = document.createElement("th");
-                th.textContent = header;
-                th.draggable = true;
-                th.dataset.index = index;
-                th.addEventListener("dragstart", handleDragStart);
-                th.addEventListener("dragover", handleDragOver);
-                th.addEventListener("drop", handleDrop);
-                th.addEventListener("blur", () => {
-                    tableData.headers[index] = sanitizeInput(th.textContent);
-                    generateMarkdown();
-                });
-                headerRow.appendChild(th);
-            });
+            const parseBtn = document.getElementById("parseBtn");
+            const analyzeBtn = document.getElementById("analyzeBtn");
+            const copyBtn = document.getElementById("copyBtn");
+            const clearBtn = document.getElementById("clearBtn");
+            const addColumnBtn = document.getElementById("addColumnBtn");
+            const addRowBtn = document.getElementById("addRowBtn");
+            const sortRowsBtn = document.getElementById("sortRowsBtn");
+            const removeColumnBtn = document.getElementById("removeColumnBtn");
+            const removeRowBtn = document.getElementById("removeRowBtn");
 
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
+            let tableData = {
+                headers: [],
+                rows: [],
+                alignments: []
+            };
+// Theme switching function
+const toggleTheme = () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Toggle icon visibility
+    sunPath.style.display = newTheme === 'dark' ? 'block' : 'none';
+    moonPath.style.display = newTheme === 'dark' ? 'none' : 'block';
+};
 
-            const tbody = document.createElement("tbody");
-            tableData.rows.forEach((row, rowIndex) => {
-                const tr = document.createElement("tr");
-                row.forEach((cell, cellIndex) => {
-                    const td = document.createElement("td");
-                    td.contentEditable = true;
-                    td.textContent = cell;
-                    td.addEventListener("blur", () => {
-                        tableData.rows[rowIndex][cellIndex] = sanitizeInput(td.textContent);
+// Initialize theme
+const initTheme = () => {
+    const savedTheme = localStorage.getItem('theme') || 
+                      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    sunPath.style.display = savedTheme === 'dark' ? 'block' : 'none';
+    moonPath.style.display = savedTheme === 'dark' ? 'none' : 'block';
+};
+
+// Event listeners
+themeToggle.addEventListener('click', toggleTheme);
+window.addEventListener('DOMContentLoaded', initTheme);
+            const showNotification = (message, type = "success") => {
+                notificationDiv.textContent = message;
+                notificationDiv.style.backgroundColor = type === "error" ? "#dc3545" : "#4CAF50";
+                notificationDiv.style.display = "block";
+                setTimeout(() => {
+                    notificationDiv.style.display = "none";
+                }, 3000);
+            };
+
+            const sanitizeInput = (str) => str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+            const debounce = (func, delay) => {
+                let timeout;
+                return (...args) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
+
+            const parseTable = () => {
+                const inputText = inputTextArea.value.trim();
+                if (!inputText) {
+                    showNotification("Please enter a markdown table", "error");
+                    return;
+                }
+
+                const lines = inputText.split("\n");
+                if (lines.length < 2) {
+                    showNotification("Invalid table format", "error");
+                    return;
+                }
+
+                try {
+                    tableData.headers = lines[0].split("|").filter(cell => cell.trim()).map(cell => sanitizeInput(cell.trim()));
+                    const separatorLine = lines[1].split("|").filter(cell => cell.trim());
+                    tableData.alignments = separatorLine.map(cell => {
+                        cell = cell.trim();
+                        if (cell.startsWith(":") && cell.endsWith(":")) return "center";
+                        if (cell.endsWith(":")) return "right";
+                        return "left";
+                    });
+                    tableData.rows = lines.slice(2).map(row => row.split("|").filter(cell => cell.trim()).map(cell => sanitizeInput(cell.trim())));
+                    renderTable();
+                    showNotification("Table parsed successfully!");
+                } catch (error) {
+                    showNotification("Error parsing table", "error");
+                    console.error("Parsing error:", error);
+                }
+            };
+
+            const renderTable = () => {
+                const table = document.createElement("table");
+                const thead = document.createElement("thead");
+                const headerRow = document.createElement("tr");
+
+                tableData.headers.forEach((header, index) => {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    th.draggable = true;
+                    th.dataset.index = index;
+                    th.addEventListener("dragstart", handleDragStart);
+                    th.addEventListener("dragover", handleDragOver);
+                    th.addEventListener("drop", handleDrop);
+                    th.contentEditable = true; // Make headers editable
+                    th.addEventListener("blur", () => {
+                        tableData.headers[index] = sanitizeInput(th.textContent);
                         generateMarkdown();
                     });
-                    tr.appendChild(td);
+                    headerRow.appendChild(th);
                 });
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
 
-            tableContainer.innerHTML = "";
-            tableContainer.appendChild(table);
-            generateMarkdown();
-        }
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
 
-        function handleDragStart(event) {
-            event.target.classList.add("dragging");
-            event.dataTransfer.setData("text/plain", event.target.dataset.index);
-        }
+                const tbody = document.createElement("tbody");
+                tableData.rows.forEach((row, rowIndex) => {
+                    const tr = document.createElement("tr");
+                    row.forEach((cell, cellIndex) => {
+                        const td = document.createElement("td");
+                        td.contentEditable = true;
+                        td.textContent = cell;
+                        td.addEventListener("blur", () => {
+                            tableData.rows[rowIndex][cellIndex] = sanitizeInput(td.textContent);
+                            generateMarkdown();
+                        });
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
 
-        function handleDragOver(event) {
-            event.preventDefault();
-        }
+                tableContainer.innerHTML = "";
+                tableContainer.appendChild(table);
+                generateMarkdown();
+            };
+            const analyzeTableData = () => {
+                if (tableData.rows.length === 0 || tableData.headers.length === 0) {
+                    return;
+                }
 
-        function handleDrop(event) {
-            event.preventDefault();
-            const fromIndex = parseInt(event.dataTransfer.getData("text/plain"));
-            const toIndex = parseInt(event.target.dataset.index);
-            if (fromIndex !== toIndex) {
-                reorderColumns(fromIndex, toIndex);
-                renderTable();
-            }
-        }
+                const totalRows = tableData.rows.length;
+                let markdownOutput = `| **Total** = \`${totalRows}\` |`;
 
-        function reorderColumns(fromIndex, toIndex) {
-            const move = (arr) => {
-                const element = arr[fromIndex];
-                arr.splice(fromIndex, 1);
-                arr.splice(toIndex, 0, element);
+                // Start the loop from the second column (index 1)
+                for (let i = 1; i < tableData.headers.length; i++) {
+                    const header = tableData.headers[i];
+                    const yesCount = tableData.rows.reduce((count, row) => {
+                        return count + (row[i]?.toLowerCase() === 'yes' ? 1 : 0);
+                    }, 0);
+                    markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
+                }
+
+                analysisMarkdownOutput.textContent = markdownOutput;
             };
 
-            move(tableData.headers);
-            move(tableData.alignments);
-            tableData.rows.forEach(row => move(row));
-        }
-
-        function addColumn() {
-            tableData.headers.push("New Column");
-            tableData.alignments.push("left");
-            tableData.rows.forEach(row => row.push(""));
-            renderTable();
-            showNotification("Column added");
-        }
-
-        function addRow() {
-            const newRow = Array(tableData.headers.length).fill("");
-            tableData.rows.push(newRow);
-            renderTable();
-            showNotification("Row added");
-        }
-
-        function sortRows() {
-            if (!tableData.rows.length) {
-                showNotification("No rows to sort", "error");
-                return;
-            }
-            tableData.rows.sort((a, b) => {
-                const valueA = a[0]?.toLowerCase() || "";
-                const valueB = b[0]?.toLowerCase() || "";
-                return valueA.localeCompare(valueB);
-            });
-            renderTable();
-            showNotification("Rows sorted alphabetically");
-        }
-
-        function removeColumn() {
-            if (tableData.headers.length <= 1) {
-                showNotification("Cannot remove the last column", "error");
-                return;
-            }
-            tableData.headers.pop();
-            tableData.alignments.pop();
-            tableData.rows.forEach(row => row.pop());
-            renderTable();
-            showNotification("Column removed");
-        }
-
-        function removeRow() {
-            if (tableData.rows.length <= 1) {
-                showNotification("Cannot remove the last row", "error");
-                return;
-            }
-            tableData.rows.pop();
-            renderTable();
-            showNotification("Row removed");
-        }
-
-        function generateMarkdown() {
-            const alignments = {
-                center: ":---:",
-                right: "---:",
-                left: ":---"
+            const handleDragStart = (event) => {
+                event.target.classList.add("dragging");
+                event.dataTransfer.setData("text/plain", event.target.dataset.index);
             };
-            const separator = `| ${tableData.alignments.map(align => alignments[align]).join(" | ")} |`;
-            const header = `| ${tableData.headers.join(" | ")} |`;
-            const rows = tableData.rows.map(row => `| ${row.join(" | ")} |`).join("\n");
-            const markdown = [header, separator, rows].join("\n");
-            document.getElementById("output").value = markdown;
-            return markdown;
-        }
 
-        async function copyToClipboard() {
-            try {
-                const outputText = document.getElementById("output").value;
-                await navigator.clipboard.writeText(outputText);
-                showNotification("Copied to clipboard!");
-            } catch (err) {
-                console.error('Could not copy text: ', err);
-                document.getElementById("output").select();
-                document.execCommand("copy");
-                showNotification("Copied to clipboard!");
-            }
-        }
+            const handleDragOver = (event) => {
+                event.preventDefault();
+            };
 
-        function clearAll() {
-            if (confirm("Are you sure you want to clear everything?")) {
-                document.getElementById("input").value = "";
-                document.getElementById("output").value = "";
-                document.getElementById("tableContainer").innerHTML = "";
-                tableData = {
-                    headers: [],
-                    rows: [],
-                    alignments: []
+            const handleDrop = (event) => {
+                event.preventDefault();
+                const fromIndex = parseInt(event.dataTransfer.getData("text/plain"));
+                const toIndex = parseInt(event.target.dataset.index);
+                if (fromIndex !== toIndex) {
+                    reorderColumns(fromIndex, toIndex);
+                    renderTable();
+                    analyzeTableData(); // Call analyzeTableData after reorder
+                }
+            };
+
+            const reorderColumns = (fromIndex, toIndex) => {
+                const move = (arr) => {
+                    const element = arr[fromIndex];
+                    arr.splice(fromIndex, 1);
+                    arr.splice(toIndex, 0, element);
                 };
-                showNotification("All cleared");
-            }
-        }
 
-        function showNotification(message, type = "success") {
-            const notification = document.getElementById("notification");
-            notification.textContent = message;
-            notification.style.backgroundColor = type === "error" ? "#dc3545" : "#4CAF50";
-            notification.style.display = "block";
-            setTimeout(() => {
-                notification.style.display = "none";
-            }, 3000);
-        }
-
-        function sanitizeInput(str) {
-    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-        function debounce(func, delay) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
+                move(tableData.headers);
+                move(tableData.alignments);
+                tableData.rows.forEach(row => move(row));
             };
-        }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            setupEventListeners();
-        });
+            const addColumn = () => {
+                tableData.headers.push("New Column");
+                tableData.alignments.push("left");
+                tableData.rows.forEach(row => row.push(""));
+                renderTable();
+                showNotification("Column added");
+            };
+
+            const addRow = () => {
+                const newRow = Array(tableData.headers.length).fill("");
+                tableData.rows.push(newRow);
+                renderTable();
+                showNotification("Row added");
+            };
+
+            const sortRows = () => {
+                if (!tableData.rows.length) {
+                    showNotification("No rows to sort", "error");
+                    return;
+                }
+                tableData.rows.sort((a, b) => (a[0]?.toLowerCase() || "").localeCompare(b[0]?.toLowerCase() || ""));
+                renderTable();
+                showNotification("Rows sorted alphabetically");
+            };
+
+            const removeColumn = () => {
+                if (tableData.headers.length <= 1) {
+                    showNotification("Cannot remove the last column", "error");
+                    return;
+                }
+                const indexToRemove = tableData.headers.length - 1; // Remove the last column
+                tableData.headers.splice(indexToRemove, 1);
+                tableData.alignments.splice(indexToRemove, 1);
+                tableData.rows.forEach(row => row.splice(indexToRemove, 1));
+                renderTable();
+                analyzeTableData();
+                showNotification("Column removed");
+            };
+
+            const removeRow = () => {
+                if (tableData.rows.length === 0) {
+                    showNotification("No rows to remove", "error");
+                    return;
+                }
+                tableData.rows.pop();
+                renderTable();
+                analyzeTableData();
+                showNotification("Row removed");
+            };
+
+            const generateMarkdown = () => {
+                const alignments = { center: ":---:", right: "---:", left: ":---" };
+                const separator = `| ${tableData.alignments.map(align => alignments[align]).join(" | ")} |`;
+                const header = `| ${tableData.headers.join(" | ")} |`;
+                const rows = tableData.rows.map(row => `| ${row.join(" | ")} |`).join("\n");
+                const markdown = [header, separator, rows].join("\n");
+                outputTextArea.value = markdown;
+                return markdown;
+            };
+
+            const copyToClipboard = async () => {
+                try {
+                    await navigator.clipboard.writeText(outputTextArea.value);
+                    showNotification("Copied to clipboard!");
+                } catch (err) {
+                    console.error('Could not copy text: ', err);
+                    outputTextArea.select();
+                    document.execCommand("copy");
+                    showNotification("Copied to clipboard!");
+                }
+            };
+
+            const clearAll = () => {
+                if (confirm("Are you sure you want to clear everything?")) {
+                    inputTextArea.value = "";
+                    outputTextArea.value = "";
+                    tableContainer.innerHTML = "";
+                    tableData = { headers: [], rows: [], alignments: [] };
+                    analysisMarkdownOutput.textContent = "";
+                    showNotification("All cleared");
+                }
+            };
+
+            // Event Listeners using modern syntax
+            parseBtn.addEventListener("click", () => {
+                parseTable();
+            });
+
+            analyzeBtn.addEventListener("click", () => {
+                analyzeTableData();
+                analysisSection.open = true; // Manually open analysis section
+            });
+
+            copyBtn.addEventListener("click", copyToClipboard);
+            clearBtn.addEventListener("click", clearAll);
+            addColumnBtn.addEventListener("click", addColumn);
+            addRowBtn.addEventListener("click", addRow);
+            sortRowsBtn.addEventListener("click", sortRows);
+            removeColumnBtn.addEventListener("click", removeColumn);
+            removeRowBtn.addEventListener("click", removeRow);
+            inputTextArea.addEventListener("input", debounce(parseTable, 300));
+
+        })();
     </script>
 </body>
 
