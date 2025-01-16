@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Markdown Table Editor & Analyzer with dark mode support">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+
     <title>Markdown Table Editor & Analyzer</title>
-  <link rel="stylesheet" href="styles-min.css">
+    <link rel="stylesheet" href="styles-min.css">
+    <meta name="description"
+        content="Effortlessly create, edit, and analyze Markdown tables with this online tool. Features live editing, sorting, reordering, and dark mode support.">
 </head>
 
 <body>
@@ -14,8 +19,11 @@
             Markdown Table Editor & Analyzer
             <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path class="sun" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" style="display:none"/>
-                    <path class="moon" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    <path class="sun"
+                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                        style="display:none" />
+                    <path class="moon"
+                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
         </h1>
@@ -43,7 +51,7 @@
         <article class="section" aria-labelledby="edit-section">
             <h3 id="edit-section">Edit Table:</h3>
             <nav class="table-actions" role="toolbar" aria-label="Table editing controls">
-                
+
                 <button id="sortRowsBtn" aria-label="Sort rows alphabetically">
                     <span aria-hidden="true">Sort Rows</span>
                 </button>
@@ -62,7 +70,7 @@
                 <button id="removeRowBtn" class="btn-secondary" aria-label="Remove last row">
                     <span aria-hidden="true">Remove Row</span>
                 </button>
-                
+
             </nav>
 
             <details id="analysisSection">
@@ -92,7 +100,7 @@
 
     <aside id="notification" class="notification" role="alert" aria-live="polite"></aside>
 
-<script src="app-min.js"></script>
+    <script src="app-min.js"></script>
 </body>
 
 </html>
