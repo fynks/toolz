@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Markdown & JSON Table Editor & Analyzer with dark mode support">
+    <title>Json Table Editor & Analyzer</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <main class="container">
+        <h1>
+            Markdown & JSON Table Editor & Analyzer
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path class="sun" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" style="display:none"/>
+                    <path class="moon" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+            </button>
+        </h1>
+
+        <article class="section input-area" aria-labelledby="input-section">
+            <h3 id="input-section">Paste Table Data Here:</h3>
+            <div class="input-type-selector">
+                <input type="radio" id="markdownRadio" name="inputType" value="markdown" checked>
+                <label for="markdownRadio">Markdown</label>
+                <input type="radio" id="jsonRadio" name="inputType" value="json">
+                <label for="jsonRadio">JSON</label>
+            </div>
+            <textarea id="input" aria-label="Table data input" placeholder="Paste your markdown or JSON table here..."
+                spellcheck="false"></textarea>
+            <nav class="controls" role="toolbar" aria-label="Table controls">
+                <button id="parseBtn" aria-label="Parse table">
+                    <span aria-hidden="true">Parse Table</span>
+                </button>
+                <button id="analyzeBtn" aria-label="Analyze table data">
+                    <span aria-hidden="true">Analyze Table</span>
+                </button>
+                <button id="copyBtn" class="copy-btn" aria-label="Copy output to clipboard">
+                    <span aria-hidden="true">Copy Output</span>
+                </button>
+                <button id="clearBtn" class="btn-secondary" aria-label="Clear all data">
+                    <span aria-hidden="true">Clear All</span>
+                </button>
+            </nav>
+        </article>
+
+        <article class="section" aria-labelledby="edit-section">
+            <h3 id="edit-section">Edit Table:</h3>
+            <nav class="table-actions" role="toolbar" aria-label="Table editing controls">
+                <button id="insertColumnBtn" aria-label="Insert new column at specific position">
+                    <span aria-hidden="true">Insert Column</span>
+                </button>
+                <button id="insertRowBtn" aria-label="Insert new row at specific position">
+                    <span aria-hidden="true">Insert Row</span>
+                </button>
+                <button id="sortRowsBtn" aria-label="Sort rows alphabetically">
+                    <span aria-hidden="true">Sort Rows</span>
+                </button>
+                <button id="deleteSelectedColumnsBtn" class="btn-secondary" aria-label="Delete selected columns">
+                    <span aria-hidden="true">Delete Columns</span>
+                </button>
+                <button id="deleteSelectedRowsBtn" class="btn-secondary" aria-label="Delete selected rows">
+                    <span aria-hidden="true">Delete Rows</span>
+                </button>
+            </nav>
+
+            <details id="analysisSection">
+                <summary role="button" aria-expanded="false" tabindex="0">
+                    Table Analysis
+                </summary>
+                <div class="analysis-section">
+
+                    <output id="analysisMarkdownOutput" class="analysis-markdown-output" role="region"
+                        aria-label="Analysis results"></output>
+                </div>
+            </details>
+
+            <section id="tableContainer" class="table-container" role="region" aria-label="Editable table">
+                <!-- Table will be rendered here -->
+            </section>
+        </article>
+
+        <article class="section" aria-labelledby="output-section">
+            <h3 id="output-section">Output Table:</h3>
+            <div class="output-type-selector">
+                <input type="radio" id="markdownOutputRadio" name="outputType" value="markdown" checked>
+                <label for="markdownOutputRadio">Markdown</label>
+                <input type="radio" id="jsonOutputRadio" name="outputType" value="json">
+                <label for="jsonOutputRadio">JSON</label>
+            </div>
+            <output>
+                <textarea id="output" readonly aria-label="Generated table output"
+                    placeholder="Your generated table will appear here."></textarea>
+            </output>
+        </article>
+    </main>
+
+    <aside id="notification" class="notification" role="alert" aria-live="polite"></aside>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
