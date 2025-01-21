@@ -112,37 +112,64 @@
        return;
      }
 
-     try {
-       let baseJSON = jsonInput ? JSON.parse(jsonInput) : currentJSON;
-       if (Object.keys(baseJSON).length === 0) {
-         throw new Error("No valid JSON data provided");
-       }
+  function normalizeServiceName(name) {
+      return name.toLowerCase().trim();
+  }
+  
+  function capitalizeFirstLetter(string) {
+    // Find first letter using regex
+    const match = string.match(/[a-zA-Z]/);
+    if (!match) return string; // Return unchanged if no letters found
+    
+    const index = match.index;
+    return string.slice(0, index) + 
+           string[index].toUpperCase() + 
+           string.slice(index + 1);
+}
 
-       const supportedServicesList = supportedServices.split(',').map(s => s.trim());
-       const updatedJSON = { ...baseJSON };
+try {
+  let baseJSON = jsonInput ? JSON.parse(jsonInput) : currentJSON;
+  if (Object.keys(baseJSON).length === 0) {
+      throw new Error("No valid JSON data provided");
+  }
 
-       // Update existing services
-       Object.keys(updatedJSON).forEach(service => {
-         updatedJSON[service][newProviderName] = 
-           supportedServicesList.includes(service) ? 'yes' : 'no';
-       });
+  const supportedServicesList = supportedServices.split(',').map(s => normalizeServiceName(s));
+  const updatedJSON = {};
+  
+  // First normalize existing services
+  Object.entries(baseJSON).forEach(([service, providers]) => {
+      const normalizedService = normalizeServiceName(service);
+      updatedJSON[normalizedService] = providers;
+  });
 
-       // Add new services if they don't exist
-       supportedServicesList.forEach(service => {
-         if (!updatedJSON[service]) {
-           updatedJSON[service] = {};
-           // Copy providers from first existing service
-           const firstService = Object.keys(updatedJSON)[0];
-           Object.keys(updatedJSON[firstService]).forEach(provider => {
-             updatedJSON[service][provider] = 'no';
-           });
-           updatedJSON[service][newProviderName] = 'yes';
-         }
-       });
+  // Update existing services
+  Object.keys(updatedJSON).forEach(service => {
+      updatedJSON[service][newProviderName] = 
+          supportedServicesList.includes(normalizeServiceName(service)) ? 'yes' : 'no';
+  });
 
-       currentJSON = updatedJSON;
-       updatedJsonOutput.textContent = JSON.stringify(updatedJSON, null, 2);
-       selectUpdatedJsonBtn.style.display = 'block';
+  // Add new services if they don't exist
+  supportedServicesList.forEach(normalizedService => {
+      if (!Object.keys(updatedJSON).some(existing => 
+          normalizeServiceName(existing) === normalizedService)) {
+          updatedJSON[normalizedService] = {};
+          // Copy providers from first existing service
+          const firstService = Object.keys(updatedJSON)[0];
+          Object.keys(updatedJSON[firstService]).forEach(provider => {
+              updatedJSON[normalizedService][provider] = 'no';
+          });
+          updatedJSON[normalizedService][newProviderName] = 'yes';
+      }
+  });
+
+  const finalJSON = {};
+  Object.entries(updatedJSON).forEach(([service, providers]) => {
+      finalJSON[capitalizeFirstLetter(service)] = providers;
+  });
+
+  currentJSON = finalJSON;
+  updatedJsonOutput.textContent = JSON.stringify(finalJSON, null, 2);
+  selectUpdatedJsonBtn.style.display = 'block';
      } catch (error) {
        updatedJsonOutput.textContent = `Error: ${error.message}`;
        selectUpdatedJsonBtn.style.display = 'none';
