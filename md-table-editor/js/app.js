@@ -112,7 +112,7 @@
             renderTable();
             showNotification("Table parsed successfully!");
         } catch (error) {
-            showNotification("Error parsing table", "error");
+            showNotification(`Error parsing table: ${error.message}`, "error");
             console.error("Parsing error:", error);
         }
     };
