@@ -1,4 +1,4 @@
-(() => { // Immediately invoked function expression (IIFE) for better scope management
+(() => {
     "use strict";
 
     // Theme elements
@@ -39,6 +39,7 @@
     };
 
     let isReorderMode = false;
+    let outputFormat = 'markdown'; // Default output format
 
     // Theme switching function
     const toggleTheme = () => {
@@ -141,7 +142,7 @@
             th.addEventListener("blur", () => {
                 if (!isReorderMode) {
                     tableData.headers[index] = sanitizeInput(th.textContent);
-                    generateMarkdown();
+                    generateOutput();
                 }
             });
             headerRow.appendChild(th);
@@ -173,7 +174,7 @@
                 td.addEventListener("blur", () => {
                     if (!isReorderMode) {
                         tableData.rows[rowIndex][cellIndex] = sanitizeInput(td.textContent);
-                        generateMarkdown();
+                        generateOutput();
                     }
                 });
                 tr.appendChild(td);
@@ -184,17 +185,17 @@
 
         tableContainer.innerHTML = "";
         tableContainer.appendChild(table);
-        generateMarkdown();
+        generateOutput();
     };
 
     const analyzeTableData = () => {
         if (tableData.rows.length === 0 || tableData.headers.length === 0) {
             return;
         }
-    
+
         const totalRows = tableData.rows.length;
         let markdownOutput = `| **Total** = \`${totalRows}\` |`;
-    
+
         // Start the loop from the second column (index 1)
         for (let i = 1; i < tableData.headers.length; i++) {
             const header = tableData.headers[i];
@@ -203,7 +204,7 @@
             }, 0);
             markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
         }
-    
+
         analysisMarkdownOutput.textContent = markdownOutput;
         showNotification("Table analyzed!"); // Added notification here
     };
@@ -359,10 +360,27 @@
         const separator = `| ${tableData.alignments.map(align => alignments[align]).join(" | ")} |`;
         const header = `| ${tableData.headers.join(" | ")} |`;
         const rows = tableData.rows.map(row => `| ${row.join(" | ")} |`).join("\n");
-        const markdown = [header, separator, rows].join("\n");
-        outputTextArea.value = markdown;
-        return markdown;
+        return [header, separator, rows].join("\n");
     };
+
+    const generateJSON = () => {
+        const jsonOutput = {};
+        tableData.rows.forEach(row => {
+          const serviceName = row[0]?.replace(/\*\*/g, ''); // Remove ** from service name
+           if (serviceName) {
+              jsonOutput[serviceName] = {};
+              for (let i = 1; i < tableData.headers.length; i++) {
+                  jsonOutput[serviceName][tableData.headers[i].replace(/\*\*/g, '')] = row[i] ? row[i].toLowerCase() : "no";
+              }
+           }
+        });
+          return JSON.stringify(jsonOutput, null, 2);
+      };
+
+     const generateOutput = () => {
+            const output = outputFormat === 'markdown' ? generateMarkdown() : generateJSON();
+             outputTextArea.value = output;
+     }
 
     const copyToClipboard = async () => {
         try {
@@ -383,6 +401,7 @@
             tableContainer.innerHTML = "";
             tableData = { headers: [], rows: [], alignments: [] };
             analysisMarkdownOutput.textContent = "";
+             outputFormat = 'markdown';
             showNotification("All cleared");
         }
     };
@@ -392,6 +411,15 @@
         reorderBtn.textContent = isReorderMode ? "Edit Table" : "Re-order";
         renderTable();
     };
+    
+    //Add event listener for dropdown
+    document.addEventListener('change', function(e) {
+       if(e.target && e.target.id == 'outputFormat'){
+          outputFormat = e.target.value;
+          generateOutput();
+        }
+    });
+    
 
     // Event Listeners using modern syntax
     parseBtn.addEventListener("click", () => {

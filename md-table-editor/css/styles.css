@@ -415,6 +415,47 @@ details#analysisSection[open] summary {
     font-size: 0.85rem; /* Slightly smaller font size */
     white-space: pre-wrap; /* Ensure proper wrapping */
   }
+
+/* Styling for the output format dropdown */
+select#outputFormat {
+    margin-block: var(--spacing-sm);
+    padding: .625rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: .875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+    position: relative; /* For pseudo-element positioning */
+}
+
+/* Add + symbol */
+select#outputFormat::after {
+    content: '+';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: transform 0.2s ease-in-out;
+    pointer-events: none;
+}
+
+/* Rotate when dropdown is open */
+select#outputFormat:focus::after {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+/* Keep focus styles */
+select#outputFormat:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
 /* Notification */
 .notification {
     position: fixed;

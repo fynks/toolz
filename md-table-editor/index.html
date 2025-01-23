@@ -9,7 +9,7 @@
 
     <title>Markdown Table Editor & Analyzer</title>
     <link rel="stylesheet" href="css/styles-min.css">
-    <script src="js/app-min.js" defer></script>
+    <script src="js/app.js" defer></script>
     <meta name="description"
         content="Effortlessly create, edit, and analyze Markdown tables with this online tool. Features live editing, sorting, reordering, and dark mode support.">
 </head>
@@ -92,6 +92,13 @@
 
         <article class="section" aria-labelledby="output-section">
             <h3 id="output-section">Output Markdown Table:</h3>
+                  
+<select id="outputFormat" aria-label="Select output format">
+    <option value="markdown" selected>Markdown</option>
+    <option value="json">JSON</option>
+  </select>
+  
+      
             <output>
                 <textarea id="output" readonly aria-label="Generated markdown table output"
                     placeholder="Your generated markdown table will appear here."></textarea>
