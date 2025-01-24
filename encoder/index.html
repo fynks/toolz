@@ -1,472 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Base64URL Encoder & Decoder</title>
-  <style>
-    :root {
-      --primary: #3b82f6;
-      --success: #10b981;
-      --surface: rgba(255, 255, 255, 0.08);
-      --surface-dark: rgba(0, 0, 0, 0.2);
-      --text: rgba(255, 255, 255, 0.95);
-      --text-secondary: rgba(255, 255, 255, 0.7);
-      --border: rgba(255, 255, 255, 0.1);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      margin: 0;
-      padding: clamp(1rem, 5vw, 2rem);
-      min-height: 100vh;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      line-height: 1.5;
-    }
-
-    .container {
-      background: var(--surface);
-      backdrop-filter: blur(12px);
-      border-radius: 16px;
-      padding: clamp(1.5rem, 4vw, 2rem);
-      width: min(90%, 600px);
-      box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.1),
-        0 2px 8px rgba(0, 0, 0, 0.1),
-        inset 0 1px 2px rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--border);
-      animation: fadeIn 0.5s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      font-size: clamp(1.5rem, 4vw, 1.75rem);
-      font-weight: 600;
-      background: linear-gradient(to right, #60a5fa, #34d399);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    .input-group {
-      position: relative;
-      margin-bottom: 1rem;
-    }
-
-    textarea {
-      width: 100%;
-      height: 120px;
-      background: var(--surface-dark);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1rem;
-      font-size: 0.95rem;
-      color: var(--text);
-      resize: vertical;
-      min-height: 80px;
-      max-height: 300px;
-      transition: all 0.2s ease;
-    }
-
-    textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-    }
-
-    textarea::placeholder {
-      color: var(--text-secondary);
-    }
-
-    .buttons {
-      display: grid;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      
-    }
-/* Button Styles */
-button {
-  width: 100%;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-button.encode {
-  background: var(--primary);
-  color: white;
-}
-
-button.decode {
-  background: var(--success);
-  color: white;
-}
-
-button.copy {
-  background: var(--surface-dark);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-button:hover:not(:disabled) {
-  filter: brightness(110%);
-  transform: translateY(-1px);
-}
-
-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* Result Styling */
-.result-wrapper {
-  background: var(--surface-dark);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.result-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.result {
-  background: var(--surface-dark);
-  color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1.6;
-  position: relative;
-}
-
-.result p {
-  padding: 1rem;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.result p.encoded {
-  color: var(--primary);
-}
-
-.result p.decoded {
-  color: var(--success);
-}
-
-.result p.error {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-    .toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border-radius: 9999px;
-      font-size: 0.9rem;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .toast.show {
-      opacity: 1;
-    }
-/* Loading Animation */
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-.loading {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-    @media (max-width: 480px) {
-      .container {
-        width: 100%;
-      }
-      
-      .result-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-      
-      .copy-btn {
-        width: 100%;
-        justify-content: center;
-      }
-      .buttons {
-    grid-template-columns: 1fr;
-  }
-  
-  .result p {
-    font-size: 0.9rem;
-    padding: 0.75rem;
-  }
-    }
-
-
-
-
-
-
-
-  </style>
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles-min.css">
+  <script src="js/app-min.js" defer></script>
 </head>
+
 <body>
   <div class="container">
     <h1>Base64URL Encoder & Decoder</h1>
     <div class="input-group">
-      <textarea 
-        id="inputText" 
-        placeholder="Enter your text here..."
-        spellcheck="false"
-      ></textarea>
+      <textarea id="inputText" placeholder="Enter your text here..." spellcheck="false"></textarea>
     </div>
-   
+
     <div class="buttons">
-        <button class="encode" onclick="encodeBase64URL()">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>
-          </svg>
-          Encode
-        </button>
-        <button class="decode" onclick="decodeBase64URL()">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-          </svg>
-          Decode
-        </button>
-        <button class="copy" id="copyBtn" onclick="copyOutput()" style="display: none;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-          </svg>
-          Copy Output
-        </button>
-      </div>
+      <button class="encode" onclick="encodeBase64URL()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+        </svg>
+        Encode
+      </button>
+      <button class="decode" onclick="decodeBase64URL()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+        Decode
+      </button>
+      <button class="copy" id="copyBtn" onclick="copyOutput()" style="display: none;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+        Copy Output
+      </button>
+    </div>
 
     <div class="result-wrapper">
-        <div class="result-header">
-            <span class="result-title">Output</span>
-          </div>
+
       <div class="result" id="output"></div>
     </div>
   </div>
   <div class="toast" id="toast">Copied to clipboard!</div>
 
-<script>
-  // Constants
-  const MAX_INPUT_LENGTH = 10000;
-  const MAX_HISTORY = 10;
-  const SHORTCUTS = {
-    ENCODE: { key: 'Enter', ctrl: true },
-    DECODE: { key: 'b', ctrl: true },
-    COPY: { key: 'c', ctrl: true, shift: true },
-    CLEAR: { key: 'k', ctrl: true }
-  };
-
-  // DOM Elements
-  const inputText = document.getElementById('inputText');
-  const output = document.getElementById('output');
-  const copyBtn = document.getElementById('copyBtn');
-  const toast = document.getElementById('toast');
-
-  // State Management
-  let history = [];
-  let historyIndex = -1;
-  let isProcessing = false;
-
-  // Validation Functions
-  const isValidInput = (text) => {
-    return text && text.trim().length > 0 && text.length < MAX_INPUT_LENGTH;
-  };
-
-  const isValidBase64URL = (text) => {
-    return /^[-A-Za-z0-9_]*$/.test(text);
-  };
-
-  // History Management
-  const addToHistory = (text) => {
-    if (!history.includes(text)) {
-      history.unshift(text);
-      if (history.length > MAX_HISTORY) history.pop();
-    }
-    historyIndex = -1;
-  };
-
-  // UI Feedback
-  const showToast = (message = 'Copied to clipboard!') => {
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-  };
-
-  const setLoading = (isLoading) => {
-  isProcessing = isLoading;
-  document.querySelectorAll('button').forEach(btn => btn.disabled = isLoading);
-  output.closest('.result-wrapper').classList.toggle('loading', isLoading);
-};
-
-  const showOutput = (message, type = 'encoded') => {
-  output.innerHTML = `<p class="${type}">${message}</p>`;
-  copyBtn.style.display = type === 'error' ? 'none' : 'flex';
-  output.closest('.result-wrapper').classList.toggle('loading', false);
-};
-
-  // Core Functions
-  const encodeBase64URL = async () => {
-    const input = inputText.value.trim();
-    
-    if (!isValidInput(input)) {
-      showOutput(`Please enter valid text (1-${MAX_INPUT_LENGTH} characters).`, true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const encoded = btoa(unescape(encodeURIComponent(input)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-      addToHistory(input);
-      showOutput(`Encoded: ${encoded}`);
-    } catch (error) {
-      showOutput(`Encoding failed: ${error.message}`, true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const decodeBase64URL = async () => {
-    const input = inputText.value.trim();
-    
-    if (!isValidInput(input)) {
-      showOutput('Please enter valid Base64URL text.', true);
-      return;
-    }
-
-    if (!isValidBase64URL(input)) {
-      showOutput('Invalid Base64URL format. Use only A-Z, a-z, 0-9, -, and _', true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const padded = input
-        .replace(/-/g, '+')
-        .replace(/_/g, '/')
-        .padEnd(input.length + (4 - input.length % 4) % 4, '=');
-      const decoded = decodeURIComponent(escape(atob(padded)));
-      addToHistory(input);
-      showOutput(`Decoded: ${decoded}`);
-    } catch (error) {
-      showOutput(`Decoding failed: ${error.message}`, true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyOutput = async () => {
-    if (isProcessing) return;
-    
-    try {
-      setLoading(true);
-      const text = output.textContent.replace('Encoded: ', '').replace('Decoded: ', '');
-      await navigator.clipboard.writeText(text);
-      showToast();
-    } catch (error) {
-      showToast('Failed to copy text');
-      console.error('Copy failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearAll = () => {
-    if (isProcessing) return;
-    inputText.value = '';
-    output.innerHTML = '';
-    copyBtn.style.display = 'none';
-    inputText.focus();
-  };
-
-  // Event Listeners
-  document.addEventListener('keydown', (e) => {
-    if (isProcessing) return;
-
-    // Command shortcuts
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === SHORTCUTS.ENCODE.key) {
-        e.preventDefault();
-        encodeBase64URL();
-      } else if (e.key === SHORTCUTS.DECODE.key) {
-        e.preventDefault();
-        decodeBase64URL();
-      } else if (e.key === SHORTCUTS.CLEAR.key) {
-        e.preventDefault();
-        clearAll();
-      } else if (e.shiftKey && e.key === SHORTCUTS.COPY.key && copyBtn.style.display !== 'none') {
-        e.preventDefault();
-        copyOutput();
-      }
-    }
-
-    // History navigation
-    if (document.activeElement === inputText) {
-      if (e.key === 'ArrowUp' && history.length > 0) {
-        e.preventDefault();
-        historyIndex = Math.min(historyIndex + 1, history.length - 1);
-        inputText.value = history[historyIndex];
-      } else if (e.key === 'ArrowDown' && historyIndex > -1) {
-        e.preventDefault();
-        historyIndex = Math.max(-1, historyIndex - 1);
-        inputText.value = historyIndex === -1 ? '' : history[historyIndex];
-      }
-    }
-  });
-
-  // Initialize
-  inputText.focus();
-</script>
 </body>
+
 </html>
