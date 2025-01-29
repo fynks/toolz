@@ -1,148 +1,439 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1a1a1a"><meta name="robots" content="noindex"><title>Toolz</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="alternate icon" href="./favicon.ico"><style>:root{ --bg-primary: #1a1a1a; --bg-card: #2d2d2d; --text-primary: #ffffff; --text-secondary: #a0a0a0; --accent-color: #4f46e5; --card-border: #3d3d3d; --hover-bg: #353535; --tag-bg: #4338ca; --transition: all 0.2s ease; --card-padding: 1.5rem;} *, *::before, *::after{ margin: 0; padding: 0; box-sizing: border-box;} body{ font-family: system-ui, -apple-system, sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.5; min-height: 100vh;} .container{ max-width: 1200px; margin: 0 auto; padding: 2rem 1rem}header{ width: 100%; padding: 1rem 0}.header-content{ display: flex; justify-content: center; align-items: center; max-width: 900px; margin: 0 auto; padding: 0 1rem}.logo-title{ display: flex; align-items: center; gap: 1rem}.title-group{ display: flex; flex-direction: column; align-items: center; }h1{ font-size: 2.5rem; font-weight: 700; margin: 0; background: linear-gradient(to right, #4f46e5, #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent}.logo svg{ width: 42px; height: 42px; stroke: var(--accent-color); stroke-width: 2; transition: var(--transition)}.logo svg path{ background: linear-gradient(to right, #4f46e5, #818cf8); stroke: url(#header-gradient)} .search-container{ max-width: 600px; margin: 0 auto 2rem; position: relative;} .search-icon{ position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);} .search-input{ width: 100%; padding: 1rem 1rem 1rem 2.5rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 0.75rem; background: var(--bg-card); color: var(--text-primary); transition: var(--transition);} .search-input:focus{ outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);} .search-input::placeholder{ color: var(--text-secondary);} .bookmarks-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;} .bookmark-card{ position: relative; background: var(--bg-card); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: var(--card-padding); transition: var(--transition); text-decoration: none; display: flex; flex-direction: column; height: 100%; overflow: hidden;} .card-content{ display: flex; flex-direction: column; position: relative; gap: 0.75rem; min-height: 80px; } .bookmark-card:hover{ transform: translateY(-4px); border-color: var(--accent-color); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);} .bookmark-card:before{ content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(to right, var(--accent-color), #818cf8); border-radius: 0.75rem 0.75rem 0 0; opacity: 0; transition: var(--transition);} .bookmark-card:hover:before{ opacity: 1;} .bookmark-title{ font-size: 1.25rem; font-weight: 600; color: var(--text-primary); line-height: 1.3} .bookmark-url{ color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem; word-break: break-all;} .bookmark-category{ margin-top: auto; background: var(--tag-bg); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; align-self: flex-start;} .external-icon{ position: absolute; top: 0; right: 0; color: var(--text-secondary); transition: var(--transition); pointer-events: none} .bookmark-card:hover .external-icon{ color: var(--accent-color);} @media (max-width: 768px){ .container{ padding: 1rem;} h1{ font-size: 2rem;} .bookmarks-grid{ grid-template-columns: 1fr;}} @media (max-width: 640px){ .header-content{ flex-direction: column; gap: 1rem;} .title-group{ text-align: center;}} @media (max-width: 480px){ .bookmark-title{ font-size: 1.125rem; padding-right: 1.5rem;}} </style></head>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="robots" content="noindex">
+    <title>Toolz</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="./favicon.ico">
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-card: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-color: #4f46e5;
+            --card-border: #3d3d3d;
+            --hover-bg: #353535;
+            --tag-bg: #4338ca;
+            --transition: all 0.2s ease;
+            --card-padding: 1.5rem;
+            --focus-outline-color: rgba(79, 70, 229, 0.5);
+        }
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem
+        }
+
+        header {
+            width: 100%;
+            padding: 1rem 0
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem
+        }
+
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem
+        }
+
+        .title-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(to right, #4f46e5, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .logo svg {
+            width: 42px;
+            height: 42px;
+            stroke: var(--accent-color);
+            stroke-width: 2;
+            transition: var(--transition)
+        }
+
+        .logo svg path {
+            background: linear-gradient(to right, #4f46e5, #818cf8);
+            stroke: url(#header-gradient)
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 2.5rem;
+            font-size: 1rem;
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--focus-outline-color);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .bookmarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .bookmark-card {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: var(--card-padding);
+            transition: var(--transition);
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            will-change: transform, border-color, box-shadow;
+        }
+        .card-content{
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            gap: 0.75rem;
+            min-height: 80px;
+        }
+
+        .bookmark-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .bookmark-card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--accent-color), #818cf8);
+            border-radius: 0.75rem 0.75rem 0 0;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .bookmark-card:hover:before {
+            opacity: 1;
+        }
+
+        .bookmark-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3
+        }
+
+        .bookmark-url {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            word-break: break-all;
+        }
+
+        .bookmark-category {
+            margin-top: auto;
+            background: var(--tag-bg);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            align-self: flex-start;
+        }
+
+        .external-icon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            pointer-events: none
+        }
+
+        .bookmark-card:hover .external-icon {
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .bookmarks-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .title-group {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bookmark-title {
+                font-size: 1.125rem;
+                padding-right: 1.5rem;
+            }
+        }
+    </style>
+</head>
 
 <body>
-  <div class="container">
-    <header>
-      <div class="header-content">
-        <div class="logo-title">
-            <svg class="logo" width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#4f46e5" />
-                    <stop offset="100%" style="stop-color:#818cf8" />
-                  </linearGradient>
-                </defs>
-                <path d="M12 4L3 9L12 14L21 9L12 4Z" stroke="url(#header-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M3 14L12 19L21 14" stroke="url(#header-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-          <div class="title-group">
-            <h1>Toolz</h1>
-          </div>
-        </div>
-      </div>
-    </header>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-title">
+                    <svg class="logo" width="42" height="42" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="header-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#4f46e5" />
+                                <stop offset="100%" style="stop-color:#818cf8" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M12 4L3 9L12 14L21 9L12 4Z" stroke="url(#header-gradient)" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M3 14L12 19L21 14" stroke="url(#header-gradient)" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="title-group">
+                        <h1>Toolz</h1>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main>
+            <div class="search-container">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search bookmarks... (title, url, category)"
+                    aria-label="Search bookmarks" autofocus>
+            </div>
 
-    <div class="search-container">
-      <span class="search-icon" aria-hidden="true">🔍</span>
-      <input type="text" id="searchInput" class="search-input" placeholder="Search bookmarks..."
-        aria-label="Search bookmarks" autofocus>
+            <div id="bookmarksGrid" class="bookmarks-grid">
+
+                <a href="./md-table-editor/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">MD Table Editor</h3>
+                        <div class="bookmark-url">Edit Markdown Tables Visually</div>
+                    </div>
+                    <span class="bookmark-category">MD Tool</span>
+                </a>
+
+                <a href="./chat/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Chat</h3>
+                        <div class="bookmark-url">Open Whatsapp chat</div>
+                    </div>
+                    <span class="bookmark-category">WhatsApp</span>
+                </a>
+
+                <a href="./md-table-to-json/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">MD Table to Json</h3>
+                        <div class="bookmark-url">Convert Markdown Tables to JSON</div>
+                    </div>
+                    <span class="bookmark-category">MD Tool</span>
+                </a>
+
+                <a href="./mdtable-to-pdf/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">MD Table to PDF</h3>
+                        <div class="bookmark-url">Generate PDF from Markdown Tables</div>
+                    </div>
+                    <span class="bookmark-category">MD Tool</span>
+                </a>
+
+                <a href="./svg-converter/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">SVG Converter</h3>
+                        <div class="bookmark-url">Convert SVG Images</div>
+                    </div>
+                    <span class="bookmark-category">SVG converter</span>
+                </a>
+
+                <a href="./svg-converter/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">SVG Converter</h3>
+                        <div class="bookmark-url">Convert SVG Images</div>
+                    </div>
+                    <span class="bookmark-category">SVG converter</span>
+                </a>
+
+                <a href="./github-repo-explorer/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Github Repo Explorer</h3>
+                        <div class="bookmark-url">Get Github repo info</div>
+                    </div>
+                    <span class="bookmark-category">Github</span>
+                </a>
+
+                <a href="./regex-generator/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Regex Generator</h3>
+                        <div class="bookmark-url">Create Regular Expression</div>
+                    </div>
+                    <span class="bookmark-category">Regex Generator</span>
+                </a>
+
+                <a href="./subs/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Subs</h3>
+                        <div class="bookmark-url">Export your Subreddits</div>
+                    </div>
+                    <span class="bookmark-category">Reddit</span>
+                </a>
+
+                <a href="./exam-planner/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Exam Planner</h3>
+                        <div class="bookmark-url">Plan Your Exams</div>
+                    </div>
+                    <span class="bookmark-category">Planning Tool</span>
+                </a>
+
+                <a href="./links-to-table/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Links to Table</h3>
+                        <div class="bookmark-url">Extract Links From Text To Table</div>
+                    </div>
+                    <span class="bookmark-category">Conversion Tool</span>
+                </a>
+
+                <a href="./px-to-rem/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">px to rem</h3>
+                        <div class="bookmark-url">Convert Pixels To Rem</div>
+                    </div>
+                    <span class="bookmark-category">CSS converter</span>
+                </a>
+
+                <a href="./demographic-calculators/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
+                    <div class="card-content">
+                        <span class="external-icon" aria-hidden="true">↗</span>
+                        <h3 class="bookmark-title">Demographic Calculators</h3>
+                        <div class="bookmark-url">Various Demographic Calculations</div>
+                    </div>
+                    <span class="bookmark-category">Demographic Calculator</span>
+                </a>
+            </div>
+        </main>
     </div>
+    <script>
+        const bookmarksGrid = document.getElementById('bookmarksGrid');
+        const searchInput = document.getElementById('searchInput');
+        // Convert NodeList to an array for easier filtering. Also preprocess the data.
+        const allBookmarks = Array.from(bookmarksGrid.querySelectorAll('.bookmark-card')).map(card => {
+            return {
+                title: card.querySelector('.bookmark-title').textContent.toLowerCase(),
+                url: card.querySelector('.bookmark-url').textContent.toLowerCase(),
+                cat: card.querySelector('.bookmark-category').textContent.toLowerCase(),
+                element: card
+            }
+        });
 
-    <div id="bookmarksGrid" class="bookmarks-grid">
-        
-      <a href="./md-table-editor/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">MD Table Editor</h2>
-          <div class="bookmark-url">Edit Markdown Tables Visually</div>
-        </div>
-        <span class="bookmark-category">MD Tool</span>
-      </a>
-
-      <a href="./chat/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Chat</h2>
-          <div class="bookmark-url">Open Whatsapp chat</div>
-        </div>
-        <span class="bookmark-category">WhatsApp</span>
-      </a>
-
-      <a href="./md-table-to-json/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">MD Table to Json</h2>
-          <div class="bookmark-url">Convert Markdown Tables to JSON</div>
-        </div>
-        <span class="bookmark-category">MD Tool</span>
-      </a>
-
-      <a href="./mdtable-to-pdf/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-           <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">MD Table to PDF</h2>
-          <div class="bookmark-url">Generate PDF from Markdown Tables</div>
-        </div>
-        <span class="bookmark-category">MD Tool</span>
-      </a>
-
-      <a href="./svg-converter/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">SVG Converter</h2>
-          <div class="bookmark-url">Convert SVG Images</div>
-        </div>
-        <span class="bookmark-category">SVG converter</span>
-      </a>
-
-      <a href="./encoder/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Base64URL Encoder</h2>
-          <div class="bookmark-url">Encode and decode Base64URL</div>
-        </div>
-        <span class="bookmark-category">Encoder</span>
-      </a>
-
-      <a href="./regex-generator/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-            <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Regex Generator</h2>
-           <div class="bookmark-url">Create Regular Expression</div>
-        </div>
-        <span class="bookmark-category">Regex Generator</span>
-      </a>
-      
-      <a href="./subs/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Subs</h2>
-          <div class="bookmark-url">Export your Subreddits</div>
-        </div>
-        <span class="bookmark-category">Reddit</span>
-      </a>
-
-      <a href="./exam-planner/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-          <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Exam Planner</h2>
-          <div class="bookmark-url">Plan Your Exams</div>
-        </div>
-        <span class="bookmark-category">Planning Tool</span>
-      </a>
-
-      <a href="./links-to-table/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-            <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Links to Table</h2>
-            <div class="bookmark-url">Extract Links From Text To Table</div>
-        </div>
-        <span class="bookmark-category">Conversion Tool</span>
-      </a>
-
-      <a href="./px-to-rem/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-            <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">px to rem</h2>
-          <div class="bookmark-url">Convert Pixels To Rem</div>
-        </div>
-        <span class="bookmark-category">CSS converter</span>
-      </a>
-
-      <a href="./demographic-calculators/" class="bookmark-card" target="_blank" rel="noopener noreferrer">
-        <div class="card-content">
-            <span class="external-icon" aria-hidden="true">↗</span>
-          <h2 class="bookmark-title">Demographic Calculators</h2>
-          <div class="bookmark-url">Various Demographic Calculations</div>
-        </div>
-        <span class="bookmark-category">Demographic Calculator</span>
-      </a>
-
-
-    </div>
-  </div>
-<script>
-const bookmarksGrid=document.getElementById('bookmarksGrid'); const searchInput=document.getElementById('searchInput'); const allBookmarks=Array.from(bookmarksGrid.querySelectorAll('.bookmark-card')).map(card=>({ title: card.querySelector('.bookmark-title').textContent.toLowerCase(), url: card.querySelector('.bookmark-url').textContent.toLowerCase(), cat: card.querySelector('.bookmark-category').textContent.toLowerCase(), element: card})); function displayBookmarks(bookmarks){ bookmarksGrid.innerHTML=''; bookmarks.forEach(bookmark=>{ bookmarksGrid.appendChild(bookmark.element);});} searchInput.addEventListener('input', ()=>{ const searchTerm=searchInput.value.toLowerCase(); const filteredBookmarks=allBookmarks.filter(({ title, url, cat})=>title.includes(searchTerm) || url.includes(searchTerm) || cat.includes(searchTerm) ); displayBookmarks(filteredBookmarks);});
-</script>
+        function displayBookmarks(bookmarks) {
+            bookmarksGrid.innerHTML = '';
+            bookmarks.forEach(bookmark => {
+                bookmarksGrid.appendChild(bookmark.element);
+            });
+        }
+        // Using `input` event listener for live search functionality
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredBookmarks = allBookmarks.filter(({
+                title,
+                url,
+                cat
+            }) => title.includes(searchTerm) || url.includes(searchTerm) || cat.includes(searchTerm));
+            displayBookmarks(filteredBookmarks);
+        });
+    </script>
 </body>
+
 </html>
