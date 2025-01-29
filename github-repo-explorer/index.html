@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repo Explorer</title>
+    <style>
+   :root{ --primary: #2d3436; --secondary: #636e72; --accent: #0984e3; --background: #f5f6fa; --card-bg: #ffffff;} *{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif;} body{ background: var(--background); color: var(--primary); line-height: 1.6;} .container{ max-width: 1400px; margin: 0 auto; padding: 2rem;} .header{ text-align: center; margin-bottom: 3rem;} .header h1{ font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--primary);} .search-container{ max-width: 600px; margin: 0 auto 2rem; position: relative;} .search-input{ width: 100%; padding: 1rem 2rem; border: 2px solid #dfe6e9; border-radius: 50px; font-size: 1.1rem; transition: all 0.3s ease} .search-input:focus{ outline: none; border-color: var(--accent); box-shadow: 0 5px 15px rgba(9, 132, 227, 0.1);} .result-container{ display: flex; justify-content: center; margin-top: 2rem;} .repo-card{ background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%); border-radius: 24px; padding: 3rem; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; width: 100%; max-width: 800px; margin: 0 auto; border: 1px solid rgba(0, 0, 0, 0.08);} .repo-card:hover{ transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);} .repo-header{ display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid rgba(0, 0, 0, 0.05);} .repo-avatar{ width: 80px; height: 80px; border-radius: 16px;} .repo-title{ font-size: 1.5rem; font-weight: bold;} .repo-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 2rem; margin: 2rem 0; padding: 2rem; background: rgba(0, 0, 0, 0.02); border-radius: 16px;} .stat-item{ text-align: left; display: flex; flex-direction: column; gap: 0.5rem;} .stat-value{ font-size: 1.4rem; font-weight: bold; color: var(--accent);} .stat-label{ color: var(--secondary); font-size: 0.9rem;} .language-chart{ display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 1rem 0;} .language-bar{ height: 100%; transition: width 0.5s ease;} .contributors{ display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;} .contributor{ display: flex; align-items: center; background: var(--background); padding: 0.5rem; border-radius: 20px; text-decoration: none; color: inherit; transition: transform 0.2s ease;} .contributor:hover{ transform: translateY(-2px);} .contributor-avatar{ width: 30px; height: 30px; border-radius: 50%; margin-right: 0.5rem;} .repo-details{ margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;} .detail-section{ background: var(--background); padding: 1rem; border-radius: 10px;} .pr-item, .release-item{ padding: 0.75rem; border-bottom: 1px solid rgba(0, 0, 0, 0.1);} .pr-item:last-child, .release-item:last-child{ border-bottom: none;} .pr-title, .release-title{ color: var(--accent); text-decoration: none; font-weight: 500;} .pr-meta, .release-meta{ font-size: 0.9rem; color: var(--secondary); margin-top: 0.25rem;} .repo-meta{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1.5rem 0}.meta-item{ display: flex; align-items: center; gap: 0.5rem}.meta-item:last-child{ justify-content: flex-end} .tag{ display: inline-block; padding: 0.25rem 0.5rem; border-radius: 15px; font-size: 0.8rem; background: var(--accent); color: white;} .last-updated{ color: var(--secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 0, 0, 0.03); padding: 0.5rem 1rem; border-radius: 20px; margin-left: auto} .refresh-dialog{ position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000}.refresh-content{ background: white; padding: 20px; border-radius: 10px; text-align: center}.refresh-content button{ margin: 10px; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer} .loading{ text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--secondary);} .error{ color: #e74c3c; text-align: center; margin: 2rem auto; padding: 1.5rem; background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%); border-radius: 18px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; width: 100%; border: 1px solid rgba(0, 0, 0, 0.08); max-width: 500px}.error h3{ margin-bottom: 0.5rem; font-size: 1.2rem}.error p{ color: #636e72; font-size: 0.9rem} @media (max-width: 1200px){ .repo-card{ max-width: 900px; padding: 2rem;}} @media (max-width: 768px){ .repo-card{ padding: 1.5rem;} .repo-header{ grid-template-columns: 1fr; text-align: center; gap: 1rem;} .repo-header p{ text-align: left; line-height: 1.5; font-size: 1rem;} .repo-avatar{ margin: 0 auto;} .repo-stats{ grid-template-columns: repeat(2, 1fr); padding: 1rem; gap: 1rem;} .stat-item{ text-align: center; align-items: center;}}@media (max-width: 480px){ .container{ padding: 1rem;} .repo-stats{ gap: 0.8rem;} .repo-header >div{ text-align: center;} .repo-header p{ margin: 0.5rem auto; max-width: 90%;} .stat-item{ padding: 0.5rem;} .stat-value{ font-size: 1.2rem;} .stat-label{ font-size: 0.8rem;}} </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GitHub Repository Explorer</h1>
+            <p>Discover detailed information about any GitHub repository</p>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Enter repository URL (e.g., facebook/react) and press Enter">
+        </div>
+
+        <div class="result-container"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.github.com/repos/';
+        const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const searchInput = document.querySelector('.search-input');
+        const resultContainer = document.querySelector('.result-container');
+
+        // Add cache management functions:
+const getCachedData = (repoPath) => {
+    const cache = localStorage.getItem(`repo_${repoPath}`);
+    if (!cache) return null;
+    
+    const { data, timestamp } = JSON.parse(cache);
+    if (Date.now() - timestamp > CACHE_EXPIRY) {
+        localStorage.removeItem(`repo_${repoPath}`);
+        return null;
+    }
+    return data;
+};
+
+const setCacheData = (repoPath, data) => {
+    const cacheObj = {
+        data,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(`repo_${repoPath}`, JSON.stringify(cacheObj));
+};
+
+        const fetchRepoData = async (repoPath, forceRefresh = false) => {
+            try {
+                const cachedData = getCachedData(repoPath);
+                
+                if (cachedData && !forceRefresh) {
+                    const shouldRefresh = await showRefreshConfirm();
+                    if (!shouldRefresh) {
+                        displayRepoInfo(...Object.values(cachedData));
+                        return;
+                    }
+                }
+        
+                resultContainer.innerHTML = '<div class="loading">Fetching repository data...</div>';
+        
+                const [repoResponse, languagesResponse, contributorsResponse, pullsResponse, releasesResponse] = await Promise.all([
+                    fetch(`${API_BASE}${repoPath}`),
+                    fetch(`${API_BASE}${repoPath}/languages`),
+                    fetch(`${API_BASE}${repoPath}/contributors?per_page=10`),
+                    fetch(`${API_BASE}${repoPath}/pulls?state=all&per_page=5`),
+                    fetch(`${API_BASE}${repoPath}/releases?per_page=5`)
+                ]);
+        
+                // Check for rate limit or other errors
+                if (repoResponse.status === 403) {
+            throw new Error('GitHub API rate limit reached. Please try again later.');
+        }
+        
+                if (!repoResponse.ok) {
+                    throw new Error('Repository not found');
+                }
+        
+                const repo = await repoResponse.json();
+                const languages = await languagesResponse.json();
+                const contributors = await contributorsResponse.json();
+                const pulls = await pullsResponse.json();
+                const releases = await releasesResponse.json();
+        
+                const data = { repo, languages, contributors, pulls, releases };
+                setCacheData(repoPath, data);
+                displayRepoInfo(repo, languages, contributors, pulls, releases);
+            } catch (error) {
+        console.error('GitHub API Error:', error);
+        resultContainer.innerHTML = `
+            <div class="error">
+                <h3>⚠️ ${error.message}</h3>
+                ${error.message.includes('rate limit') ? 
+                    '<p>Too many requests. Please wait a few minutes.</p>' : 
+                    ''}
+            </div>`;
+    }
+        };
+const showRefreshConfirm = () => {
+    return new Promise((resolve) => {
+        const dialog = document.createElement('div');
+        dialog.className = 'refresh-dialog';
+        dialog.innerHTML = `
+            <div class="refresh-content">
+                <p>Cached data available. Refresh?</p>
+                <button onclick="this.closest('.refresh-dialog').remove(); ${resolve(false)}">Use Cached</button>
+                <button onclick="this.closest('.refresh-dialog').remove(); ${resolve(true)}">Refresh</button>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+    });
+};
+        
+        const displayRepoInfo = (repo, languages, contributors, pulls, releases) => {
+            const languageTotal = Object.values(languages).reduce((a, b) => a + b, 0);
+            const languageBars = Object.entries(languages)
+                .map(([name, value]) =>
+                    `<div class="language-bar" title="${name}: ${((value / languageTotal) * 100).toFixed(1)}%" 
+             style="width: ${(value / languageTotal) * 100}%; background: ${getRandomColor()}"></div>`
+                ).join('');
+
+            const contributorList = contributors.map(contributor => `
+        <a href="${contributor.html_url}" class="contributor" target="_blank">
+            <img src="${contributor.avatar_url}" alt="${contributor.login}" class="contributor-avatar">
+            <span>${contributor.login}</span>
+        </a>
+    `).join('');
+            const getRelativeTime = (date) => {
+                const now = new Date();
+                const diff = (now.getTime() - date.getTime()) / 1000; // Convert to seconds
+
+                const intervals = {
+                    year: 31536000,
+                    month: 2592000,
+                    week: 604800,
+                    day: 86400,
+                    hour: 3600,
+                    minute: 60
+                };
+
+                for (let [unit, seconds] of Object.entries(intervals)) {
+                    const interval = Math.floor(diff / seconds);
+                    if (interval >= 1) {
+                        return `${interval} ${unit}${interval === 1 ? '' : 's'} ago`;
+                    }
+                }
+                return 'just now';
+            };
+
+            const lastUpdated = new Date(repo.updated_at);
+            const relativeTime = getRelativeTime(lastUpdated);
+            const fullDate = lastUpdated.toLocaleString();
+
+            resultContainer.innerHTML = `
+        <div class="repo-card">
+            <div class="repo-header">
+                <img src="${repo.owner.avatar_url}" alt="${repo.owner.login}" class="repo-avatar">
+                <div>
+                    <h2 class="repo-title">${repo.full_name}</h2>
+                    <p>${repo.description || 'No description provided'}</p>
+                </div>
+            </div>
+
+            <div class="repo-meta">
+                <div class="meta-item">
+                    <span class="tag">${repo.visibility}</span>
+                    <span>${repo.default_branch}</span>
+                </div>
+                <div class="meta-item">
+    <span class="last-updated" title="${fullDate}">Last updated: ${relativeTime}</span>
+</div>
+            </div>
+
+            <div class="repo-stats">
+                <div class="stat-item">
+                    <div class="stat-value">${repo.stargazers_count.toLocaleString()}</div>
+                    <div class="stat-label">Stars</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${repo.forks_count.toLocaleString()}</div>
+                    <div class="stat-label">Forks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${repo.open_issues_count.toLocaleString()}</div>
+                    <div class="stat-label">Issues</div>
+                </div>
+                    <div class="stat-item">
+        <div class="stat-value">${Array.isArray(pulls) ? pulls.length.toLocaleString() : '0'}</div>
+        <div class="stat-label">Pull Requests</div>
+    </div>
+            </div>
+
+            <h3>Languages</h3>
+            <div class="language-chart">${languageBars}</div>
+
+            <h3>Top Contributors</h3>
+            <div class="contributors">${contributorList}</div>
+        </div>
+    `;
+        };
+
+        const getRandomColor = () => {
+            return `hsl(${Math.random() * 360}, 70%, 50%)`;
+        };
+
+
+        searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        const repoPath = searchInput.value.trim();
+        if (repoPath) fetchRepoData(repoPath);
+    }
+});
+    </script>
+</body>
+
+</html>
