@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../favicon.ico" sizes="any">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<meta name="robots" content="noindex">
+    <title>ENT OT List</title>
+    <link rel="manifest"
+        href="data:application/json;base64,ewogICJuYW1lIjogIkVOVCBPVCBMaXN0IiwKICAic2hvcnRfbmFtZSI6ICJFTS1PVCIsCiAgInN0YXJ0X3VybCI6ICIvIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmZmZmIiwKICAidGhlbWVfY29sb3IiOiAiIzJkM2E0YiIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBQUVBQUFBQkNBUUFBQUM2RDcxUkFBQUFDMGxFUVZRSW1XTmdZR0FBQUFBRUFBSDNBVHpyTkhZQUFBQUFTVVZPUks1Q1lJST0iLAogICAgICAic2l6ZXMiOiAiNDh4NDgiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.5rem;
+        }
+
+        header {
+            background-color: var(--surface);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        h1 {
+            color: var(--text);
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .add-button {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+            min-height: 44px;
+        }
+
+        .add-button:hover {
+            background-color: var(--primary-light);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            padding: 0.5rem;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0.5rem;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        input,
+        select {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            color: var(--text);
+            background-color: var(--surface);
+            min-height: 44px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .procedure-suggestions {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .suggestion-item:hover {
+            background-color: var(--background);
+        }
+
+        .procedure-field {
+            position: relative;
+        }
+
+        .disease-suggestions {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .form-field {
+            position: relative;
+        }
+
+        /* Card-based layout for mobile */
+        .entry-card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .entry-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .entry-card-header .entry-card-date {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.875rem;
+        }
+
+        .entry-card-header .entry-value {
+            background-color: var(--background);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.875rem;
+        }
+
+
+        .header-mr {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--background);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        .mr-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        .mr-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .entry-card-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .entry-card-content {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .entry-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .entry-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .entry-value {
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .edit-btn,
+        .delete-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            min-height: 44px;
+            flex: 1;
+        }
+
+        .edit-btn {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Desktop table view */
+        .table-container {
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .form-group {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .entry-cards {
+                display: none;
+            }
+
+            .table-container {
+                display: block;
+                background: var(--surface);
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                overflow-x: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.875rem;
+            }
+
+            th,
+            td {
+                padding: 1rem;
+                text-align: left;
+                border-bottom: 1px solid var(--border);
+            }
+
+            th {
+                background-color: var(--background);
+                font-weight: 500;
+                color: var(--text-light);
+            }
+
+            tbody tr:hover {
+                background-color: var(--background);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1>ENT OT List</h1>
+            <button class="add-button" onclick="openModal()">Add New</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Mobile Card View -->
+        <div class="entry-cards" id="entryCards"></div>
+
+        <!-- Desktop Table View -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>MR Number</th>
+                        <th>PL Number</th>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Disease</th>
+                        <th>Procedure</th>
+                        <th>Surgeon</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="entriesTable"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Entry</h2>
+                <button class="close-button" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="otForm">
+                <div class="form-group">
+                    <div class="form-field">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="mrNumber">MR Number</label>
+                        <input type="text" id="mrNumber" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="plNumber">PL Number</label>
+                        <input type="text" id="plNumber" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="name">Patient Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="disease">Disease</label>
+                        <input type="text" id="disease" required autocomplete="off">
+                    </div>
+
+                    <div class="form-field procedure-field">
+                        <label for="procedure">Procedure</label>
+                        <input type="text" id="procedure" required autocomplete="off">
+                    </div>
+                    <div class="form-field">
+                        <label for="surgeon">Surgeon</label>
+                        <select id="surgeon" required>
+                            <option value="">Select Surgeon</option>
+                            <option value="Dr. Asad">Dr. Asad</option>
+                            <option value="Dr. Usman">Dr. Usman</option>
+                            <option value="Dr. Huma">Dr. Huma</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="add-button" id="submitBtn">Add Entry</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check if service worker is supported
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgZXZlbnQgPT4ge30pOw==')
+                .then(() => console.log('Service Worker registered'))
+                .catch(error => console.log('Service Worker registration failed:', error));
+        }
+
+        // Initialize the application
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        let editingIndex = -1;
+
+        const form = document.getElementById('otForm');
+        const entriesTable = document.getElementById('entriesTable');
+        const entryCards = document.getElementById('entryCards');
+        const submitBtn = document.getElementById('submitBtn');
+        const modal = document.getElementById('entryModal');
+        const modalTitle = document.getElementById('modalTitle');
+
+        // Modal functions
+        function openModal() {
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            form.reset();
+            editingIndex = -1;
+            submitBtn.textContent = 'Add Entry';
+            modalTitle.textContent = 'Add New Entry';
+        }
+
+        // Render entries in both table and card format
+        function renderEntries() {
+            // Render table view for desktop
+            entriesTable.innerHTML = entries.map((entry, index) => `
+                <tr>
+                    <td>${new Date(entry.date).toLocaleDateString()}</td>
+                    <td>${entry.mrNumber}</td>
+                    <td>${entry.plNumber}</td>
+                    <td>${entry.name}</td>
+                    <td>${entry.age}</td>
+                    <td>${entry.disease}</td>
+                    <td>${entry.procedure}</td>
+                    <td>${entry.surgeon}</td>
+                    <td class="action-buttons">
+                        <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
+                        <button class="delete-btn" onclick="deleteEntry(${index})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render card view for mobile
+            entryCards.innerHTML = entries.map((entry, index) => `
+                    <div class="entry-card">
+        <div class="entry-card-header">
+            <div class="header-date">
+                <span class="entry-card-date">${new Date(entry.date).toLocaleDateString()}</span>
+            </div>
+            <div class="header-mr">
+                
+                            <span class="entry-value">${entry.procedure}</span>
+            </div>
+        </div>
+        <div class="entry-card-content">
+                        <div class="entry-field">
+                            <span class="entry-label">PL Number</span>
+                            <span class="entry-value">${entry.plNumber}</span>
+                        </div>
+                        <div class="entry-field">
+                            <span class="entry-label">MR</span>
+                            <span class="entry-value">${entry.mrNumber}</span>
+                        </div>
+                        <div class="entry-field">
+                            <span class="entry-label">Patient Name</span>
+                            <span class="entry-value">${entry.name}</span>
+                        </div>
+                        <div class="entry-field">
+                            <span class="entry-label">Age</span>
+                            <span class="entry-value">${entry.age}</span>
+                        </div>
+                        <div class="entry-field">
+                            <span class="entry-label">Disease</span>
+                            <span class="entry-value">${entry.disease}</span>
+                        </div>
+                        <div class="entry-field">
+                            <span class="entry-label">Surgeon</span>
+                            <span class="entry-value">${entry.surgeon}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
+                            <button class="delete-btn" onclick="deleteEntry(${index})">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Handle form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const entry = {
+                date: document.getElementById('date').value,
+                mrNumber: document.getElementById('mrNumber').value,
+                plNumber: document.getElementById('plNumber').value,
+                name: document.getElementById('name').value,
+                age: document.getElementById('age').value,
+                disease: document.getElementById('disease').value,
+                procedure: document.getElementById('procedure').value,
+                surgeon: document.getElementById('surgeon').value
+            };
+
+            if (editingIndex === -1) {
+                entries.push(entry);
+            } else {
+                entries[editingIndex] = entry;
+                editingIndex = -1;
+                submitBtn.textContent = 'Add Entry';
+                modalTitle.textContent = 'Add New Entry';
+            }
+
+            localStorage.setItem('entries', JSON.stringify(entries));
+            form.reset();
+            closeModal();
+            sortEntries();
+        });
+
+        // Edit entry
+        function editEntry(index) {
+            const entry = entries[index];
+            document.getElementById('date').value = entry.date;
+            document.getElementById('mrNumber').value = entry.mrNumber;
+            document.getElementById('plNumber').value = entry.plNumber;
+            document.getElementById('name').value = entry.name;
+            document.getElementById('age').value = entry.age;
+            document.getElementById('disease').value = entry.disease;
+            document.getElementById('procedure').value = entry.procedure;
+            document.getElementById('surgeon').value = entry.surgeon;
+
+            editingIndex = index;
+            submitBtn.textContent = 'Update Entry';
+            modalTitle.textContent = 'Edit Entry';
+            openModal();
+        }
+
+        // Delete entry
+        function deleteEntry(index) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                entries.splice(index, 1);
+                localStorage.setItem('entries', JSON.stringify(entries));
+                sortEntries();
+            }
+        }
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Sort entries by date (most recent first)
+        function sortEntries() {
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem('entries', JSON.stringify(entries));
+            renderEntries();
+        }
+
+        // Initial render
+        sortEntries();
+
+        const entProcedures = {
+            "Ear": [
+                "Myringotomy with Tympanostomy Tube Insertion",
+                "Tympanoplasty",
+                "Mastoidectomy",
+                "Ossiculoplasty",
+                "Stapedectomy",
+                "Cochlear Implant Surgery",
+                "Endolymphatic Sac Decompression"
+            ],
+            "Nose": [
+                "Functional Endoscopic Sinus Surgery (FESS)",
+                "Septoplasty",
+                "Turbinate Reduction",
+                "Rhinoplasty",
+                "Nasal Polypectomy",
+                "Dacryocystorhinostomy (DCR)",
+                "Epistaxis Control"
+            ],
+            "Throat": [
+                "Tonsillectomy",
+                "Adenoidectomy",
+                "Uvulopalatopharyngoplasty (UPPP)",
+                "Microlaryngoscopy with Vocal Cord Surgery",
+                "Tracheostomy",
+                "Laryngectomy"
+            ],
+            "Head & Neck": [
+                "Parotidectomy",
+                "Thyroidectomy",
+                "Neck Dissection",
+                "Submandibular Gland Excision",
+                "Glossectomy"
+            ]
+        };
+
+        // Modify the procedure input field in your form
+        document.getElementById('procedure').addEventListener('input', function (e) {
+            const input = e.target.value.toLowerCase();
+            let suggestions = [];
+
+            // Get all procedures in a flat array
+            const allProcedures = Object.values(entProcedures).flat();
+
+            // Filter procedures based on input
+            if (input) {
+                suggestions = allProcedures.filter(proc =>
+                    proc.toLowerCase().includes(input)
+                );
+            }
+
+            // Show suggestions
+            showSuggestions(suggestions, e.target);
+        });
+
+        function showSuggestions(suggestions, inputElement) {
+            // Remove existing suggestions
+            const existingSuggestions = document.querySelector('.procedure-suggestions');
+            if (existingSuggestions) {
+                existingSuggestions.remove();
+            }
+
+            if (!suggestions.length) return;
+
+            // Create suggestions container
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'procedure-suggestions';
+
+            // Add suggestions
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.addEventListener('click', () => {
+                    inputElement.value = suggestion;
+                    suggestionsDiv.remove();
+                });
+                suggestionsDiv.appendChild(item);
+            });
+
+            // Show suggestions below input
+            inputElement.parentElement.appendChild(suggestionsDiv);
+            suggestionsDiv.style.display = 'block';
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.procedure-field')) {
+                const suggestions = document.querySelector('.procedure-suggestions');
+                if (suggestions) {
+                    suggestions.remove();
+                }
+            }
+        });
+
+        // Add this after the entProcedures object in your script section
+        const entDiseases = {
+            "Ear": [
+                "Chronic Otitis Media (COM)",
+                "Cholesteatoma",
+                "Otosclerosis",
+                "Recurrent Acute Otitis Media",
+                "Perforated Tympanic Membrane",
+                "Meniere's Disease",
+                "Vestibular Schwannoma"
+            ],
+            "Nose": [
+                "Deviated Nasal Septum (DNS)",
+                "Chronic Rhinosinusitis (CRS)",
+                "Nasal Polyps",
+                "Recurrent Epistaxis",
+                "Sinus Tumors",
+                "Obstructive Sleep Apnea (OSA)",
+                "Dacryocystitis"
+            ],
+            "Throat": [
+                "Recurrent Tonsillitis",
+                "Adenoid Hypertrophy",
+                "Vocal Cord Polyps",
+                "Laryngeal Cancer",
+                "Recurrent Laryngeal Papillomatosis",
+                "Tracheal Stenosis"
+            ],
+            "Head & Neck": [
+                "Thyroid Nodules",
+                "Thyroid Cancer",
+                "Parotid Gland Tumors",
+                "Submandibular Gland Stones",
+                "Head & Neck Squamous Cell Carcinoma"
+            ]
+        };
+
+        // Add event listener for disease input
+        document.getElementById('disease').addEventListener('input', function (e) {
+            const input = e.target.value.toLowerCase();
+            let suggestions = [];
+
+            // Get all diseases in a flat array
+            const allDiseases = Object.values(entDiseases).flat();
+
+            // Filter diseases based on input
+            if (input) {
+                suggestions = allDiseases.filter(disease =>
+                    disease.toLowerCase().includes(input)
+                );
+            }
+
+            // Show suggestions
+            showDiseaseSuggestions(suggestions, e.target);
+        });
+
+        function showDiseaseSuggestions(suggestions, inputElement) {
+            // Remove existing suggestions
+            const existingSuggestions = document.querySelector('.disease-suggestions');
+            if (existingSuggestions) {
+                existingSuggestions.remove();
+            }
+
+            if (!suggestions.length) return;
+
+            // Create suggestions container
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'disease-suggestions';
+
+            // Add suggestions
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = suggestion;
+                item.addEventListener('click', () => {
+                    inputElement.value = suggestion;
+                    suggestionsDiv.remove();
+                });
+                suggestionsDiv.appendChild(item);
+            });
+
+            // Show suggestions below input
+            inputElement.parentElement.appendChild(suggestionsDiv);
+            suggestionsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>
