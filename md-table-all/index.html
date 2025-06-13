@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     <title>Advanced Markdown Table Toolkit</title>
-    <link rel="stylesheet" href="css/styles-merged.css"> <!-- We'll create this -->
-    <script src="js/app-merged.js" defer></script> <!-- We'll create this -->
+    <link rel="stylesheet" href="css/styles-merged.css"> <!-- Assumes new CSS is in here -->
+    <script src="js/app-merged.js" defer></script>
     <meta name="description"
         content="Create, edit, analyze, and transform Markdown tables. Includes service/provider JSON conversion and bulk updates.">
 </head>
@@ -35,13 +35,26 @@
                 spellcheck="false"></textarea>
             <nav class="controls-toolbar" role="toolbar" aria-label="Main controls">
                 <button id="parseBtn" class="btn btn-primary" aria-label="Parse table">
-                    <span class="icon">⚙️</span> Parse Table
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106A1.532 1.532 0 0111.49 3.17zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                    </span> Parse Table
                 </button>
                 <button id="clearBtn" class="btn btn-secondary" aria-label="Clear all data">
-                    <span class="icon">🗑️</span> Clear All
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.177-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25V4c.827-.05 1.66-.075 2.5-.075zM8.47 5.026c.54.166 1.054.35 1.53.554V17.5h-1.521L8.47 5.026zM11.53 5.58c.474-.204.99-.387 1.53-.554L11.522 17.5H10V5.58z" clip-rule="evenodd" />
+                        </svg>
+                    </span> Clear All
                 </button>
                  <button id="copyOutputBtn" class="btn btn-primary copy-btn" aria-label="Copy output to clipboard">
-                    <span class="icon">📋</span> Copy Output
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.5 2a.5.5 0 00-.5-.5h-5a.5.5 0 00-.5.5v1.25a1.75 1.75 0 00-1.75 1.75v8.5A1.75 1.75 0 006.5 15.25h7a1.75 1.75 0 001.75-1.75v-8.5A1.75 1.75 0 0013.5 3.25V2zm-5.5 0h5V.75a.75.75 0 00-.75-.75h-3.5a.75.75 0 00-.75.75V2zM12.25 3.5h-4.5a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h4.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25z" clip-rule="evenodd" />
+                            <path d="M4.75 4.25a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0113.25 16h-8.5A2.25 2.25 0 012.5 13.75v-8.5A2.25 2.25 0 014.75 3h4a.75.75 0 010 1.5h-4z" />
+                        </svg>
+                    </span> Copy Output
                 </button>
             </nav>
         </section>
@@ -49,12 +62,51 @@
         <section class="tool-section editor-section" aria-labelledby="edit-heading">
             <h2 id="edit-heading" class="section-title">Interactive Table Editor</h2>
             <nav class="controls-toolbar" role="toolbar" aria-label="Table editing controls">
-                <button id="addRowBtn" class="btn" aria-label="Add new row"><span class="icon">➕</span> Add Row</button>
-                <button id="removeRowBtn" class="btn btn-secondary" aria-label="Remove last row"><span class="icon">➖</span> Remove Row</button>
-                <button id="addColumnBtn" class="btn" aria-label="Add new column"><span class="icon">➕</span> Add Column</button>
-                <button id="removeColumnBtn" class="btn btn-secondary" aria-label="Remove last column"><span class="icon">➖</span> Remove Column</button>
-                <button id="sortRowsBtn" class="btn" aria-label="Sort rows alphabetically"><span class="icon">⇅</span> Sort Rows</button>
-                <button id="reorderBtn" class="btn" aria-label="Toggle reorder mode"><span class="icon">✥</span> Re-order</button>
+                <button id="addRowBtn" class="btn" aria-label="Add new row">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                        </svg>
+                    </span> Add Row
+                </button>
+                <button id="removeRowBtn" class="btn btn-secondary" aria-label="Remove last row">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clip-rule="evenodd" />
+                        </svg>
+                    </span> Remove Row
+                </button>
+                <button id="addColumnBtn" class="btn" aria-label="Add new column">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                        </svg>
+                    </span> Add Column
+                </button>
+                <button id="removeColumnBtn" class="btn btn-secondary" aria-label="Remove last column">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clip-rule="evenodd" />
+                        </svg>
+                    </span> Remove Column
+                </button>
+                <button id="sortRowsBtn" class="btn" aria-label="Sort rows alphabetically">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.47-3.47a.75.75 0 111.06 1.06l-4.75 4.75a.75.75 0 01-1.06 0l-4.75-4.75a.75.75 0 111.06-1.06l3.47 3.47V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+                            <path d="M4.25 8.25a.75.75 0 010-1.5h8.5a.75.75 0 010 1.5h-8.5z" stroke="currentColor" stroke-width="0"/> <!-- Path to ensure it's up/down arrows appearance -->
+                             <path transform="rotate(180 10 10)" d="M10 3a.75.75 0 01.75.75v10.638l3.47-3.47a.75.75 0 111.06 1.06l-4.75 4.75a.75.75 0 01-1.06 0l-4.75-4.75a.75.75 0 111.06-1.06l3.47 3.47V3.75A.75.75 0 0110 3z" />
+
+                        </svg>
+                    </span> Sort Rows
+                </button> <!-- Simplified a up/down arrow appearance -->
+                <button id="reorderBtn" class="btn" aria-label="Toggle reorder mode">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path d="M10 2.5a.75.75 0 01.75.75V7h3.75a.75.75 0 010 1.5H10.75v3.75a.75.75 0 01-1.5 0V8.5H5.5a.75.75 0 010-1.5H9.25V3.25A.75.75 0 0110 2.5zM5.207 7.207a.75.75 0 010 1.06l-1.47 1.47.01.01L2.28 11.217a.75.75 0 01-1.06-1.06l1.47-1.47-.01-.01-1.47-1.47a.75.75 0 011.06-1.06l1.47 1.47.01.01 1.47 1.47zM14.793 12.793a.75.75 0 010-1.06l1.47-1.47-.01-.01 1.47-1.47a.75.75 0 011.06 1.06L17.33 11.25l.01.01-1.47 1.47a.75.75 0 01-1.06 0zM11.25 14.5a.75.75 0 011.5 0V17h.75a.75.75 0 010 1.5h-3a.75.75 0 010-1.5h.75v-2.5z" />
+                        </svg>
+                    </span> Re-order
+                </button>
             </nav>
 
             <div id="tableContainer" class="table-container" role="region" aria-label="Editable table">
@@ -78,7 +130,12 @@
                         <input type="text" id="supportedServices" placeholder="e.g., 1Fichier, Rapidgator">
                     </div>
                     <button id="addProviderBtn" class="btn btn-primary" aria-label="Add provider and update table">
-                        <span class="icon">✨</span> Add Provider & Update Table
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2.5a.75.75 0 01.75.75V5h1.75A2.75 2.75 0 0115.25 7.75v2.515a.75.75 0 01-1.5 0V7.75a1.25 1.25 0 00-1.25-1.25H10.75V9h2.515a.75.75 0 010 1.5H10.75v2.515a.75.75 0 01-1.5 0V10.5H6.735a.75.75 0 010-1.5H9.25V6.5H7.5A2.75 2.75 0 014.75 3.75V2.51a.75.75 0 011.5 0V3.75a1.25 1.25 0 001.25 1.25H9.25V2.5A.75.75 0 0110 2.5zM5.61 5.093a.75.75 0 011.054.223l1.25 2.5a.75.75 0 01-.444 1.235H6.5V10h-.093a.75.75 0 01-.223-1.054l1.25-2.5a.75.75 0 011.235-.444V6.5h-1.07zM14.39 14.907a.75.75 0 01-1.054-.223l-1.25-2.5a.75.75 0 01.444-1.235H13.5V10h.093a.75.75 0 01.223 1.054l-1.25 2.5a.75.75 0 01-1.235.444V13.5h1.07z" clip-rule="evenodd" />
+                                <path d="M7.75 14.957a.75.75 0 01.97-1.203l.84-.42a15.703 15.703 0 003.882 0l.84.42a.75.75 0 11-.536 1.41l-.841-.421a14.204 14.204 0 01-2.81 0l-.84.42a.75.75 0 01-1.204-.972z" />
+                             </svg>
+                        </span> Add Provider & Update Table
                     </button>
                 </div>
             </details>
@@ -91,7 +148,11 @@
                 </summary>
                 <div class="analysis-content">
                     <button id="analyzeBtn" class="btn" aria-label="Analyze table data">
-                        <span class="icon">🔍</span> Analyze Current Table
+                        <span class="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                            </svg>
+                        </span> Analyze Current Table
                     </button>
                     <output id="analysisMarkdownOutput" class="analysis-markdown-output" role="region"
                         aria-label="Analysis results">Analysis results will appear here.</output>
