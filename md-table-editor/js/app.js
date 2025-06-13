@@ -2,71 +2,49 @@
     "use strict";
 
     // Constants
-    const THEMES = Object.freeze({
-        DARK: 'dark',
-        LIGHT: 'light'
-    });
-
+    const THEMES = Object.freeze({ DARK: 'dark', LIGHT: 'light' });
     const OUTPUT_FORMATS = Object.freeze({
         MARKDOWN: 'markdown',
-        JSON: 'json',
+        GENERIC_JSON: 'generic_json',
+        SERVICE_PROVIDER_JSON: 'service_provider_json',
         HTML: 'html'
     });
-
-    const ALIGNMENTS = Object.freeze({
-        CENTER: 'center',
-        RIGHT: 'right',
-        LEFT: 'left'
-    });
-
+    const ALIGNMENTS = Object.freeze({ CENTER: 'center', RIGHT: 'right', LEFT: 'left' });
     const ALIGNMENT_MARKERS = Object.freeze({
         [ALIGNMENTS.CENTER]: ':---:',
         [ALIGNMENTS.RIGHT]: '---:',
         [ALIGNMENTS.LEFT]: ':---'
     });
+    const NOTIFICATION_TYPES = Object.freeze({ SUCCESS: 'success', ERROR: 'error', WARNING: 'warning', INFO: 'info' });
 
-    const NOTIFICATION_TYPES = Object.freeze({
-        SUCCESS: 'success',
-        ERROR: 'error',
-        WARNING: 'warning',
-        INFO: 'info'
-    });
-
-    // DOM element references - using more efficient query patterns
     const elements = {
-        // Theme elements
         themeToggle: document.getElementById('themeToggle'),
         get sunPath() { return this.themeToggle?.querySelector('.sun'); },
         get moonPath() { return this.themeToggle?.querySelector('.moon'); },
-
-        // Input/Output elements
         inputTextArea: document.getElementById("input"),
         outputTextArea: document.getElementById("output"),
-
-        // Table elements
         tableContainer: document.getElementById("tableContainer"),
-        analysisSection: document.getElementById('analysisSection'),
         analysisMarkdownOutput: document.getElementById('analysisMarkdownOutput'),
-
-        // Control buttons
         parseBtn: document.getElementById("parseBtn"),
         analyzeBtn: document.getElementById("analyzeBtn"),
-        copyBtn: document.getElementById("copyBtn"),
+        copyOutputBtn: document.getElementById("copyOutputBtn"),
         clearBtn: document.getElementById("clearBtn"),
-
-        // Table editing buttons
         addColumnBtn: document.getElementById("addColumnBtn"),
         addRowBtn: document.getElementById("addRowBtn"),
         sortRowsBtn: document.getElementById("sortRowsBtn"),
         removeColumnBtn: document.getElementById("removeColumnBtn"),
         removeRowBtn: document.getElementById("removeRowBtn"),
         reorderBtn: document.getElementById("reorderBtn"),
-
-        // Notification element
-        notificationDiv: document.getElementById("notification")
+        notificationDiv: document.getElementById("notification"),
+        outputFormatSelect: document.getElementById('outputFormat'),
+        // New elements for advanced ops
+        newProviderNameInput: document.getElementById('newProviderName'),
+        supportedServicesInput: document.getElementById('supportedServices'),
+        addProviderBtn: document.getElementById('addProviderBtn'),
+        analysisDetails: document.getElementById('analysisDetails'),
+        advancedOpsDetails: document.getElementById('advancedOpsDetails'),
     };
 
-    // Application state
     class TableState {
         constructor() {
             this.headers = [];
@@ -78,47 +56,40 @@
             this.historyIndex = -1;
         }
 
-        // Save current state to history for undo functionality
         saveToHistory() {
             const state = {
-                headers: [...this.headers],
-                rows: this.rows.map(row => [...row]),
-                alignments: [...this.alignments]
+                headers: JSON.parse(JSON.stringify(this.headers)), // Deep copy
+                rows: JSON.parse(JSON.stringify(this.rows)),       // Deep copy
+                alignments: JSON.parse(JSON.stringify(this.alignments)) // Deep copy
             };
-
-            // Remove any future history if we're not at the end
             this.history = this.history.slice(0, this.historyIndex + 1);
             this.history.push(state);
             this.historyIndex++;
-
-            // Limit history size
             if (this.history.length > 50) {
                 this.history.shift();
                 this.historyIndex--;
             }
         }
 
-        // Undo last action
         undo() {
             if (this.historyIndex > 0) {
                 this.historyIndex--;
                 const state = this.history[this.historyIndex];
-                this.headers = [...state.headers];
-                this.rows = state.rows.map(row => [...row]);
-                this.alignments = [...state.alignments];
+                this.headers = JSON.parse(JSON.stringify(state.headers));
+                this.rows = JSON.parse(JSON.stringify(state.rows));
+                this.alignments = JSON.parse(JSON.stringify(state.alignments));
                 return true;
             }
             return false;
         }
 
-        // Redo last undone action
         redo() {
             if (this.historyIndex < this.history.length - 1) {
                 this.historyIndex++;
                 const state = this.history[this.historyIndex];
-                this.headers = [...state.headers];
-                this.rows = state.rows.map(row => [...row]);
-                this.alignments = [...state.alignments];
+                this.headers = JSON.parse(JSON.stringify(state.headers));
+                this.rows = JSON.parse(JSON.stringify(state.rows));
+                this.alignments = JSON.parse(JSON.stringify(state.alignments));
                 return true;
             }
             return false;
@@ -129,442 +100,497 @@
             this.rows = [];
             this.alignments = [];
             this.isReorderMode = false;
-            this.outputFormat = OUTPUT_FORMATS.MARKDOWN;
+            // this.outputFormat = OUTPUT_FORMATS.MARKDOWN; // Don't reset output format preference
             this.history = [];
             this.historyIndex = -1;
         }
 
-        isEmpty() {
-            return this.headers.length === 0 && this.rows.length === 0;
-        }
-
-        isValid() {
-            return this.headers.length > 0 && this.alignments.length === this.headers.length;
-        }
+        isEmpty() { return this.headers.length === 0 && this.rows.length === 0; }
+        isValid() { return this.headers.length > 0 && this.alignments.length === this.headers.length; }
     }
 
-    // Initialize application state
     const tableState = new TableState();
 
-    // Utility functions
     const utils = {
         sanitizeInput: (str) => {
             if (typeof str !== 'string') return '';
-            return str
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         },
-
         debounce: (func, delay) => {
             let timeout;
             return (...args) => {
                 clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
+                timeout = setTimeout(() => func.apply(null, args), delay); // Fix: use null instead of this
             };
         },
-
-        throttle: (func, limit) => {
-            let inThrottle;
-            return (...args) => {
-                if (!inThrottle) {
-                    func.apply(this, args);
-                    inThrottle = true;
-                    setTimeout(() => inThrottle = false, limit);
-                }
-            };
-        },
-
-        escapeCSV: (str) => {
-            if (typeof str !== 'string') return '';
-            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return str;
-        },
-
-        validateTableStructure: (headers, rows) => {
-            if (!Array.isArray(headers) || headers.length === 0) {
-                throw new Error('Headers must be a non-empty array');
-            }
-            
-            if (!Array.isArray(rows)) {
-                throw new Error('Rows must be an array');
-            }
-
-            const headerCount = headers.length;
-            rows.forEach((row, index) => {
-                if (!Array.isArray(row)) {
-                    throw new Error(`Row ${index + 1} must be an array`);
-                }
-                if (row.length !== headerCount) {
-                    throw new Error(`Row ${index + 1} has ${row.length} cells, expected ${headerCount}`);
-                }
-            });
-        },
-
         copyToClipboard: async (text) => {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch (err) {
-                // Fallback for older browsers
+                console.warn("Clipboard API failed, trying execCommand:", err);
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = '0';
+                textarea.style.left = '-9999px'; // Fix: better positioning
                 document.body.appendChild(textarea);
                 textarea.select();
-                const success = document.execCommand('copy');
-                document.body.removeChild(textarea);
-                return success;
+                try {
+                    const success = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    return success;
+                } catch (e) {
+                    document.body.removeChild(textarea);
+                    console.error("execCommand failed:", e);
+                    return false;
+                }
             }
+        },
+        normalizeServiceName: (name) => name.toLowerCase().trim().replace(/\s+/g, ''),
+        capitalizeFirstLetterOfWords: (string) => {
+            return string.replace(/\b\w/g, char => char.toUpperCase())
+                .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+                .replace(/\b\w/g, char => char.toUpperCase())
+                .replace(/\s+/g, '');
         }
     };
 
-    // Notification system
+
     const notification = {
         show: (message, type = NOTIFICATION_TYPES.SUCCESS, duration = 3000) => {
             if (!elements.notificationDiv) return;
-
-            const colors = {
-                [NOTIFICATION_TYPES.SUCCESS]: '#4CAF50',
-                [NOTIFICATION_TYPES.ERROR]: '#dc3545',
-                [NOTIFICATION_TYPES.WARNING]: '#ff9800',
-                [NOTIFICATION_TYPES.INFO]: '#2196F3'
-            };
-
             elements.notificationDiv.textContent = message;
-            elements.notificationDiv.style.backgroundColor = colors[type] || colors[NOTIFICATION_TYPES.SUCCESS];
-            elements.notificationDiv.style.display = 'block';
-            elements.notificationDiv.setAttribute('aria-live', 'polite');
+            elements.notificationDiv.className = 'notification show'; // Reset classes
+            elements.notificationDiv.classList.add(type);
+
+            elements.notificationDiv.style.opacity = '1';
+            elements.notificationDiv.style.bottom = '30px';
 
             setTimeout(() => {
-                elements.notificationDiv.style.display = 'none';
+                elements.notificationDiv.style.opacity = '0';
+                elements.notificationDiv.style.bottom = '20px';
+                setTimeout(() => {
+                    if (elements.notificationDiv.style.opacity === '0') { // ensure it's still hidden
+                        elements.notificationDiv.classList.remove('show', type);
+                    }
+                }, 300); // Wait for transition
             }, duration);
         }
     };
 
-    // Theme management
     const themeManager = {
         toggle: () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
             themeManager.set(newTheme);
         },
-
         set: (theme) => {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
             themeManager.updateIcons(theme);
         },
-
         updateIcons: (theme) => {
             if (!elements.sunPath || !elements.moonPath) return;
-            
             elements.sunPath.style.display = theme === THEMES.DARK ? 'block' : 'none';
             elements.moonPath.style.display = theme === THEMES.DARK ? 'none' : 'block';
         },
-
         init: () => {
             const savedTheme = localStorage.getItem('theme') ||
-                              (window.matchMedia('(prefers-color-scheme: dark)').matches ? THEMES.DARK : THEMES.LIGHT);
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? THEMES.DARK : THEMES.LIGHT);
             themeManager.set(savedTheme);
         }
     };
 
-    // Table parsing with improved error handling
     const tableParser = {
         parse: (inputText) => {
-            if (!inputText?.trim()) {
-                throw new Error('Please enter a markdown table');
+            if (!inputText?.trim()) throw new Error('Input is empty.');
+
+            const lines = inputText.trim().split('\n').map(line => line.trim()).filter(line => line);
+
+            if (lines.length < 1) throw new Error('Table must have at least a header row.');
+
+            const headerLineIndex = lines.findIndex(line => line.includes('|'));
+            if (headerLineIndex === -1) throw new Error('No valid header row found.');
+
+            const headers = tableParser.parseRow(lines[headerLineIndex]);
+
+            let alignments;
+            let dataStartIndex = headerLineIndex + 1;
+
+            if (dataStartIndex < lines.length) {
+                const potentialSeparatorLine = lines[dataStartIndex];
+                if (potentialSeparatorLine && potentialSeparatorLine.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/)) {
+                    const separatorCells = tableParser.parseRow(potentialSeparatorLine);
+                    if (separatorCells.length === headers.length) {
+                        alignments = separatorCells.map(cell => {
+                            const trimmed = cell.trim();
+                            if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
+                            if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
+                            return ALIGNMENTS.LEFT;
+                        });
+                        dataStartIndex++;
+                    }
+                }
             }
 
-            const lines = inputText.trim().split('\n').filter(line => line.trim());
-            
-            if (lines.length < 2) {
-                throw new Error('Table must have at least a header and separator row');
+            if (!alignments || alignments.length !== headers.length) {
+                alignments = headers.map(() => ALIGNMENTS.LEFT);
             }
 
-            const headers = tableParser.parseRow(lines[0]);
-            const separatorCells = tableParser.parseRow(lines[1]);
-            
-            if (headers.length !== separatorCells.length) {
-                throw new Error('Header and separator row must have the same number of columns');
-            }
-
-            const alignments = separatorCells.map(cell => {
-                const trimmed = cell.trim();
-                if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
-                if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
-                return ALIGNMENTS.LEFT;
+            const dataRowLines = lines.slice(dataStartIndex).filter(line => {
+                return !line.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/);
             });
 
-            const rows = lines.slice(2).map((line, index) => {
+            const rows = dataRowLines.map((line) => {
                 const row = tableParser.parseRow(line);
-                if (row.length !== headers.length) {
-                    console.warn(`Row ${index + 3} has ${row.length} columns, expected ${headers.length}. Padding with empty cells.`);
-                    // Pad or trim row to match header length
-                    while (row.length < headers.length) row.push('');
-                    if (row.length > headers.length) row.splice(headers.length);
-                }
+                while (row.length < headers.length) row.push('');
+                if (row.length > headers.length) row.splice(headers.length);
                 return row;
             });
 
             return {
-                headers: headers.map(utils.sanitizeInput),
+                headers: headers.map(h => utils.sanitizeInput(h.replace(/\*\*/g, ''))),
                 alignments,
-                rows: rows.map(row => row.map(utils.sanitizeInput))
+                rows: rows.map(row => row.map(cell => utils.sanitizeInput(cell.replace(/\*\*/g, ''))))
             };
         },
-
         parseRow: (line) => {
-            return line.split('|')
-                      .filter((cell, index, array) => {
-                          // Remove empty cells at start and end (table borders)
-                          return !(index === 0 && cell.trim() === '') && 
-                                 !(index === array.length - 1 && cell.trim() === '');
-                      })
-                      .map(cell => cell.trim());
+            const cells = line.split('|').map(cell => cell.trim());
+            // Fix: More robust cell filtering
+            let startIndex = 0;
+            let endIndex = cells.length;
+
+            // Remove empty cells at the beginning (from leading |)
+            if (cells[0] === '') startIndex = 1;
+            // Remove empty cells at the end (from trailing |)
+            if (cells[cells.length - 1] === '') endIndex = cells.length - 1;
+
+            return cells.slice(startIndex, endIndex);
         }
     };
 
-    // Output generators
+    // Service/Provider specific conversion functions (adapted from Tool 2)
+    const serviceProviderConverter = {
+        tableToServiceProviderJson: (headers, rows) => {
+            if (!headers || headers.length === 0 || !rows) {
+                throw new Error("Invalid table data for Service/Provider JSON conversion.");
+            }
+            const jsonData = {};
+            const serviceNameHeader = headers[0]; // Assume first col is service name
+            const providerHeaders = headers.slice(1);
+
+            rows.forEach(row => {
+                const serviceName = row[0]?.trim();
+                if (serviceName) {
+                    jsonData[serviceName] = {};
+                    providerHeaders.forEach((providerHeader, idx) => {
+                        jsonData[serviceName][providerHeader] = (row[idx + 1]?.toLowerCase() === 'yes') ? 'yes' : 'no';
+                    });
+                }
+            });
+            return jsonData;
+        },
+
+        serviceProviderJsonToTable: (jsonData) => {
+            if (Object.keys(jsonData).length === 0) {
+                return { headers: [], rows: [], alignments: [] };
+            }
+
+            const serviceNames = Object.keys(jsonData);
+            // Get all unique provider names from all services to form headers
+            const allProviders = new Set();
+            serviceNames.forEach(service => {
+                if (jsonData[service]) {
+                    Object.keys(jsonData[service]).forEach(provider => allProviders.add(provider));
+                }
+            });
+
+            const sortedProviders = Array.from(allProviders).sort();
+
+            const headers = ["Service Name", ...sortedProviders];
+            const alignments = headers.map(() => ALIGNMENTS.LEFT); // Default alignment
+
+            const rows = serviceNames.sort().map(serviceName => {
+                const row = [serviceName];
+                sortedProviders.forEach(provider => {
+                    row.push(jsonData[serviceName]?.[provider]?.toLowerCase() === 'yes' ? 'Yes' : 'No');
+                });
+                return row;
+            });
+            return { headers, rows, alignments };
+        },
+
+        updateServiceProviderJson: (currentJson, newProviderName, supportedServicesCsv) => {
+            if (!newProviderName || !supportedServicesCsv) {
+                throw new Error("New provider name and supported services are required.");
+            }
+
+            let baseJSON = JSON.parse(JSON.stringify(currentJson)); // Deep copy
+            const normalizedNewProviderName = utils.capitalizeFirstLetterOfWords(newProviderName.trim());
+
+            const supportedServicesList = supportedServicesCsv.split(',')
+                .map(s => utils.normalizeServiceName(s.trim()))
+                .filter(Boolean);
+
+            const updatedJSON = {};
+
+            // Normalize existing service keys and add new provider with 'no'
+            Object.keys(baseJSON).forEach(serviceKey => {
+                const normalizedServiceKey = utils.normalizeServiceName(serviceKey);
+                updatedJSON[normalizedServiceKey] = { ...baseJSON[serviceKey] };
+                updatedJSON[normalizedServiceKey][normalizedNewProviderName] = 'no';
+            });
+
+            // Update 'yes' for supported services for the new provider
+            supportedServicesList.forEach(supportedServiceNorm => {
+                if (updatedJSON[supportedServiceNorm]) {
+                    updatedJSON[supportedServiceNorm][normalizedNewProviderName] = 'yes';
+                } else { // New service found in the list
+                    updatedJSON[supportedServiceNorm] = {};
+                    // Infer existing providers from the first service in baseJSON to fill 'no' for them
+                    const firstServiceInBase = Object.keys(baseJSON)[0];
+                    if (firstServiceInBase && baseJSON[firstServiceInBase]) {
+                        Object.keys(baseJSON[firstServiceInBase]).forEach(existingProvider => {
+                            updatedJSON[supportedServiceNorm][existingProvider] = 'no';
+                        });
+                    }
+                    updatedJSON[supportedServiceNorm][normalizedNewProviderName] = 'yes';
+                }
+            });
+
+            // Final JSON with capitalized service names
+            const finalJSON = {};
+            Object.keys(updatedJSON).sort().forEach(normalizedServiceKey => {
+                const capitalizedServiceName = utils.capitalizeFirstLetterOfWords(normalizedServiceKey); // Capitalize for display
+                finalJSON[capitalizedServiceName] = {};
+                // Ensure provider columns are sorted for consistency
+                const providers = Object.keys(updatedJSON[normalizedServiceKey]).sort();
+                providers.forEach(provider => {
+                    finalJSON[capitalizedServiceName][provider] = updatedJSON[normalizedServiceKey][provider];
+                });
+            });
+            return finalJSON;
+        }
+    };
+
+
     const outputGenerators = {
         [OUTPUT_FORMATS.MARKDOWN]: () => {
-            const separator = `| ${tableState.alignments.map(align => ALIGNMENT_MARKERS[align]).join(' | ')} |`;
+            if (!tableState.isValid()) return '';
+            const separator = `| ${tableState.alignments.map(align => ALIGNMENT_MARKERS[align] || ALIGNMENT_MARKERS[ALIGNMENTS.LEFT]).join(' | ')} |`;
             const header = `| ${tableState.headers.join(' | ')} |`;
             const rows = tableState.rows.map(row => `| ${row.join(' | ')} |`).join('\n');
             return [header, separator, rows].filter(Boolean).join('\n');
         },
-
-        [OUTPUT_FORMATS.JSON]: () => {
-            const jsonOutput = {};
-            tableState.rows.forEach(row => {
-                const serviceName = row[0]?.replace(/\*\*/g, '');
-                if (serviceName) {
-                    jsonOutput[serviceName] = {};
-                    for (let i = 1; i < tableState.headers.length; i++) {
-                        const key = tableState.headers[i].replace(/\*\*/g, '');
-                        jsonOutput[serviceName][key] = row[i] ? row[i].toLowerCase() : 'no';
-                    }
-                }
+        [OUTPUT_FORMATS.GENERIC_JSON]: () => {
+            if (!tableState.isValid()) return JSON.stringify({}, null, 2);
+            // Tool 1's original JSON output logic (service name as key, then header:value)
+            const jsonOutput = tableState.rows.map(row => {
+                const rowObject = {};
+                tableState.headers.forEach((header, index) => {
+                    rowObject[header] = row[index];
+                });
+                return rowObject;
             });
             return JSON.stringify(jsonOutput, null, 2);
         },
+        [OUTPUT_FORMATS.SERVICE_PROVIDER_JSON]: () => {
+            if (!tableState.isValid()) return JSON.stringify({}, null, 2);
+            try {
+                const spJson = serviceProviderConverter.tableToServiceProviderJson(tableState.headers, tableState.rows);
+                return JSON.stringify(spJson, null, 2);
+            } catch (error) {
+                notification.show(`Error converting to Service/Provider JSON: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+                return JSON.stringify({ error: error.message }, null, 2);
+            }
+        },
         [OUTPUT_FORMATS.HTML]: () => {
-            const alignmentClass = (align) => align !== ALIGNMENTS.LEFT ? ` class="text-${align}"` : '';
-            
+            if (!tableState.isValid()) return '';
+            const alignmentClass = (align) => align !== ALIGNMENTS.LEFT ? ` style="text-align: ${align};"` : '';
             const headerRow = tableState.headers
-                .map((header, i) => `<th${alignmentClass(tableState.alignments[i])}>${header}</th>`)
+                .map((header, i) => `<th${alignmentClass(tableState.alignments[i])}>${utils.sanitizeInput(header)}</th>`)
                 .join('');
-            
             const bodyRows = tableState.rows
                 .map(row => {
                     const cells = row
-                        .map((cell, i) => `<td${alignmentClass(tableState.alignments[i])}>${cell}</td>`)
+                        .map((cell, i) => `<td${alignmentClass(tableState.alignments[i])}>${utils.sanitizeInput(cell)}</td>`)
                         .join('');
                     return `<tr>${cells}</tr>`;
                 })
                 .join('');
-
-            return `<table>
-<thead>
-<tr>${headerRow}</tr>
-</thead>
-<tbody>
-${bodyRows}
-</tbody>
-</table>`;
+            return `<table>\n<thead>\n<tr>${headerRow}</tr>\n</thead>\n<tbody>\n${bodyRows}\n</tbody>\n</table>`;
         }
     };
 
-    // Table renderer with improved performance
+    // Table renderer (from Tool 1, largely unchanged but using utils.sanitizeInput more)
     const tableRenderer = {
         render: () => {
+            if (tableState.isEmpty()) {
+                elements.tableContainer.innerHTML = '<p class="empty-table-message">Paste a Markdown table above or use "Add Row/Column" to start.</p>';
+                outputManager.generate();
+                return;
+            }
             if (!tableState.isValid()) {
-                elements.tableContainer.innerHTML = '';
+                elements.tableContainer.innerHTML = '<p class="empty-table-message error-message">Table data is invalid. Ensure headers and alignments match.</p>';
+                outputManager.generate();
                 return;
             }
 
-            const table = tableRenderer.createTable();
-            elements.tableContainer.innerHTML = '';
-            elements.tableContainer.appendChild(table);
-            outputManager.generate();
+            try {
+                const table = document.createElement('table');
+                table.appendChild(tableRenderer.createHeader());
+                table.appendChild(tableRenderer.createBody());
+                elements.tableContainer.innerHTML = '';
+                elements.tableContainer.appendChild(table);
+                outputManager.generate();
+            } catch (error) {
+                console.error('Error rendering table:', error);
+                elements.tableContainer.innerHTML = '<p class="empty-table-message error-message">Error rendering table. Please check your data.</p>';
+            }
         },
-
-        createTable: () => {
-            const table = document.createElement('table');
-            table.appendChild(tableRenderer.createHeader());
-            table.appendChild(tableRenderer.createBody());
-            return table;
-        },
-
         createHeader: () => {
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-
             tableState.headers.forEach((header, index) => {
-                const th = tableRenderer.createHeaderCell(header, index);
+                const th = document.createElement('th');
+                th.textContent = header; // Already sanitized by parser or input
+                th.draggable = tableState.isReorderMode;
+                th.dataset.index = index;
+                th.classList.toggle('dragging-allowed', tableState.isReorderMode);
+                th.contentEditable = !tableState.isReorderMode;
+                th.tabIndex = tableState.isReorderMode ? -1 : 0;
+
+                if (tableState.isReorderMode) {
+                    th.addEventListener('dragstart', dragHandler.handleDragStart);
+                    th.addEventListener('dragover', dragHandler.handleDragOver);
+                    th.addEventListener('drop', dragHandler.handleDrop);
+                }
+                th.addEventListener('blur', () => {
+                    if (!tableState.isReorderMode) {
+                        const newHeader = utils.sanitizeInput(th.textContent);
+                        if (tableState.headers[index] !== newHeader) {
+                            tableState.saveToHistory();
+                            tableState.headers[index] = newHeader;
+                            outputManager.generate();
+                        }
+                    }
+                });
+                th.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !tableState.isReorderMode) { e.preventDefault(); th.blur(); } });
                 headerRow.appendChild(th);
             });
-
             thead.appendChild(headerRow);
             return thead;
         },
-
-        createHeaderCell: (header, index) => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            th.draggable = tableState.isReorderMode;
-            th.dataset.index = index;
-            th.classList.toggle('dragging-allowed', tableState.isReorderMode);
-            th.contentEditable = !tableState.isReorderMode;
-            th.tabIndex = tableState.isReorderMode ? -1 : 0;
-
-            if (tableState.isReorderMode) {
-                th.addEventListener('dragstart', dragHandler.handleDragStart);
-                th.addEventListener('dragover', dragHandler.handleDragOver);
-                th.addEventListener('drop', dragHandler.handleDrop);
-            }
-
-            th.addEventListener('blur', () => {
-                if (!tableState.isReorderMode) {
-                    tableState.saveToHistory();
-                    tableState.headers[index] = utils.sanitizeInput(th.textContent);
-                    outputManager.generate();
-                }
-            });
-
-            th.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !tableState.isReorderMode) {
-                    e.preventDefault();
-                    th.blur();
-                }
-            });
-
-            return th;
-        },
-
         createBody: () => {
             const tbody = document.createElement('tbody');
-
             tableState.rows.forEach((row, rowIndex) => {
-                const tr = tableRenderer.createRow(row, rowIndex);
+                const tr = document.createElement('tr');
+                tr.draggable = tableState.isReorderMode;
+                tr.dataset.index = rowIndex;
+                tr.classList.toggle('dragging-allowed', tableState.isReorderMode);
+
+                if (tableState.isReorderMode) {
+                    tr.addEventListener('dragstart', dragHandler.handleDragStart);
+                    tr.addEventListener('dragover', dragHandler.handleDragOver);
+                    tr.addEventListener('drop', dragHandler.handleDrop);
+                }
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement('td');
+                    td.textContent = cell; // Already sanitized
+                    td.contentEditable = !tableState.isReorderMode;
+                    td.tabIndex = tableState.isReorderMode ? -1 : 0;
+                    td.addEventListener('blur', () => {
+                        if (!tableState.isReorderMode) {
+                            const newCell = utils.sanitizeInput(td.textContent);
+                            if (tableState.rows[rowIndex][cellIndex] !== newCell) {
+                                tableState.saveToHistory();
+                                tableState.rows[rowIndex][cellIndex] = newCell;
+                                outputManager.generate();
+                            }
+                        }
+                    });
+                    td.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !tableState.isReorderMode) { e.preventDefault(); td.blur(); } });
+                    tr.appendChild(td);
+                });
                 tbody.appendChild(tr);
             });
-
             return tbody;
-        },
-
-        createRow: (row, rowIndex) => {
-            const tr = document.createElement('tr');
-            tr.draggable = tableState.isReorderMode;
-            tr.dataset.index = rowIndex;
-            tr.classList.toggle('dragging-allowed', tableState.isReorderMode);
-
-            if (tableState.isReorderMode) {
-                tr.addEventListener('dragstart', dragHandler.handleDragStart);
-                tr.addEventListener('dragover', dragHandler.handleDragOver);
-                tr.addEventListener('drop', dragHandler.handleDrop);
-            }
-
-            row.forEach((cell, cellIndex) => {
-                const td = tableRenderer.createCell(cell, rowIndex, cellIndex);
-                tr.appendChild(td);
-            });
-
-            return tr;
-        },
-
-        createCell: (cell, rowIndex, cellIndex) => {
-            const td = document.createElement('td');
-            td.contentEditable = !tableState.isReorderMode;
-            td.tabIndex = tableState.isReorderMode ? -1 : 0;
-            td.textContent = cell;
-
-            td.addEventListener('blur', () => {
-                if (!tableState.isReorderMode) {
-                    tableState.saveToHistory();
-                    tableState.rows[rowIndex][cellIndex] = utils.sanitizeInput(td.textContent);
-                    outputManager.generate();
-                }
-            });
-
-            td.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !tableState.isReorderMode) {
-                    e.preventDefault();
-                    td.blur();
-                }
-            });
-
-            return td;
         }
     };
 
-    // Drag and drop handler
+    // Drag and drop handler (from Tool 1, largely unchanged)
     const dragHandler = {
+        currentDraggedElement: null,
         handleDragStart: (event) => {
+            dragHandler.currentDraggedElement = event.target;
             event.target.classList.add('dragging');
             event.dataTransfer.setData('text/plain', event.target.dataset.index);
             event.dataTransfer.setData('type', event.target.tagName.toLowerCase());
+            event.dataTransfer.effectAllowed = 'move';
         },
-
         handleDragOver: (event) => {
             event.preventDefault();
-            const draggableType = event.dataTransfer.getData('type');
-            
-            if (draggableType === 'tr') {
-                const container = elements.tableContainer.querySelector('tbody');
-                const afterElement = dragHandler.getDragAfterElement(container, event.clientY);
-                const draggable = document.querySelector('.dragging');
-                
-                if (afterElement == null) {
-                    container.appendChild(draggable);
-                } else {
-                    container.insertBefore(draggable, afterElement);
+            event.dataTransfer.dropEffect = 'move';
+            const target = event.target.closest('tr, th');
+            if (!target || target === dragHandler.currentDraggedElement) return;
+
+            const type = event.dataTransfer.getData('type');
+            if (type === 'tr' && target.tagName === 'TR') {
+                const container = target.parentNode; // tbody
+                const afterElement = dragHandler.getDragAfterElement(container, event.clientY, 'tr');
+                if (dragHandler.currentDraggedElement) {
+                    if (afterElement == null) {
+                        container.appendChild(dragHandler.currentDraggedElement);
+                    } else {
+                        container.insertBefore(dragHandler.currentDraggedElement, afterElement);
+                    }
                 }
+            } else if (type === 'th' && target.tagName === 'TH') {
+                // For column reordering, visual feedback is harder without full re-render
+                // We'll rely on the 'drop' event to actually reorder data and re-render
             }
         },
-
         handleDrop: (event) => {
             event.preventDefault();
+            if (!dragHandler.currentDraggedElement) return;
+
+            dragHandler.currentDraggedElement.classList.remove('dragging');
             const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
-            const toIndex = parseInt(event.target.dataset.index);
             const type = event.dataTransfer.getData('type');
+            let toElement = event.target.closest('tr, th');
+
+            if (!toElement) { // Dropped somewhere not on a valid target
+                dragHandler.currentDraggedElement = null;
+                tableRenderer.render(); // Re-render to restore original order if drop failed
+                return;
+            }
+
+            const toIndex = parseInt(toElement.dataset.index);
 
             if (fromIndex !== toIndex) {
                 tableState.saveToHistory();
-                
                 if (type === 'th') {
                     tableOperations.reorderColumns(fromIndex, toIndex);
                 } else if (type === 'tr') {
-                    const tbody = elements.tableContainer.querySelector('tbody');
-                    const droppedRow = tbody.querySelector('tr.dragging');
-                    if (droppedRow) {
-                        const newIndex = Array.from(tbody.children).indexOf(droppedRow);
-                        tableOperations.reorderRows(fromIndex, newIndex);
-                    }
+                    // For rows, the visual drag/drop might be sufficient if handled well by getDragAfterElement
+                    // Let's re-calculate toIndex based on final position
+                    const parent = dragHandler.currentDraggedElement.parentNode;
+                    const finalToIndex = Array.from(parent.children).indexOf(dragHandler.currentDraggedElement);
+                    tableOperations.reorderRows(fromIndex, finalToIndex);
                 }
-                
                 tableRenderer.render();
-                analyzer.analyze();
+                analyzer.analyzeIfOpen();
             }
-
-            // Clean up dragging classes
-            document.querySelectorAll('.dragging').forEach(el => {
-                el.classList.remove('dragging');
-            });
+            dragHandler.currentDraggedElement = null;
         },
-
-        getDragAfterElement: (container, y) => {
-            const draggableElements = [...container.querySelectorAll('tr:not(.dragging)')];
-
+        getDragAfterElement: (container, y, selector) => {
+            const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                
                 if (offset < 0 && offset > closest.offset) {
                     return { offset, element: child };
                 }
@@ -573,129 +599,143 @@ ${bodyRows}
         }
     };
 
-    // Table operations
+    // Table operations (from Tool 1, with additions)
     const tableOperations = {
         addColumn: () => {
             if (tableState.isReorderMode) return;
-            
             tableState.saveToHistory();
-            tableState.headers.push('New Column');
+            const newHeaderName = `Column ${tableState.headers.length + 1}`;
+            tableState.headers.push(newHeaderName);
             tableState.alignments.push(ALIGNMENTS.LEFT);
             tableState.rows.forEach(row => row.push(''));
-            
             tableRenderer.render();
             notification.show('Column added');
         },
-
         addRow: () => {
             if (tableState.isReorderMode) return;
-            
             tableState.saveToHistory();
             const newRow = Array(tableState.headers.length).fill('');
             tableState.rows.push(newRow);
-            
             tableRenderer.render();
             notification.show('Row added');
         },
-
         removeColumn: () => {
             if (tableState.isReorderMode) return;
-            
             if (tableState.headers.length <= 1) {
-                notification.show('Cannot remove the last column', NOTIFICATION_TYPES.ERROR);
+                notification.show('Cannot remove the last column', NOTIFICATION_TYPES.WARNING);
                 return;
             }
-            
             tableState.saveToHistory();
-            const indexToRemove = tableState.headers.length - 1;
+            const indexToRemove = tableState.headers.length - 1; // remove last
             tableState.headers.splice(indexToRemove, 1);
             tableState.alignments.splice(indexToRemove, 1);
             tableState.rows.forEach(row => row.splice(indexToRemove, 1));
-            
             tableRenderer.render();
-            analyzer.analyze();
-            notification.show('Column removed');
+            analyzer.analyzeIfOpen();
+            notification.show('Last column removed');
         },
-
         removeRow: () => {
             if (tableState.isReorderMode) return;
-            
             if (tableState.rows.length === 0) {
-                notification.show('No rows to remove', NOTIFICATION_TYPES.ERROR);
+                notification.show('No rows to remove', NOTIFICATION_TYPES.WARNING);
                 return;
             }
-            
             tableState.saveToHistory();
-            tableState.rows.pop();
-            
+            tableState.rows.pop(); // remove last
             tableRenderer.render();
-            analyzer.analyze();
-            notification.show('Row removed');
+            analyzer.analyzeIfOpen();
+            notification.show('Last row removed');
         },
-
         sortRows: () => {
             if (tableState.isReorderMode) return;
-            
             if (!tableState.rows.length) {
-                notification.show('No rows to sort', NOTIFICATION_TYPES.ERROR);
+                notification.show('No rows to sort', NOTIFICATION_TYPES.WARNING);
                 return;
             }
-            
             tableState.saveToHistory();
-            tableState.rows.sort((a, b) => 
+            tableState.rows.sort((a, b) =>
                 (a[0]?.toLowerCase() || '').localeCompare(b[0]?.toLowerCase() || '')
             );
-            
             tableRenderer.render();
-            notification.show('Rows sorted alphabetically');
+            notification.show('Rows sorted by first column');
         },
-
         reorderColumns: (fromIndex, toIndex) => {
             const move = (arr) => {
-                const element = arr[fromIndex];
-                arr.splice(fromIndex, 1);
-                arr.splice(toIndex, 0, element);
+                const el = arr.splice(fromIndex, 1)[0];
+                arr.splice(toIndex, 0, el);
             };
-
             move(tableState.headers);
             move(tableState.alignments);
             tableState.rows.forEach(row => move(row));
         },
-
         reorderRows: (fromIndex, toIndex) => {
-            const element = tableState.rows[fromIndex];
-            tableState.rows.splice(fromIndex, 1);
-            tableState.rows.splice(toIndex, 0, element);
+            const el = tableState.rows.splice(fromIndex, 1)[0];
+            tableState.rows.splice(toIndex, 0, el);
         },
-
-        duplicateRow: (rowIndex) => {
+        // New: Add Provider (integrates Tool 2 logic)
+        addProviderAndUpdateTable: () => {
             if (tableState.isReorderMode) return;
-            
-            tableState.saveToHistory();
-            const rowToDuplicate = [...tableState.rows[rowIndex]];
-            tableState.rows.splice(rowIndex + 1, 0, rowToDuplicate);
-            
-            tableRenderer.render();
-            notification.show('Row duplicated');
-        },
+            const newProviderName = elements.newProviderNameInput.value.trim();
+            const supportedServicesCsv = elements.supportedServicesInput.value.trim();
 
-        insertRowAfter: (rowIndex) => {
-            if (tableState.isReorderMode) return;
-            
-            tableState.saveToHistory();
-            const newRow = Array(tableState.headers.length).fill('');
-            tableState.rows.splice(rowIndex + 1, 0, newRow);
-            
-            tableRenderer.render();
-            notification.show('Row inserted');
+            if (!newProviderName) {
+                notification.show("New Provider Name is required.", NOTIFICATION_TYPES.ERROR);
+                elements.newProviderNameInput.focus();
+                return;
+            }
+            if (!supportedServicesCsv) {
+                notification.show("Supported Services list is required.", NOTIFICATION_TYPES.ERROR);
+                elements.supportedServicesInput.focus();
+                return;
+            }
+            if (tableState.headers.length === 0) {
+                notification.show("Cannot add provider to an empty table. Parse or create a table first.", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
+
+
+            try {
+                tableState.saveToHistory();
+                // 1. Convert current table to Service/Provider JSON
+                const currentSpJson = serviceProviderConverter.tableToServiceProviderJson(tableState.headers, tableState.rows);
+
+                // 2. Apply update logic
+                const updatedSpJson = serviceProviderConverter.updateServiceProviderJson(currentSpJson, newProviderName, supportedServicesCsv);
+
+                // 3. Convert updated JSON back to table structure
+                const { headers, rows, alignments } = serviceProviderConverter.serviceProviderJsonToTable(updatedSpJson);
+
+                // 4. Update tableState and re-render
+                tableState.headers = headers;
+                tableState.rows = rows;
+                tableState.alignments = alignments; // Use new alignments or derive them
+
+                tableRenderer.render();
+                analyzer.analyzeIfOpen();
+                notification.show(`Provider "${newProviderName}" added/updated.`, NOTIFICATION_TYPES.SUCCESS);
+                elements.newProviderNameInput.value = ''; // Clear inputs
+                elements.supportedServicesInput.value = '';
+            } catch (error) {
+                console.error("Error adding provider:", error);
+                notification.show(`Error: ${error.message}`, NOTIFICATION_TYPES.ERROR, 5000);
+                // No undo history save on error, or potentially pop the last history item if it was optimistic.
+                // For now, let's just not save to history if an error occurs mid-way
+                if (tableState.historyIndex > 0 && tableState.history[tableState.historyIndex].headers.length === 0) {
+                    tableState.history.pop();
+                    tableState.historyIndex--;
+                }
+            }
         }
     };
 
-    // Output manager
     const outputManager = {
         generate: () => {
-            if (!tableState.isValid()) {
+            if (tableState.isEmpty()) { // Fix: simplified condition
                 elements.outputTextArea.value = '';
+                return;
+            }
+            if (!tableState.isValid()) {
+                elements.outputTextArea.value = 'Table data is currently invalid. Cannot generate output.';
                 return;
             }
 
@@ -707,7 +747,6 @@ ${bodyRows}
                 elements.outputTextArea.value = outputGenerators[OUTPUT_FORMATS.MARKDOWN]();
             }
         },
-
         setFormat: (format) => {
             if (Object.values(OUTPUT_FORMATS).includes(format)) {
                 tableState.outputFormat = format;
@@ -716,137 +755,146 @@ ${bodyRows}
         }
     };
 
-    // Table analyzer
+    // Table analyzer (from Tool 1, minor updates)
     const analyzer = {
         analyze: () => {
             if (tableState.rows.length === 0 || tableState.headers.length === 0) {
-                elements.analysisMarkdownOutput.textContent = '';
+                elements.analysisMarkdownOutput.textContent = 'No data to analyze. Table is empty.';
+                return;
+            }
+            if (!tableState.isValid()) {
+                elements.analysisMarkdownOutput.textContent = 'Table structure is invalid. Cannot analyze.';
                 return;
             }
 
             const totalRows = tableState.rows.length;
-            let markdownOutput = `| **Total** = \`${totalRows}\` |`;
 
-            // Start from the second column (index 1)
-            for (let i = 1; i < tableState.headers.length; i++) {
+            // Build the compact analysis table
+            let analysisOutput = '| ';
+
+            // First column: Total count
+            analysisOutput += `**Total** = \`${totalRows}\` | `;
+
+            // Skip first header (Service Name) and analyze provider columns
+            const providerHeaders = tableState.headers.slice(1);
+            const analysisCells = [];
+
+            providerHeaders.forEach((header, i) => {
+                const columnIndex = i + 1; // +1 because we skip first column
                 const yesCount = tableState.rows.reduce((count, row) => {
-                    return count + (row[i]?.toLowerCase() === 'yes' ? 1 : 0);
+                    return count + (row[columnIndex]?.trim().toLowerCase() === 'yes' ? 1 : 0);
                 }, 0);
-                markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
-            }
-
-            elements.analysisMarkdownOutput.textContent = markdownOutput;
-            notification.show('Table analyzed!');
-        },
-
-        getColumnStats: (columnIndex) => {
-            if (columnIndex >= tableState.headers.length) return null;
-
-            const values = tableState.rows.map(row => row[columnIndex] || '');
-            const uniqueValues = [...new Set(values)];
-            const emptyCells = values.filter(val => !val.trim()).length;
-
-            return {
-                columnName: tableState.headers[columnIndex],
-                totalCells: values.length,
-                uniqueValues: uniqueValues.length,
-                emptyCells,
-                mostCommon: analyzer.getMostCommonValue(values)
-            };
-        },
-
-        getMostCommonValue: (values) => {
-            const frequency = {};
-            values.forEach(val => {
-                frequency[val] = (frequency[val] || 0) + 1;
+                analysisCells.push(`\`${yesCount}/${totalRows}\``);
             });
 
-            return Object.entries(frequency)
-                .sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+            analysisOutput += analysisCells.join(' | ') + ' |';
+
+            elements.analysisMarkdownOutput.textContent = analysisOutput;
+            notification.show('Table analyzed!', NOTIFICATION_TYPES.INFO);
+        },
+        analyzeIfOpen: () => {
+            if (elements.analysisDetails && elements.analysisDetails.open) {
+                analyzer.analyze();
+            }
         }
     };
 
-    // Main application controller
     const app = {
-        init: () => {
-            themeManager.init();
-            app.bindEvents();
-            app.initializeKeyboardShortcuts();
-        },
 
+        init: () => {
+            // Fix: Better initialization order
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    themeManager.init();
+                    app.bindEvents();
+                    app.initializeKeyboardShortcuts();
+                    tableRenderer.render();
+                    if (elements.outputFormatSelect?.value) {
+                        outputManager.setFormat(elements.outputFormatSelect.value);
+                    }
+                });
+            } else {
+                themeManager.init();
+                app.bindEvents();
+                app.initializeKeyboardShortcuts();
+                tableRenderer.render();
+                if (elements.outputFormatSelect?.value) {
+                    outputManager.setFormat(elements.outputFormatSelect.value);
+                }
+            }
+        },
         parseTable: () => {
             const inputText = elements.inputTextArea.value.trim();
-            
+            if (!inputText) {
+                notification.show('Input is empty. Nothing to parse.', NOTIFICATION_TYPES.WARNING);
+                return;
+            }
             try {
                 const parsed = tableParser.parse(inputText);
-                tableState.saveToHistory();
-                Object.assign(tableState, parsed);
+                tableState.saveToHistory(); // Save *before* changing state
+                Object.assign(tableState, parsed); // This overwrites current state
                 tableRenderer.render();
+                analyzer.analyzeIfOpen();
                 notification.show('Table parsed successfully!');
             } catch (error) {
-                notification.show(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+                notification.show(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR, 5000);
                 console.error('Parsing error:', error);
             }
         },
-
-        copyToClipboard: async () => {
+        copyOutputToClipboard: async () => {
+            if (!elements.outputTextArea.value) {
+                notification.show('Nothing to copy from output.', NOTIFICATION_TYPES.WARNING);
+                return;
+            }
             const success = await utils.copyToClipboard(elements.outputTextArea.value);
             notification.show(
-                success ? 'Copied to clipboard!' : 'Failed to copy to clipboard',
+                success ? 'Output copied to clipboard!' : 'Failed to copy output.',
                 success ? NOTIFICATION_TYPES.SUCCESS : NOTIFICATION_TYPES.ERROR
             );
         },
-
         clearAll: () => {
-            if (confirm('Are you sure you want to clear everything?')) {
+            if (confirm('Are you sure you want to clear all input, table data, and output?')) {
+                tableState.saveToHistory(); // Save current state before clearing for undo
                 elements.inputTextArea.value = '';
                 elements.outputTextArea.value = '';
-                elements.tableContainer.innerHTML = '';
-                elements.analysisMarkdownOutput.textContent = '';
+                // elements.tableContainer.innerHTML = ''; // render will handle this
+                elements.analysisMarkdownOutput.textContent = 'Analysis results will appear here.';
                 tableState.reset();
-                notification.show('All cleared');
+                tableRenderer.render(); // Re-render to show empty state
+                outputManager.generate(); // Clear output
+                notification.show('All cleared. You can undo this action.');
             }
         },
-
         toggleReorderMode: () => {
             tableState.isReorderMode = !tableState.isReorderMode;
-            elements.reorderBtn.textContent = tableState.isReorderMode ? 'Edit Table' : 'Re-order';
-            tableRenderer.render();
+            elements.reorderBtn.innerHTML = `<span class="icon">${tableState.isReorderMode ? '✏️' : '✥'}</span> ${tableState.isReorderMode ? 'Edit Mode' : 'Re-order'}`;
+            elements.reorderBtn.setAttribute('aria-label', tableState.isReorderMode ? 'Switch to edit mode' : 'Switch to reorder mode');
+            tableRenderer.render(); // Re-render to update draggable attributes etc.
         },
-
         undo: () => {
             if (tableState.undo()) {
                 tableRenderer.render();
-                analyzer.analyze();
-                notification.show('Undone', NOTIFICATION_TYPES.INFO);
+                analyzer.analyzeIfOpen();
+                notification.show('Action undone.', NOTIFICATION_TYPES.INFO);
             } else {
-                notification.show('Nothing to undo', NOTIFICATION_TYPES.WARNING);
+                notification.show('Nothing to undo.', NOTIFICATION_TYPES.WARNING);
             }
         },
-
         redo: () => {
             if (tableState.redo()) {
                 tableRenderer.render();
-                analyzer.analyze();
-                notification.show('Redone', NOTIFICATION_TYPES.INFO);
+                analyzer.analyzeIfOpen();
+                notification.show('Action redone.', NOTIFICATION_TYPES.INFO);
             } else {
-                notification.show('Nothing to redo', NOTIFICATION_TYPES.WARNING);
+                notification.show('Nothing to redo.', NOTIFICATION_TYPES.WARNING);
             }
         },
-
         bindEvents: () => {
-            // Theme toggle
+            // Fix: Add null checks for all elements
             elements.themeToggle?.addEventListener('click', themeManager.toggle);
-
-            // Table operations
             elements.parseBtn?.addEventListener('click', app.parseTable);
-            elements.analyzeBtn?.addEventListener('click', () => {
-                analyzer.analyze();
-                if (elements.analysisSection) {
-                    elements.analysisSection.open = true;
-                }
-            });
-            elements.copyBtn?.addEventListener('click', app.copyToClipboard);
+            elements.analyzeBtn?.addEventListener('click', analyzer.analyze);
+            elements.copyOutputBtn?.addEventListener('click', app.copyOutputToClipboard);
             elements.clearBtn?.addEventListener('click', app.clearAll);
             elements.addColumnBtn?.addEventListener('click', tableOperations.addColumn);
             elements.addRowBtn?.addEventListener('click', tableOperations.addRow);
@@ -854,61 +902,83 @@ ${bodyRows}
             elements.removeColumnBtn?.addEventListener('click', tableOperations.removeColumn);
             elements.removeRowBtn?.addEventListener('click', tableOperations.removeRow);
             elements.reorderBtn?.addEventListener('click', app.toggleReorderMode);
+            elements.addProviderBtn?.addEventListener('click', tableOperations.addProviderAndUpdateTable);
 
-            // Input handling
-            elements.inputTextArea?.addEventListener('input', 
-                utils.debounce(app.parseTable, 300)
-            );
+            // Fix: Better debounced input handling
+            if (elements.inputTextArea) {
+                elements.inputTextArea.addEventListener('input', utils.debounce(() => {
+                    if (elements.inputTextArea.value.trim() === '') {
+                        tableState.reset();
+                        tableRenderer.render();
+                        analyzer.analyzeIfOpen();
+                        outputManager.generate();
+                    } else {
+                        app.parseTable();
+                    }
+                }, 500));
+            }
 
-            // Output format change
-            document.addEventListener('change', (e) => {
-                if (e.target?.id === 'outputFormat') {
-                    outputManager.setFormat(e.target.value);
-                }
-            });
+            elements.outputFormatSelect?.addEventListener('change', (e) => outputManager.setFormat(e.target.value));
 
-            // Window events
-            window.addEventListener('DOMContentLoaded', themeManager.init);
+            // Fix: Use proper event for initialization
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', themeManager.init);
+            } else {
+                themeManager.init();
+            }
+
             window.addEventListener('beforeunload', (e) => {
                 if (!tableState.isEmpty()) {
                     e.preventDefault();
-                    e.returnValue = '';
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                }
+            });
+
+            [elements.advancedOpsDetails, elements.analysisDetails].forEach(details => {
+                if (details) {
+                    details.addEventListener('toggle', () => {
+                        if (details.id === 'analysisDetails' && details.open) {
+                            analyzer.analyze();
+                        }
+                    });
                 }
             });
         },
-
         initializeKeyboardShortcuts: () => {
             document.addEventListener('keydown', (e) => {
-                // Ctrl/Cmd + Z for undo
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                const isInInput = e.target.closest('textarea, input, [contenteditable="true"]');
+
+                if (isInInput) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                        e.target.blur();
+                        return;
+                    } else if (e.key === 'Escape' && e.target.hasAttribute('contenteditable')) {
+                        e.target.blur();
+                        return;
+                    }
+
+                    // Don't handle global shortcuts in input fields except for contenteditable
+                    if (!e.target.hasAttribute('contenteditable')) {
+                        return;
+                    }
+                }
+                // Global keyboard shortcuts
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
                     e.preventDefault();
                     app.undo();
-                }
-                
-                // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
-                if ((e.ctrlKey || e.metaKey) && (
-                    (e.key === 'z' && e.shiftKey) || e.key === 'y'
-                )) {
+                } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
                     e.preventDefault();
                     app.redo();
-                }
-                
-                // Ctrl/Cmd + Enter for parse
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isInInput) {
                     e.preventDefault();
                     app.parseTable();
-                }
-                
-                // Ctrl/Cmd + Shift + C for copy
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'C') {
                     e.preventDefault();
-                    app.copyToClipboard();
+                    app.copyOutputToClipboard();
                 }
             });
-        }
+        },
     };
 
-    // Initialize the application
     app.init();
-
 })();
