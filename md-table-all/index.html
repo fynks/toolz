@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    <title>Advanced Markdown Table Toolkit</title>
+    <link rel="stylesheet" href="css/styles-merged.css"> <!-- We'll create this -->
+    <script src="js/app-merged.js" defer></script> <!-- We'll create this -->
+    <meta name="description"
+        content="Create, edit, analyze, and transform Markdown tables. Includes service/provider JSON conversion and bulk updates.">
+</head>
+
+<body>
+    <header class="app-header">
+        <h1>
+            📊 Advanced Markdown Table Toolkit
+        </h1>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon">
+                <path class="sun"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    style="display:none" />
+                <path class="moon"
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+        </button>
+    </header>
+
+    <main class="container">
+        <section class="tool-section input-section" aria-labelledby="input-heading">
+            <h2 id="input-heading" class="section-title">Input Markdown Table</h2>
+            <textarea id="input" aria-label="Markdown table input" placeholder="Paste your markdown table here..."
+                spellcheck="false"></textarea>
+            <nav class="controls-toolbar" role="toolbar" aria-label="Main controls">
+                <button id="parseBtn" class="btn btn-primary" aria-label="Parse table">
+                    <span class="icon">⚙️</span> Parse Table
+                </button>
+                <button id="clearBtn" class="btn btn-secondary" aria-label="Clear all data">
+                    <span class="icon">🗑️</span> Clear All
+                </button>
+                 <button id="copyOutputBtn" class="btn btn-primary copy-btn" aria-label="Copy output to clipboard">
+                    <span class="icon">📋</span> Copy Output
+                </button>
+            </nav>
+        </section>
+
+        <section class="tool-section editor-section" aria-labelledby="edit-heading">
+            <h2 id="edit-heading" class="section-title">Interactive Table Editor</h2>
+            <nav class="controls-toolbar" role="toolbar" aria-label="Table editing controls">
+                <button id="addRowBtn" class="btn" aria-label="Add new row"><span class="icon">➕</span> Add Row</button>
+                <button id="removeRowBtn" class="btn btn-secondary" aria-label="Remove last row"><span class="icon">➖</span> Remove Row</button>
+                <button id="addColumnBtn" class="btn" aria-label="Add new column"><span class="icon">➕</span> Add Column</button>
+                <button id="removeColumnBtn" class="btn btn-secondary" aria-label="Remove last column"><span class="icon">➖</span> Remove Column</button>
+                <button id="sortRowsBtn" class="btn" aria-label="Sort rows alphabetically"><span class="icon">⇅</span> Sort Rows</button>
+                <button id="reorderBtn" class="btn" aria-label="Toggle reorder mode"><span class="icon">✥</span> Re-order</button>
+            </nav>
+
+            <div id="tableContainer" class="table-container" role="region" aria-label="Editable table">
+                <!-- Table will be rendered here -->
+            </div>
+        </section>
+
+        <section class="tool-section advanced-ops-section" aria-labelledby="advanced-heading">
+            <details id="advancedOpsDetails">
+                <summary role="button" aria-expanded="false" class="section-title-summary">
+                    <h2 id="advanced-heading" class="section-title">Advanced Operations</h2>
+                </summary>
+                <div class="advanced-ops-content">
+                    <p>These operations assume a "Service Name" first column and subsequent "Provider" columns.</p>
+                    <div class="form-group">
+                        <label for="newProviderName">New Provider/Column Name:</label>
+                        <input type="text" id="newProviderName" placeholder="e.g., AwesomeDebrid">
+                    </div>
+                    <div class="form-group">
+                        <label for="supportedServices">Supported Services (comma-separated):</label>
+                        <input type="text" id="supportedServices" placeholder="e.g., 1Fichier, Rapidgator">
+                    </div>
+                    <button id="addProviderBtn" class="btn btn-primary" aria-label="Add provider and update table">
+                        <span class="icon">✨</span> Add Provider & Update Table
+                    </button>
+                </div>
+            </details>
+        </section>
+        
+        <section class="tool-section analysis-section" aria-labelledby="analysis-heading">
+             <details id="analysisDetails" open>
+                <summary role="button" aria-expanded="true" class="section-title-summary">
+                    <h2 id="analysis-heading" class="section-title">Table Analysis</h2>
+                </summary>
+                <div class="analysis-content">
+                    <button id="analyzeBtn" class="btn" aria-label="Analyze table data">
+                        <span class="icon">🔍</span> Analyze Current Table
+                    </button>
+                    <output id="analysisMarkdownOutput" class="analysis-markdown-output" role="region"
+                        aria-label="Analysis results">Analysis results will appear here.</output>
+                </div>
+            </details>
+        </section>
+
+        <section class="tool-section output-section" aria-labelledby="output-heading">
+            <h2 id="output-heading" class="section-title">Formatted Output</h2>
+            <div class="output-controls">
+                <label for="outputFormat">Format:</label>
+                <select id="outputFormat" aria-label="Select output format">
+                    <option value="markdown" selected>Markdown</option>
+                    <option value="generic_json">Generic JSON</option>
+                    <option value="service_provider_json">Service/Provider JSON</option>
+                    <option value="html">HTML Table</option>
+                </select>
+            </div>
+            <textarea id="output" readonly aria-label="Generated output"
+                placeholder="Generated output will appear here."></textarea>
+        </section>
+    </main>
+
+    <aside id="notification" class="notification" role="alert" aria-live="polite"></aside>
+</body>
+</html>
