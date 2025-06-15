@@ -37,7 +37,7 @@
                     }
                 }
                 
-                resultContainer.innerHTML = '<div class="loading">Fetching repository data...</div>';
+                resultContainer.innerHTML = '<div class="loading">🔍 Fetching repository data...</div>';
 
                const [repoResponse, languagesResponse, contributorsResponse, pullsResponse, releasesResponse] = await Promise.all([
                     fetch(`${API_BASE}${repoPath}`),
@@ -71,8 +71,8 @@
                     <div class="error">
                         <h3>⚠️ ${error.message}</h3>
                        ${error.message.includes('rate limit') ?
-                            '<p>Too many requests. Please wait a few minutes.</p>' :
-                            ''}
+                            '<p>📊 Too many requests. Please wait a few minutes and try again.</p>' :
+                            '<p>🔍 Please check the repository path and try again.</p>'}
                     </div>`;
             }
         };
@@ -83,18 +83,46 @@
                 dialog.className = 'refresh-dialog';
                 dialog.innerHTML = `
                     <div class="refresh-content">
-                        <p>Cached data available. Refresh?</p>
-                        <button onclick="this.closest('.refresh-dialog').remove(); ${resolve(false)}">Use Cached</button>
-                        <button onclick="this.closest('.refresh-dialog').remove(); ${resolve(true)}">Refresh</button>
+                        <p>🔄 Cached data available. What would you like to do?</p>
+                        <button class="use-cached" onclick="this.closest('.refresh-dialog').remove(); resolve(false)">📁 Use Cached Data</button>
+                        <button class="refresh-data" onclick="this.closest('.refresh-dialog').remove(); resolve(true)">🚀 Fetch Fresh Data</button>
                     </div>
                 `;
+                
+                // Add event listeners for the buttons
+                const useCachedBtn = dialog.querySelector('.use-cached');
+                const refreshBtn = dialog.querySelector('.refresh-data');
+                
+                useCachedBtn.onclick = () => {
+                    dialog.remove();
+                    resolve(false);
+                };
+                
+                refreshBtn.onclick = () => {
+                    dialog.remove();
+                    resolve(true);
+                };
+                
+                // Close on escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        dialog.remove();
+                        resolve(false);
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+                
                 document.body.appendChild(dialog);
+                
+                // Focus the refresh button by default
+                setTimeout(() => refreshBtn.focus(), 100);
             });
         };
 
         const displayRepoInfo = (repo, languages, contributors, pulls, releases, isCached = false) => {
             if (!repo) {
-                resultContainer.innerHTML = '<div class="no-results">No repository found for this path.</div>';
+                resultContainer.innerHTML = '<div class="no-results">🤔 No repository found for this path.</div>';
                  return;
             }
 
@@ -180,7 +208,7 @@
 
                     <h3>Top Contributors</h3>
                     <div class="contributors">${contributorList}</div>
-                     ${isCached ? '<p class="cached-indicator">Data loaded from cache</p>' : ''}
+                     ${isCached ? '<p class="cached-indicator">📦 Data loaded from cache - Refresh for latest information</p>' : ''}
                 </div>
             `;
         };
@@ -192,7 +220,34 @@
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const repoPath = searchInput.value.trim();
-                if (repoPath) fetchRepoData(repoPath);
+                if (repoPath) {
+                    // Add visual feedback
+                    searchInput.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        searchInput.style.transform = 'scale(1)';
+                    }, 150);
+                    
+                    fetchRepoData(repoPath);
+                }
+            }
+        });
+
+        // Add input validation and suggestions
+        searchInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            
+            // Remove invalid characters for GitHub repo paths
+            const cleaned = value.replace(/[^a-zA-Z0-9\-_./]/g, '');
+            if (cleaned !== value) {
+                e.target.value = cleaned;
+            }
+            
+            // Visual feedback for valid repo format
+            const isValid = /^[a-zA-Z0-9\-_.]+\/[a-zA-Z0-9\-_.]+$/.test(cleaned);
+            if (cleaned.length > 0) {
+                e.target.style.borderColor = isValid ? 'var(--accent-success)' : 'var(--accent-warning)';
+            } else {
+                e.target.style.borderColor = 'var(--border-primary)';
             }
         });
 
