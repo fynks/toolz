@@ -1,81 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <title>URLs to HTML Table Converter</title>
   <style>
-    body{ font-family: Arial, sans-serif; background-color: #f5f5f5; text-align: center; padding: 20px;} .container{ max-width: 600px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);} textarea{ width: 100%; margin-top: 5px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;} button{ margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px;} button:hover{ background-color: #45a049;} table{ width: 96%; margin: auto; border-collapse: collapse; margin-top: 10px;} th, td{ border: 1px solid #ccc; padding: 8px; text-align: left;} th{ background-color: #f2f2f2;} a{ color: #007bff; text-decoration: none;} a:hover{ text-decoration: underline;} #message{ margin-top: 10px; font-weight: bold;} :focus{ outline: 2px solid #4CAF50; }
+ :root{ --primary-color: #4f46e5; --primary-hover: #3730a3; --success-color: #10b981; --error-color: #ef4444; --warning-color: #f59e0b; --border-color: #e5e7eb; --text-gray: #6b7280; --bg-gray: #f9fafb; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); --radius: 8px;} *{ box-sizing: border-box;} body{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; min-height: 100vh; line-height: 1.6;} .container{ max-width: 800px; margin: 0 auto; background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;} .header{ background: var(--primary-color); color: white; padding: 2rem; text-align: center;} .header h1{ margin: 0; font-size: 2rem; font-weight: 600;} .header p{ margin: 0.5rem 0 0; opacity: 0.9;} .content{ padding: 2rem;} .form-group{ margin-bottom: 1.5rem;} label{ display: block; font-weight: 600; color: #374151; margin-bottom: 0.5rem;} textarea{ width: 100%; min-height: 120px; padding: 12px; border: 2px solid var(--border-color); border-radius: var(--radius); font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; resize: vertical; font-family: 'Courier New', monospace;} textarea:focus{ outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);} .button-group{ display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1.5rem;} button{ padding: 12px 24px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;} .btn-primary{ background: var(--primary-color); color: white;} .btn-primary:hover:not(:disabled){ background: var(--primary-hover);} .btn-secondary{ background: var(--bg-gray); color: #374151; border: 1px solid var(--border-color);} .btn-secondary:hover:not(:disabled){ background: #f3f4f6;} button:disabled{ opacity: 0.6; cursor: not-allowed;} .stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;} .stat-card{ background: var(--bg-gray); padding: 1rem; border-radius: var(--radius); text-align: center; border: 1px solid var(--border-color);} .stat-number{ font-size: 1.5rem; font-weight: bold; color: var(--primary-color);} .stat-label{ font-size: 0.875rem; color: var(--text-gray); margin-top: 0.25rem;} .alert{ padding: 12px 16px; border-radius: var(--radius); margin-bottom: 1rem; font-weight: 500; display: none;} .alert.show{ display: block;} .alert-success{ background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;} .alert-error{ background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;} .alert-warning{ background: #fffbeb; color: #92400e; border: 1px solid #fed7aa;} table{ width: 100%; border-collapse: collapse; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-top: 1rem;} th{ background: var(--primary-color); color: white; padding: 16px; text-align: left; font-weight: 600;} td{ padding: 12px 16px; border-bottom: 1px solid var(--border-color);} tr:hover{ background: var(--bg-gray);} .url-link{ color: var(--primary-color); text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 8px;} .url-link:hover{ text-decoration: underline;} .loading{ display: inline-flex; align-items: center; gap: 8px;} .spinner{ width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;} @keyframes spin{ 0%{ transform: rotate(0deg);} 100%{ transform: rotate(360deg);}} .copy-button{ background: var(--success-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin-left: 8px;} .copy-button:hover{ background: #059669;} @media (max-width: 640px){ .button-group{ flex-direction: column;} .stats{ grid-template-columns: repeat(2, 1fr);}}
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>URLs to HTML Table Converter</h1>
-    <div>
-      <label for="urlInput">Enter URLs (one per line):</label><br>
-      <textarea id="urlInput" rows="5" cols="50" placeholder="Enter URLs one per line (http:// or https://)"></textarea>
+    <div class="header">
+      <h1>🔗 URLs to HTML Table Converter</h1>
+      <p>Convert your list of URLs into a beautiful HTML table</p>
     </div>
-    <button onclick="convertToTable()">Convert to HTML Table</button>
-    <div id="htmlOutput"></div>
-    <div id="message"></div>
+    
+    <div class="content">
+      <div class="form-group">
+        <label for="urlInput">Enter URLs (one per line):</label>
+        <textarea 
+          id="urlInput" 
+          placeholder="https://example.com&#10;https://github.com&#10;https://stackoverflow.com"
+          oninput="handleInputChange()"
+        ></textarea>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="convertToTable()" id="convertBtn">
+          <span id="convertText">🚀 Convert to Table</span>
+        </button>
+        <button class="btn-secondary" onclick="clearAll()">
+          🗑️ Clear All
+        </button>
+        <button class="btn-secondary" onclick="loadSampleData()">
+          📝 Load Sample
+        </button>
+        <button class="btn-secondary" onclick="exportTable()" id="exportBtn" disabled>
+          💾 Export HTML
+        </button>
+      </div>
+
+      <div class="stats" id="stats" style="display: none;">
+        <div class="stat-card">
+          <div class="stat-number" id="totalUrls">0</div>
+          <div class="stat-label">Total URLs</div>
+        </div>
+      </div>
+
+      <div id="alert" class="alert"></div>
+      <div id="htmlOutput"></div>
+    </div>
   </div>
 
   <script>
-    const convertToTable = () => {
-      const urlInput = document.getElementById('urlInput').value.trim();
-      const urls = urlInput.split('\n').map(url => url.trim());
-
-      
-      const formattedUrls = urls.filter(url => url !== '');
-
-      try {
-      
-        const validUrls = formattedUrls.filter(url => url.startsWith('http://') || url.startsWith('https://'));
-        if (validUrls.length === 0) {
-          throw new Error('Please enter at least one valid URL (starting with http:// or https://)');
-        }
-
-        showMessage('Converting...');  
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-
-        const headerRow = document.createElement('tr');
-        const headerCell = document.createElement('th');
-        headerCell.textContent = 'URLs';
-        headerRow.appendChild(headerCell);
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        validUrls.forEach(url => {
-          const row = document.createElement('tr');
-          const cell = document.createElement('td');
-          const link = document.createElement('a');
-          link.href = url;
-          link.textContent = url;
-          link.target = '_blank'; 
-          cell.appendChild(link);
-          row.appendChild(cell);
-          tbody.appendChild(row);
-        });
-
-        table.appendChild(tbody);
-
-        const outputDiv = document.getElementById('htmlOutput');
-        outputDiv.innerHTML = ''; 
-        outputDiv.appendChild(table);
-
-        showMessage(`Converted ${validUrls.length} URL(s) successfully.`);
-      } catch (error) {
-        showMessage(error.message, 'red');
-      }
-    };
-
-    const showMessage = (message, color = 'black') => {
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = message;
-      messageDiv.style.color = color;
-    };
+ let currentUrls=[]; let isProcessing=false; const isValidUrl=(url)=>{ try{ const urlObj=new URL(url); return ['http:', 'https:'].includes(urlObj.protocol);} catch{ return false;}}; const sanitizeUrl=(url)=>{ url=url.trim(); if (!url) return ''; if (!url.match(/^https?:\/\//i)){ url='https://' + url;} return url;}; const showAlert=(message, type='success')=>{ const alert=document.getElementById('alert'); alert.className=`alert alert-${type} show`; alert.textContent=message; setTimeout(()=>{ alert.classList.remove('show');}, 5000);}; const updateStats=(total, valid, invalid)=>{ document.getElementById('totalUrls').textContent=total; const statsDiv=document.getElementById('stats'); statsDiv.style.display=total >0 ? 'grid' : 'none';}; const setLoading=(loading)=>{ isProcessing=loading; const convertBtn=document.getElementById('convertBtn'); const convertText=document.getElementById('convertText'); if (loading){ convertText.innerHTML='<div class="loading"><div class="spinner"></div>Processing...</div>'; convertBtn.disabled=true;} else{ convertText.innerHTML='🚀 Convert to Table'; convertBtn.disabled=false;}}; const convertToTable=async ()=>{ if (isProcessing) return; const urlInput=document.getElementById('urlInput').value.trim(); if (!urlInput){ showAlert('Please enter at least one URL', 'error'); return;} setLoading(true); try{ const rawUrls=urlInput.split('\n').map(url=>url.trim()).filter(url=>url); const sanitizedUrls=rawUrls.map(sanitizeUrl); const urlData=sanitizedUrls.map(url=>({ original: url, isValid: isValidUrl(url)})); const validUrls=urlData.filter(item=>item.isValid); const invalidUrls=urlData.filter(item=>!item.isValid); if (validUrls.length===0){ throw new Error('No valid URLs found. Please check your input.');} await new Promise(resolve=>setTimeout(resolve, 500)); const table=createTable(validUrls); const outputDiv=document.getElementById('htmlOutput'); outputDiv.innerHTML=''; outputDiv.appendChild(table); updateStats(rawUrls.length); currentUrls=validUrls; document.getElementById('exportBtn').disabled=false; let message=`Successfully processed ${validUrls.length} URL(s)`; if (invalidUrls.length >0){ message +=`. ${invalidUrls.length} invalid URL(s) were skipped.`; showAlert(message, 'warning');} else{ showAlert(message, 'success');}} catch (error){ console.error('Conversion error:', error); showAlert(error.message, 'error');} finally{ setLoading(false);}}; const createTable=(urlData)=>{ const table=document.createElement('table'); const thead=document.createElement('thead'); const headerRow=document.createElement('tr'); const headers=['#', 'URL', 'Actions']; headers.forEach(headerText=>{ const th=document.createElement('th'); th.textContent=headerText; headerRow.appendChild(th);}); thead.appendChild(headerRow); table.appendChild(thead); const tbody=document.createElement('tbody'); urlData.forEach((urlItem, index)=>{ const row=document.createElement('tr'); const indexCell=document.createElement('td'); indexCell.textContent=index + 1; row.appendChild(indexCell); const urlCell=document.createElement('td'); const link=document.createElement('a'); link.href=urlItem.original; link.textContent=urlItem.original; link.className='url-link'; link.target='_blank'; link.rel='noopener noreferrer'; urlCell.appendChild(link); row.appendChild(urlCell); const actionsCell=document.createElement('td'); const copyBtn=document.createElement('button'); copyBtn.className='copy-button'; copyBtn.textContent='Copy'; copyBtn.onclick=()=>copyToClipboard(urlItem.original); actionsCell.appendChild(copyBtn); row.appendChild(actionsCell); tbody.appendChild(row);}); table.appendChild(tbody); return table;}; const handleInputChange=()=>{ const input=document.getElementById('urlInput').value.trim(); const hasContent=input.length >0; document.getElementById('convertBtn').disabled=!hasContent || isProcessing;}; const clearAll=()=>{ document.getElementById('urlInput').value=''; document.getElementById('htmlOutput').innerHTML=''; document.getElementById('alert').classList.remove('show'); document.getElementById('exportBtn').disabled=true; updateStats(0, 0, 0); currentUrls=[]; handleInputChange();}; const loadSampleData=()=>{ const sampleUrls=[ 'https://github.com', 'https://stackoverflow.com', 'https://developer.mozilla.org', 'google.com', 'https://www.w3schools.com' ]; document.getElementById('urlInput').value=sampleUrls.join('\n'); handleInputChange(); showAlert('Sample data loaded successfully!', 'success');}; const copyToClipboard=async (text)=>{ try{ await navigator.clipboard.writeText(text); showAlert(`URL copied to clipboard: ${text.substring(0, 50)}...`, 'success');} catch (error){ console.error('Copy failed:', error); showAlert('Failed to copy to clipboard', 'error');}}; const exportTable=()=>{ if (currentUrls.length===0){ showAlert('No table to export', 'error'); return;} const tableHtml=document.getElementById('htmlOutput').innerHTML; const fullHtml=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Exported URLs Table</title><style>body{ font-family: Arial, sans-serif; padding: 20px;} table{ width: 100%; border-collapse: collapse;} th, td{ border: 1px solid #ddd; padding: 12px; text-align: left;} th{ background-color: #4f46e5; color: white;} tr:nth-child(even){ background-color: #f9fafb;} a{ color: #4f46e5; text-decoration: none;} a:hover{ text-decoration: underline;} </style></head><body><h1>URLs Table - Generated on ${new Date().toLocaleString()}</h1>${tableHtml}</body></html>`; const blob=new Blob([fullHtml],{ type: 'text/html'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`urls-table-${new Date().toISOString().split('T')[0]}.html`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showAlert('Table exported successfully!', 'success');}; document.addEventListener('keydown', (e)=>{ if (e.ctrlKey || e.metaKey){ switch (e.key){ case 'Enter': e.preventDefault(); if (!isProcessing) convertToTable(); break; case 'k': e.preventDefault(); clearAll(); break;}}}); document.addEventListener('DOMContentLoaded', ()=>{ handleInputChange(); console.log('URLs to HTML Table Converter loaded successfully!');});
   </script>
 </body>
 </html>
