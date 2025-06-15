@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    // Constants
+    // Enhanced Constants
     const THEMES = Object.freeze({ DARK: 'dark', LIGHT: 'light' });
     const OUTPUT_FORMATS = Object.freeze({
         MARKDOWN: 'markdown',
@@ -15,14 +15,32 @@
         [ALIGNMENTS.RIGHT]: '---:',
         [ALIGNMENTS.LEFT]: ':---'
     });
-    const NOTIFICATION_TYPES = Object.freeze({ SUCCESS: 'success', ERROR: 'error', WARNING: 'warning', INFO: 'info' });
+    const NOTIFICATION_TYPES = Object.freeze({ 
+        SUCCESS: 'success', 
+        ERROR: 'error', 
+        WARNING: 'warning', 
+        INFO: 'info' 
+    });
 
-    const elements = {
+    // Performance-optimized element cache
+    const elements = new Proxy({}, {
+        get(target, prop) {
+            if (!(prop in target)) {
+                target[prop] = document.getElementById(prop) || 
+                              document.querySelector(`[data-element="${prop}"]`) ||
+                              document.querySelector(`.${prop}`);
+            }
+            return target[prop];
+        }
+    });
+
+    // Initialize core elements
+    const coreElements = {
         themeToggle: document.getElementById('themeToggle'),
         get sunPath() { return this.themeToggle?.querySelector('.sun'); },
         get moonPath() { return this.themeToggle?.querySelector('.moon'); },
-        inputTextArea: document.getElementById("input"),
-        outputTextArea: document.getElementById("output"),
+        input: document.getElementById("input"),
+        output: document.getElementById("output"),
         tableContainer: document.getElementById("tableContainer"),
         analysisMarkdownOutput: document.getElementById('analysisMarkdownOutput'),
         parseBtn: document.getElementById("parseBtn"),
@@ -35,16 +53,18 @@
         removeColumnBtn: document.getElementById("removeColumnBtn"),
         removeRowBtn: document.getElementById("removeRowBtn"),
         reorderBtn: document.getElementById("reorderBtn"),
-        notificationDiv: document.getElementById("notification"),
-        outputFormatSelect: document.getElementById('outputFormat'),
-        // New elements for advanced ops
-        newProviderNameInput: document.getElementById('newProviderName'),
-        supportedServicesInput: document.getElementById('supportedServices'),
+        notification: document.getElementById("notification"),
+        outputFormat: document.getElementById('outputFormat'),
+        newProviderName: document.getElementById('newProviderName'),
+        supportedServices: document.getElementById('supportedServices'),
         addProviderBtn: document.getElementById('addProviderBtn'),
         analysisDetails: document.getElementById('analysisDetails'),
         advancedOpsDetails: document.getElementById('advancedOpsDetails'),
+        outputStats: document.getElementById('outputStats'),
+        loadingIndicator: document.getElementById('loadingIndicator')
     };
 
+    // Enhanced Table State with better performance tracking
     class TableState {
         constructor() {
             this.headers = [];
@@ -54,30 +74,39 @@
             this.outputFormat = OUTPUT_FORMATS.MARKDOWN;
             this.history = [];
             this.historyIndex = -1;
+            this.isModified = false;
+            this.lastSaveTime = Date.now();
+            this.stats = { rows: 0, columns: 0, cells: 0 };
         }
 
         saveToHistory() {
             const state = {
-                headers: JSON.parse(JSON.stringify(this.headers)), // Deep copy
-                rows: JSON.parse(JSON.stringify(this.rows)),       // Deep copy
-                alignments: JSON.parse(JSON.stringify(this.alignments)) // Deep copy
+                headers: structuredClone(this.headers),
+                rows: structuredClone(this.rows),
+                alignments: structuredClone(this.alignments),
+                timestamp: Date.now()
             };
+            
+            // Remove future history if we're in the middle
             this.history = this.history.slice(0, this.historyIndex + 1);
             this.history.push(state);
             this.historyIndex++;
+            
+            // Limit history size for performance
             if (this.history.length > 50) {
                 this.history.shift();
                 this.historyIndex--;
             }
+            
+            this.isModified = true;
+            this.updateStats();
         }
 
         undo() {
             if (this.historyIndex > 0) {
                 this.historyIndex--;
                 const state = this.history[this.historyIndex];
-                this.headers = JSON.parse(JSON.stringify(state.headers));
-                this.rows = JSON.parse(JSON.stringify(state.rows));
-                this.alignments = JSON.parse(JSON.stringify(state.alignments));
+                this.restoreState(state);
                 return true;
             }
             return false;
@@ -87,12 +116,34 @@
             if (this.historyIndex < this.history.length - 1) {
                 this.historyIndex++;
                 const state = this.history[this.historyIndex];
-                this.headers = JSON.parse(JSON.stringify(state.headers));
-                this.rows = JSON.parse(JSON.stringify(state.rows));
-                this.alignments = JSON.parse(JSON.stringify(state.alignments));
+                this.restoreState(state);
                 return true;
             }
             return false;
+        }
+
+        restoreState(state) {
+            this.headers = structuredClone(state.headers);
+            this.rows = structuredClone(state.rows);
+            this.alignments = structuredClone(state.alignments);
+            this.updateStats();
+        }
+
+        updateStats() {
+            this.stats = {
+                rows: this.rows.length,
+                columns: this.headers.length,
+                cells: this.rows.length * this.headers.length
+            };
+            this.updateStatsDisplay();
+        }
+
+        updateStatsDisplay() {
+            if (coreElements.outputStats) {
+                const { rows, columns, cells } = this.stats;
+                coreElements.outputStats.textContent = 
+                    `${rows} rows × ${columns} columns = ${cells} cells`;
+            }
         }
 
         reset() {
@@ -100,42 +151,60 @@
             this.rows = [];
             this.alignments = [];
             this.isReorderMode = false;
-            // this.outputFormat = OUTPUT_FORMATS.MARKDOWN; // Don't reset output format preference
             this.history = [];
             this.historyIndex = -1;
+            this.isModified = false;
+            this.updateStats();
         }
 
-        isEmpty() { return this.headers.length === 0 && this.rows.length === 0; }
-        isValid() { return this.headers.length > 0 && this.alignments.length === this.headers.length; }
+        isEmpty() {
+            return this.headers.length === 0 && this.rows.length === 0;
+        }
+
+        isValid() {
+            return this.headers.length > 0 && this.alignments.length === this.headers.length;
+        }
     }
 
-    const tableState = new TableState();
-
+    // Enhanced utility functions
     const utils = {
-        sanitizeInput: (str) => {
+        sanitizeHTML: (str) => {
             if (typeof str !== 'string') return '';
-            const temp = document.createElement('div');
-            temp.textContent = str;
-            return temp.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         },
+
         debounce: (func, delay) => {
-            let timeout;
+            let timeoutId;
             return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(null, args), delay); // Fix: use null instead of this
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(null, args), delay);
             };
         },
+
+        throttle: (func, limit) => {
+            let inThrottle;
+            return (...args) => {
+                if (!inThrottle) {
+                    func.apply(null, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        },
+
         copyToClipboard: async (text) => {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch (err) {
-                console.warn("Clipboard API failed, trying execCommand:", err);
+                // Fallback for older browsers
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = '0';
-                textarea.style.left = '-9999px'; // Fix: better positioning
+                textarea.style.left = '-9999px';
                 document.body.appendChild(textarea);
                 textarea.select();
                 try {
@@ -144,88 +213,159 @@
                     return success;
                 } catch (e) {
                     document.body.removeChild(textarea);
-                    console.error("execCommand failed:", e);
                     return false;
                 }
             }
         },
-        normalizeServiceName: (name) => name.toLowerCase().trim().replace(/\s+/g, ''),
-        capitalizeFirstLetterOfWords: (string) => {
-            return string.replace(/\b\w/g, char => char.toUpperCase())
-                .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
-                .replace(/\b\w/g, char => char.toUpperCase())
-                .replace(/\s+/g, '');
+
+        normalizeString: (str) => str.toLowerCase().trim().replace(/\s+/g, ''),
+
+        titleCase: (str) => {
+            return str.replace(/\b\w/g, c => c.toUpperCase())
+                     .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+                     .replace(/\b\w/g, c => c.toUpperCase())
+                     .replace(/\s+/g, '');
+        },
+
+        showLoading: (show = true) => {
+            if (coreElements.loadingIndicator) {
+                coreElements.loadingIndicator.style.display = show ? 'flex' : 'none';
+                coreElements.loadingIndicator.setAttribute('aria-hidden', !show);
+            }
+        },
+
+        formatFileSize: (bytes) => {
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
         }
     };
 
 
-    const notification = {
-        show: (message, type = NOTIFICATION_TYPES.SUCCESS, duration = 3000) => {
-            if (!elements.notificationDiv) return;
-            elements.notificationDiv.textContent = message;
-            elements.notificationDiv.className = 'notification show'; // Reset classes
-            elements.notificationDiv.classList.add(type);
 
-            elements.notificationDiv.style.opacity = '1';
-            elements.notificationDiv.style.bottom = '30px';
-
-            setTimeout(() => {
-                elements.notificationDiv.style.opacity = '0';
-                elements.notificationDiv.style.bottom = '20px';
-                setTimeout(() => {
-                    if (elements.notificationDiv.style.opacity === '0') { // ensure it's still hidden
-                        elements.notificationDiv.classList.remove('show', type);
+        
+            // Enhanced notification system
+            const notifications = {
+                show: (message, type = NOTIFICATION_TYPES.SUCCESS, duration = 4000) => {
+                    if (!coreElements.notification) {
+                        console.warn('Notification element not found');
+                        return;
                     }
-                }, 300); // Wait for transition
-            }, duration);
-        }
-    };
+        
+                    // Clear any existing notification
+                    notifications.hide();
+        
+                    const notification = coreElements.notification;
+                    
+                    // Clear previous content and classes
+                    notification.innerHTML = '';
+                    notification.className = 'notification';
+                    
+                    // Set the message
+                    notification.textContent = message;
+                    
+                    // Add classes
+                    notification.classList.add('show', type);
+                    notification.setAttribute('aria-live', type === NOTIFICATION_TYPES.ERROR ? 'assertive' : 'polite');
+        
+                    // Auto-hide with custom duration
+                    if (duration > 0) {
+                        setTimeout(() => notifications.hide(), duration);
+                    }
+                },
+        
+                hide: () => {
+                    if (!coreElements.notification) return;
+                    
+                    const notification = coreElements.notification;
+                    notification.classList.remove('show', ...Object.values(NOTIFICATION_TYPES));
+                    notification.innerHTML = '';
+                },
+        
+                success: (message, duration = 4000) => notifications.show(message, NOTIFICATION_TYPES.SUCCESS, duration),
+                error: (message, duration = 6000) => notifications.show(message, NOTIFICATION_TYPES.ERROR, duration),
+                warning: (message, duration = 5000) => notifications.show(message, NOTIFICATION_TYPES.WARNING, duration),
+                info: (message, duration = 4000) => notifications.show(message, NOTIFICATION_TYPES.INFO, duration)
+            };
+        
 
+    // Enhanced theme management
     const themeManager = {
+        init: () => {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (systemPrefersDark ? THEMES.DARK : THEMES.LIGHT);
+            
+            themeManager.set(theme);
+            
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)')
+                  .addEventListener('change', (e) => {
+                      if (!localStorage.getItem('theme')) {
+                          themeManager.set(e.matches ? THEMES.DARK : THEMES.LIGHT);
+                      }
+                  });
+        },
+
         toggle: () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
             themeManager.set(newTheme);
         },
+
         set: (theme) => {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
             themeManager.updateIcons(theme);
+            
+            // Update meta theme-color
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.content = theme === THEMES.DARK ? '#0d1117' : '#0969da';
+            }
         },
+
         updateIcons: (theme) => {
-            if (!elements.sunPath || !elements.moonPath) return;
-            elements.sunPath.style.display = theme === THEMES.DARK ? 'block' : 'none';
-            elements.moonPath.style.display = theme === THEMES.DARK ? 'none' : 'block';
-        },
-        init: () => {
-            const savedTheme = localStorage.getItem('theme') ||
-                (window.matchMedia('(prefers-color-scheme: dark)').matches ? THEMES.DARK : THEMES.LIGHT);
-            themeManager.set(savedTheme);
+            if (coreElements.sunPath && coreElements.moonPath) {
+                coreElements.sunPath.style.display = theme === THEMES.DARK ? 'block' : 'none';
+                coreElements.moonPath.style.display = theme === THEMES.DARK ? 'none' : 'block';
+            }
         }
     };
 
-    const tableParser = {
-        parse: (inputText) => {
-            if (!inputText?.trim()) throw new Error('Input is empty.');
+    // Enhanced markdown parser with better error handling
+    const markdownParser = {
+        parse: (input) => {
+            if (!input?.trim()) {
+                throw new Error('Input is empty or contains only whitespace.');
+            }
 
-            const lines = inputText.trim().split('\n').map(line => line.trim()).filter(line => line);
+            const lines = input.trim().split('\n')
+                              .map(line => line.trim())
+                              .filter(line => line);
 
-            if (lines.length < 1) throw new Error('Table must have at least a header row.');
+            if (lines.length < 1) {
+                throw new Error('No valid content found in input.');
+            }
 
-            const headerLineIndex = lines.findIndex(line => line.includes('|'));
-            if (headerLineIndex === -1) throw new Error('No valid header row found.');
+            // Find the first line that looks like a table header
+            const headerIndex = lines.findIndex(line => line.includes('|') && !line.match(/^\|?\s*:?-+:?/));
+            
+            if (headerIndex === -1) {
+                throw new Error('No valid table header found. Make sure your table uses pipe (|) separators.');
+            }
 
-            const headers = tableParser.parseRow(lines[headerLineIndex]);
+            const headers = markdownParser.parseRow(lines[headerIndex]);
+            let alignments, dataStartIndex = headerIndex + 1;
 
-            let alignments;
-            let dataStartIndex = headerLineIndex + 1;
-
+            // Check for alignment row
             if (dataStartIndex < lines.length) {
-                const potentialSeparatorLine = lines[dataStartIndex];
-                if (potentialSeparatorLine && potentialSeparatorLine.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/)) {
-                    const separatorCells = tableParser.parseRow(potentialSeparatorLine);
-                    if (separatorCells.length === headers.length) {
-                        alignments = separatorCells.map(cell => {
+                const potentialAlignmentRow = lines[dataStartIndex];
+                if (potentialAlignmentRow && potentialAlignmentRow.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/)) {
+                    const alignmentRow = markdownParser.parseRow(potentialAlignmentRow);
+                    if (alignmentRow.length === headers.length) {
+                        alignments = alignmentRow.map(cell => {
                             const trimmed = cell.trim();
                             if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
                             if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
@@ -236,749 +376,1014 @@
                 }
             }
 
+            // Default to left alignment if no alignment row found
             if (!alignments || alignments.length !== headers.length) {
                 alignments = headers.map(() => ALIGNMENTS.LEFT);
             }
 
-            const dataRowLines = lines.slice(dataStartIndex).filter(line => {
-                return !line.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/);
-            });
-
-            const rows = dataRowLines.map((line) => {
-                const row = tableParser.parseRow(line);
-                while (row.length < headers.length) row.push('');
-                if (row.length > headers.length) row.splice(headers.length);
-                return row;
-            });
+            // Parse data rows
+            const rows = lines.slice(dataStartIndex)
+                             .filter(line => !line.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/))
+                             .map(line => {
+                                 const row = markdownParser.parseRow(line);
+                                 // Pad or trim row to match header length
+                                 while (row.length < headers.length) row.push('');
+                                 if (row.length > headers.length) row.splice(headers.length);
+                                 return row;
+                             });
 
             return {
-                headers: headers.map(h => utils.sanitizeInput(h.replace(/\*\*/g, ''))),
+                headers: headers.map(h => utils.sanitizeHTML(h.replace(/\*\*/g, ''))),
                 alignments,
-                rows: rows.map(row => row.map(cell => utils.sanitizeInput(cell.replace(/\*\*/g, ''))))
+                rows: rows.map(row => row.map(cell => utils.sanitizeHTML(cell.replace(/\*\*/g, ''))))
             };
         },
+
         parseRow: (line) => {
             const cells = line.split('|').map(cell => cell.trim());
-            // Fix: More robust cell filtering
-            let startIndex = 0;
-            let endIndex = cells.length;
-
-            // Remove empty cells at the beginning (from leading |)
-            if (cells[0] === '') startIndex = 1;
-            // Remove empty cells at the end (from trailing |)
-            if (cells[cells.length - 1] === '') endIndex = cells.length - 1;
-
-            return cells.slice(startIndex, endIndex);
+            let start = 0, end = cells.length;
+            
+            // Remove empty cells at start and end (from leading/trailing |)
+            if (cells[0] === '') start = 1;
+            if (cells[cells.length - 1] === '') end = cells.length - 1;
+            
+            return cells.slice(start, end);
         }
     };
 
-    // Service/Provider specific conversion functions (adapted from Tool 2)
-    const serviceProviderConverter = {
-        tableToServiceProviderJson: (headers, rows) => {
+    // Enhanced JSON conversion utilities
+    const jsonConverter = {
+        tableToServiceProviderJSON: (headers, rows) => {
             if (!headers || headers.length === 0 || !rows) {
-                throw new Error("Invalid table data for Service/Provider JSON conversion.");
+                throw new Error('Invalid table data for Service/Provider JSON conversion.');
             }
-            const jsonData = {};
-            const serviceNameHeader = headers[0]; // Assume first col is service name
-            const providerHeaders = headers.slice(1);
+
+            const result = {};
+            const providerColumns = headers.slice(1); // Skip service name column
 
             rows.forEach(row => {
                 const serviceName = row[0]?.trim();
                 if (serviceName) {
-                    jsonData[serviceName] = {};
-                    providerHeaders.forEach((providerHeader, idx) => {
-                        jsonData[serviceName][providerHeader] = (row[idx + 1]?.toLowerCase() === 'yes') ? 'yes' : 'no';
+                    result[serviceName] = {};
+                    providerColumns.forEach((provider, index) => {
+                        const value = row[index + 1]?.toLowerCase().trim();
+                        result[serviceName][provider] = value === 'yes' ? 'yes' : 'no';
                     });
                 }
             });
-            return jsonData;
+
+            return result;
         },
 
-        serviceProviderJsonToTable: (jsonData) => {
+        serviceProviderJSONToTable: (jsonData) => {
             if (Object.keys(jsonData).length === 0) {
                 return { headers: [], rows: [], alignments: [] };
             }
 
-            const serviceNames = Object.keys(jsonData);
-            // Get all unique provider names from all services to form headers
-            const allProviders = new Set();
-            serviceNames.forEach(service => {
+            const services = Object.keys(jsonData);
+            const providerSet = new Set();
+            
+            services.forEach(service => {
                 if (jsonData[service]) {
-                    Object.keys(jsonData[service]).forEach(provider => allProviders.add(provider));
+                    Object.keys(jsonData[service]).forEach(provider => providerSet.add(provider));
                 }
             });
 
-            const sortedProviders = Array.from(allProviders).sort();
+            const providers = Array.from(providerSet).sort();
+            const headers = ['Service Name', ...providers];
+            const alignments = headers.map(() => ALIGNMENTS.LEFT);
 
-            const headers = ["Service Name", ...sortedProviders];
-            const alignments = headers.map(() => ALIGNMENTS.LEFT); // Default alignment
-
-            const rows = serviceNames.sort().map(serviceName => {
-                const row = [serviceName];
-                sortedProviders.forEach(provider => {
-                    row.push(jsonData[serviceName]?.[provider]?.toLowerCase() === 'yes' ? 'Yes' : 'No');
+            const rows = services.sort().map(service => {
+                const row = [service];
+                providers.forEach(provider => {
+                    const value = jsonData[service]?.[provider];
+                    row.push(value === 'yes' ? 'yes' : 'no');
                 });
                 return row;
             });
+
             return { headers, rows, alignments };
         },
 
-        updateServiceProviderJson: (currentJson, newProviderName, supportedServicesCsv) => {
-            if (!newProviderName || !supportedServicesCsv) {
-                throw new Error("New provider name and supported services are required.");
+        addProviderToJSON: (jsonData, providerName, supportedServices) => {
+            if (!providerName || !supportedServices) {
+                throw new Error('Provider name and supported services are required.');
             }
 
-            let baseJSON = JSON.parse(JSON.stringify(currentJson)); // Deep copy
-            const normalizedNewProviderName = utils.capitalizeFirstLetterOfWords(newProviderName.trim());
+            const result = structuredClone(jsonData);
+            const normalizedProvider = utils.titleCase(providerName.trim());
+            const normalizedServices = supportedServices.split(',')
+                                                      .map(s => utils.normalizeString(s.trim()))
+                                                      .filter(Boolean);
 
-            const supportedServicesList = supportedServicesCsv.split(',')
-                .map(s => utils.normalizeServiceName(s.trim()))
-                .filter(Boolean);
-
-            const updatedJSON = {};
-
-            // Normalize existing service keys and add new provider with 'no'
-            Object.keys(baseJSON).forEach(serviceKey => {
-                const normalizedServiceKey = utils.normalizeServiceName(serviceKey);
-                updatedJSON[normalizedServiceKey] = { ...baseJSON[serviceKey] };
-                updatedJSON[normalizedServiceKey][normalizedNewProviderName] = 'no';
+            // Create service map for faster lookup
+            const serviceMap = {};
+            Object.keys(result).forEach(service => {
+                const normalizedService = utils.normalizeString(service);
+                serviceMap[normalizedService] = { ...result[service], [normalizedProvider]: 'no' };
             });
 
-            // Update 'yes' for supported services for the new provider
-            supportedServicesList.forEach(supportedServiceNorm => {
-                if (updatedJSON[supportedServiceNorm]) {
-                    updatedJSON[supportedServiceNorm][normalizedNewProviderName] = 'yes';
-                } else { // New service found in the list
-                    updatedJSON[supportedServiceNorm] = {};
-                    // Infer existing providers from the first service in baseJSON to fill 'no' for them
-                    const firstServiceInBase = Object.keys(baseJSON)[0];
-                    if (firstServiceInBase && baseJSON[firstServiceInBase]) {
-                        Object.keys(baseJSON[firstServiceInBase]).forEach(existingProvider => {
-                            updatedJSON[supportedServiceNorm][existingProvider] = 'no';
+            // Mark supported services as 'yes'
+            normalizedServices.forEach(service => {
+                if (serviceMap[service]) {
+                    serviceMap[service][normalizedProvider] = 'yes';
+                } else {
+                    // Add new service if it doesn't exist
+                    const titleCaseService = utils.titleCase(service);
+                    serviceMap[service] = {};
+                    Object.keys(result).forEach(existingService => {
+                        Object.keys(result[existingService]).forEach(provider => {
+                            serviceMap[service][provider] = 'no';
                         });
-                    }
-                    updatedJSON[supportedServiceNorm][normalizedNewProviderName] = 'yes';
+                    });
+                    serviceMap[service][normalizedProvider] = 'yes';
                 }
             });
 
-            // Final JSON with capitalized service names
-            const finalJSON = {};
-            Object.keys(updatedJSON).sort().forEach(normalizedServiceKey => {
-                const capitalizedServiceName = utils.capitalizeFirstLetterOfWords(normalizedServiceKey); // Capitalize for display
-                finalJSON[capitalizedServiceName] = {};
-                // Ensure provider columns are sorted for consistency
-                const providers = Object.keys(updatedJSON[normalizedServiceKey]).sort();
-                providers.forEach(provider => {
-                    finalJSON[capitalizedServiceName][provider] = updatedJSON[normalizedServiceKey][provider];
+            // Convert back to proper format
+            const finalResult = {};
+            Object.keys(serviceMap).sort().forEach(normalizedService => {
+                const titleCaseService = utils.titleCase(normalizedService);
+                finalResult[titleCaseService] = {};
+                Object.keys(serviceMap[normalizedService]).sort().forEach(provider => {
+                    finalResult[titleCaseService][provider] = serviceMap[normalizedService][provider];
                 });
             });
-            return finalJSON;
+
+            return finalResult;
         }
     };
 
-
-    const outputGenerators = {
+    // Enhanced output formatters
+    const outputFormatters = {
         [OUTPUT_FORMATS.MARKDOWN]: () => {
             if (!tableState.isValid()) return '';
-            const separator = `| ${tableState.alignments.map(align => ALIGNMENT_MARKERS[align] || ALIGNMENT_MARKERS[ALIGNMENTS.LEFT]).join(' | ')} |`;
-            const header = `| ${tableState.headers.join(' | ')} |`;
-            const rows = tableState.rows.map(row => `| ${row.join(' | ')} |`).join('\n');
-            return [header, separator, rows].filter(Boolean).join('\n');
+            
+            const alignmentRow = `| ${tableState.alignments.map(align => 
+                ALIGNMENT_MARKERS[align] || ALIGNMENT_MARKERS[ALIGNMENTS.LEFT]
+            ).join(' | ')} |`;
+            
+            const headerRow = `| ${tableState.headers.join(' | ')} |`;
+            const dataRows = tableState.rows.map(row => `| ${row.join(' | ')} |`).join('\\n');
+            
+            return [headerRow, alignmentRow, dataRows].filter(Boolean).join('\\n');
         },
+
         [OUTPUT_FORMATS.GENERIC_JSON]: () => {
-            if (!tableState.isValid()) return JSON.stringify({}, null, 2);
-            // Tool 1's original JSON output logic (service name as key, then header:value)
-            const jsonOutput = tableState.rows.map(row => {
-                const rowObject = {};
+            if (!tableState.isValid()) return JSON.stringify([], null, 2);
+            
+            const result = tableState.rows.map(row => {
+                const obj = {};
                 tableState.headers.forEach((header, index) => {
-                    rowObject[header] = row[index];
+                    obj[header] = row[index] || '';
                 });
-                return rowObject;
+                return obj;
             });
-            return JSON.stringify(jsonOutput, null, 2);
+            
+            return JSON.stringify(result, null, 2);
         },
+
         [OUTPUT_FORMATS.SERVICE_PROVIDER_JSON]: () => {
             if (!tableState.isValid()) return JSON.stringify({}, null, 2);
+            
             try {
-                const spJson = serviceProviderConverter.tableToServiceProviderJson(tableState.headers, tableState.rows);
-                return JSON.stringify(spJson, null, 2);
+                const result = jsonConverter.tableToServiceProviderJSON(tableState.headers, tableState.rows);
+                return JSON.stringify(result, null, 2);
             } catch (error) {
-                notification.show(`Error converting to Service/Provider JSON: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+                notifications.error(`Error converting to Service/Provider JSON: ${error.message}`);
                 return JSON.stringify({ error: error.message }, null, 2);
             }
         },
+
         [OUTPUT_FORMATS.HTML]: () => {
             if (!tableState.isValid()) return '';
-            const alignmentClass = (align) => align !== ALIGNMENTS.LEFT ? ` style="text-align: ${align};"` : '';
-            const headerRow = tableState.headers
-                .map((header, i) => `<th${alignmentClass(tableState.alignments[i])}>${utils.sanitizeInput(header)}</th>`)
-                .join('');
-            const bodyRows = tableState.rows
-                .map(row => {
-                    const cells = row
-                        .map((cell, i) => `<td${alignmentClass(tableState.alignments[i])}>${utils.sanitizeInput(cell)}</td>`)
-                        .join('');
-                    return `<tr>${cells}</tr>`;
-                })
-                .join('');
-            return `<table>\n<thead>\n<tr>${headerRow}</tr>\n</thead>\n<tbody>\n${bodyRows}\n</tbody>\n</table>`;
+            
+            const getAlignStyle = align => align !== ALIGNMENTS.LEFT ? ` style="text-align: ${align};"` : '';
+            
+            const headerCells = tableState.headers.map((header, index) => 
+                `<th${getAlignStyle(tableState.alignments[index])}>${utils.sanitizeHTML(header)}</th>`
+            ).join('');
+            
+            const bodyRows = tableState.rows.map(row => 
+                `<tr>${row.map((cell, index) => 
+                    `<td${getAlignStyle(tableState.alignments[index])}>${utils.sanitizeHTML(cell)}</td>`
+                ).join('')}</tr>`
+            ).join('\n');
+            
+            return `<table>\n<thead>\n<tr>${headerCells}</tr>\n</thead>\n<tbody>\n${bodyRows}\n</tbody>\n</table>`;
         }
     };
 
-    // Table renderer (from Tool 1, largely unchanged but using utils.sanitizeInput more)
+    // Enhanced table renderer with performance optimizations
     const tableRenderer = {
         render: () => {
             if (tableState.isEmpty()) {
-                elements.tableContainer.innerHTML = '<p class="empty-table-message">Paste a Markdown table above or use "Add Row/Column" to start.</p>';
-                outputManager.generate();
+                coreElements.tableContainer.innerHTML = `
+                    <div class="empty-table-message">
+                        <p>📋 No table data available</p>
+                        <p>Paste a Markdown table above or use the "Add Row/Column" buttons to start creating your table.</p>
+                    </div>
+                `;
+                outputGenerator.generate();
                 return;
             }
+
             if (!tableState.isValid()) {
-                elements.tableContainer.innerHTML = '<p class="empty-table-message error-message">Table data is invalid. Ensure headers and alignments match.</p>';
-                outputManager.generate();
+                coreElements.tableContainer.innerHTML = `
+                    <div class="empty-table-message error-message">
+                        <p>⚠️ Invalid table structure</p>
+                        <p>The table data is inconsistent. Please check that headers and alignments match.</p>
+                    </div>
+                `;
+                outputGenerator.generate();
                 return;
             }
 
             try {
                 const table = document.createElement('table');
-                table.appendChild(tableRenderer.createHeader());
-                table.appendChild(tableRenderer.createBody());
-                elements.tableContainer.innerHTML = '';
-                elements.tableContainer.appendChild(table);
-                outputManager.generate();
+                table.setAttribute('role', 'table');
+                table.setAttribute('aria-label', 'Editable data table');
+                
+                const thead = tableRenderer.createHeader();
+                const tbody = tableRenderer.createBody();
+                
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                
+                coreElements.tableContainer.innerHTML = '';
+                coreElements.tableContainer.appendChild(table);
+                
+                outputGenerator.generate();
+                tableState.updateStats();
             } catch (error) {
                 console.error('Error rendering table:', error);
-                elements.tableContainer.innerHTML = '<p class="empty-table-message error-message">Error rendering table. Please check your data.</p>';
+                coreElements.tableContainer.innerHTML = `
+                    <div class="empty-table-message error-message">
+                        <p>❌ Error rendering table</p>
+                        <p>Please check your data and try again. Error: ${error.message}</p>
+                    </div>
+                `;
             }
         },
+
         createHeader: () => {
             const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
+            const tr = document.createElement('tr');
+            tr.setAttribute('role', 'row');
+
             tableState.headers.forEach((header, index) => {
                 const th = document.createElement('th');
-                th.textContent = header; // Already sanitized by parser or input
+                th.setAttribute('role', 'columnheader');
+                th.setAttribute('scope', 'col');
+                th.textContent = header;
                 th.draggable = tableState.isReorderMode;
                 th.dataset.index = index;
                 th.classList.toggle('dragging-allowed', tableState.isReorderMode);
                 th.contentEditable = !tableState.isReorderMode;
                 th.tabIndex = tableState.isReorderMode ? -1 : 0;
-
+                
                 if (tableState.isReorderMode) {
-                    th.addEventListener('dragstart', dragHandler.handleDragStart);
-                    th.addEventListener('dragover', dragHandler.handleDragOver);
-                    th.addEventListener('drop', dragHandler.handleDrop);
+                    th.addEventListener('dragstart', dragDropHandler.handleDragStart);
+                    th.addEventListener('dragover', dragDropHandler.handleDragOver);
+                    th.addEventListener('drop', dragDropHandler.handleDrop);
+                    th.setAttribute('aria-label', `Draggable column header: ${header}`);
+                } else {
+                    th.setAttribute('aria-label', `Editable column header: ${header}`);
                 }
-                th.addEventListener('blur', () => {
-                    if (!tableState.isReorderMode) {
-                        const newHeader = utils.sanitizeInput(th.textContent);
-                        if (tableState.headers[index] !== newHeader) {
-                            tableState.saveToHistory();
-                            tableState.headers[index] = newHeader;
-                            outputManager.generate();
-                        }
+
+                th.addEventListener('blur', (e) => {
+                    const newValue = e.target.textContent.trim();
+                    if (newValue !== tableState.headers[index]) {
+                        tableState.saveToHistory();
+                        tableState.headers[index] = newValue;
+                        outputGenerator.generate();
+                        notifications.success('Header updated');
                     }
                 });
-                th.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !tableState.isReorderMode) { e.preventDefault(); th.blur(); } });
-                headerRow.appendChild(th);
+
+                th.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.target.blur();
+                    }
+                    if (e.key === 'Escape') {
+                        e.target.textContent = tableState.headers[index];
+                        e.target.blur();
+                    }
+                });
+
+                tr.appendChild(th);
             });
-            thead.appendChild(headerRow);
+
+            thead.appendChild(tr);
             return thead;
         },
+
         createBody: () => {
             const tbody = document.createElement('tbody');
+
             tableState.rows.forEach((row, rowIndex) => {
                 const tr = document.createElement('tr');
+                tr.setAttribute('role', 'row');
                 tr.draggable = tableState.isReorderMode;
                 tr.dataset.index = rowIndex;
                 tr.classList.toggle('dragging-allowed', tableState.isReorderMode);
 
                 if (tableState.isReorderMode) {
-                    tr.addEventListener('dragstart', dragHandler.handleDragStart);
-                    tr.addEventListener('dragover', dragHandler.handleDragOver);
-                    tr.addEventListener('drop', dragHandler.handleDrop);
+                    tr.addEventListener('dragstart', dragDropHandler.handleDragStart);
+                    tr.addEventListener('dragover', dragDropHandler.handleDragOver);
+                    tr.addEventListener('drop', dragDropHandler.handleDrop);
+                    tr.setAttribute('aria-label', `Draggable row ${rowIndex + 1}`);
                 }
+
                 row.forEach((cell, cellIndex) => {
                     const td = document.createElement('td');
-                    td.textContent = cell; // Already sanitized
+                    td.setAttribute('role', 'gridcell');
+                    td.textContent = cell;
                     td.contentEditable = !tableState.isReorderMode;
                     td.tabIndex = tableState.isReorderMode ? -1 : 0;
-                    td.addEventListener('blur', () => {
-                        if (!tableState.isReorderMode) {
-                            const newCell = utils.sanitizeInput(td.textContent);
-                            if (tableState.rows[rowIndex][cellIndex] !== newCell) {
-                                tableState.saveToHistory();
-                                tableState.rows[rowIndex][cellIndex] = newCell;
-                                outputManager.generate();
-                            }
+                    
+                    if (!tableState.isReorderMode) {
+                        td.setAttribute('aria-label', `Editable cell: Row ${rowIndex + 1}, Column ${cellIndex + 1}`);
+                    }
+
+                    td.addEventListener('blur', (e) => {
+                        const newValue = e.target.textContent.trim();
+                        if (newValue !== tableState.rows[rowIndex][cellIndex]) {
+                            tableState.saveToHistory();
+                            tableState.rows[rowIndex][cellIndex] = newValue;
+                            outputGenerator.generate();
                         }
                     });
-                    td.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !tableState.isReorderMode) { e.preventDefault(); td.blur(); } });
+
+                    td.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                        }
+                        if (e.key === 'Escape') {
+                            e.target.textContent = tableState.rows[rowIndex][cellIndex];
+                            e.target.blur();
+                        }
+                        if (e.key === 'Tab') {
+                            // Enhanced tab navigation
+                            e.preventDefault();
+                            const cells = Array.from(tbody.querySelectorAll('td[contenteditable="true"]'));
+                            const currentIndex = cells.indexOf(e.target);
+                            let nextIndex;
+                            
+                            if (e.shiftKey) {
+                                nextIndex = currentIndex > 0 ? currentIndex - 1 : cells.length - 1;
+                            } else {
+                                nextIndex = currentIndex < cells.length - 1 ? currentIndex + 1 : 0;
+                            }
+                            
+                            cells[nextIndex]?.focus();
+                        }
+                    });
+
                     tr.appendChild(td);
                 });
+
                 tbody.appendChild(tr);
             });
+
             return tbody;
         }
     };
 
-    // Drag and drop handler (from Tool 1, largely unchanged)
-    const dragHandler = {
+    // Enhanced drag and drop handler
+    const dragDropHandler = {
         currentDraggedElement: null,
-        handleDragStart: (event) => {
-            dragHandler.currentDraggedElement = event.target;
-            event.target.classList.add('dragging');
-            event.dataTransfer.setData('text/plain', event.target.dataset.index);
-            event.dataTransfer.setData('type', event.target.tagName.toLowerCase());
-            event.dataTransfer.effectAllowed = 'move';
-        },
-        handleDragOver: (event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-            const target = event.target.closest('tr, th');
-            if (!target || target === dragHandler.currentDraggedElement) return;
+        placeholder: null,
 
-            const type = event.dataTransfer.getData('type');
-            if (type === 'tr' && target.tagName === 'TR') {
-                const container = target.parentNode; // tbody
-                const afterElement = dragHandler.getDragAfterElement(container, event.clientY, 'tr');
-                if (dragHandler.currentDraggedElement) {
-                    if (afterElement == null) {
-                        container.appendChild(dragHandler.currentDraggedElement);
+        handleDragStart: (e) => {
+            dragDropHandler.currentDraggedElement = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+            e.dataTransfer.setData('type', e.target.tagName.toLowerCase());
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Create visual placeholder
+            dragDropHandler.placeholder = e.target.cloneNode(true);
+            dragDropHandler.placeholder.classList.add('placeholder');
+            dragDropHandler.placeholder.style.opacity = '0.5';
+        },
+
+        handleDragOver: (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('tr, th');
+            if (!target || target === dragDropHandler.currentDraggedElement) return;
+
+            const dragType = e.dataTransfer.getData('type');
+            
+            if (dragType === 'tr' && target.tagName === 'TR') {
+                const container = target.parentNode;
+                const afterElement = dragDropHandler.getDragAfterElement(container, e.clientY, 'tr');
+                
+                if (dragDropHandler.currentDraggedElement) {
+                    if (!afterElement) {
+                        container.appendChild(dragDropHandler.currentDraggedElement);
                     } else {
-                        container.insertBefore(dragHandler.currentDraggedElement, afterElement);
+                        container.insertBefore(dragDropHandler.currentDraggedElement, afterElement);
                     }
                 }
-            } else if (type === 'th' && target.tagName === 'TH') {
-                // For column reordering, visual feedback is harder without full re-render
-                // We'll rely on the 'drop' event to actually reorder data and re-render
             }
         },
-        handleDrop: (event) => {
-            event.preventDefault();
-            if (!dragHandler.currentDraggedElement) return;
 
-            dragHandler.currentDraggedElement.classList.remove('dragging');
-            const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
-            const type = event.dataTransfer.getData('type');
-            let toElement = event.target.closest('tr, th');
-
-            if (!toElement) { // Dropped somewhere not on a valid target
-                dragHandler.currentDraggedElement = null;
-                tableRenderer.render(); // Re-render to restore original order if drop failed
+        handleDrop: (e) => {
+            e.preventDefault();
+            
+            if (!dragDropHandler.currentDraggedElement) return;
+            
+            dragDropHandler.currentDraggedElement.classList.remove('dragging');
+            
+            const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const dragType = e.dataTransfer.getData('type');
+            
+            let target = e.target.closest('tr, th');
+            if (!target) {
+                dragDropHandler.currentDraggedElement = null;
+                tableRenderer.render();
                 return;
             }
 
-            const toIndex = parseInt(toElement.dataset.index);
-
-            if (fromIndex !== toIndex) {
+            const dropIndex = parseInt(target.dataset.index);
+            
+            if (dragIndex !== dropIndex) {
                 tableState.saveToHistory();
-                if (type === 'th') {
-                    tableOperations.reorderColumns(fromIndex, toIndex);
-                } else if (type === 'tr') {
-                    // For rows, the visual drag/drop might be sufficient if handled well by getDragAfterElement
-                    // Let's re-calculate toIndex based on final position
-                    const parent = dragHandler.currentDraggedElement.parentNode;
-                    const finalToIndex = Array.from(parent.children).indexOf(dragHandler.currentDraggedElement);
-                    tableOperations.reorderRows(fromIndex, finalToIndex);
+                
+                if (dragType === 'th') {
+                    tableOperations.reorderColumns(dragIndex, dropIndex);
+                } else if (dragType === 'tr') {
+                    tableOperations.reorderRows(dragIndex, dropIndex);
                 }
+                
                 tableRenderer.render();
-                analyzer.analyzeIfOpen();
+                tableAnalyzer.analyzeIfOpen();
+                notifications.success(`${dragType === 'th' ? 'Column' : 'Row'} reordered successfully`);
             }
-            dragHandler.currentDraggedElement = null;
+            
+            dragDropHandler.currentDraggedElement = null;
         },
+
         getDragAfterElement: (container, y, selector) => {
             const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
+            
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
+                
                 if (offset < 0 && offset > closest.offset) {
-                    return { offset, element: child };
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
                 }
-                return closest;
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
     };
 
-    // Table operations (from Tool 1, with additions)
+    // Enhanced table operations
     const tableOperations = {
         addColumn: () => {
             if (tableState.isReorderMode) return;
+            
             tableState.saveToHistory();
-            const newHeaderName = `Column ${tableState.headers.length + 1}`;
-            tableState.headers.push(newHeaderName);
+            const columnName = `Column ${tableState.headers.length + 1}`;
+            tableState.headers.push(columnName);
             tableState.alignments.push(ALIGNMENTS.LEFT);
             tableState.rows.forEach(row => row.push(''));
+            
             tableRenderer.render();
-            notification.show('Column added');
+            notifications.success('Column added successfully');
         },
+
         addRow: () => {
             if (tableState.isReorderMode) return;
+            
             tableState.saveToHistory();
             const newRow = Array(tableState.headers.length).fill('');
             tableState.rows.push(newRow);
+            
             tableRenderer.render();
-            notification.show('Row added');
+            notifications.success('Row added successfully');
         },
+
         removeColumn: () => {
             if (tableState.isReorderMode) return;
+            
             if (tableState.headers.length <= 1) {
-                notification.show('Cannot remove the last column', NOTIFICATION_TYPES.WARNING);
+                notifications.warning('Cannot remove the last column');
                 return;
             }
+            
             tableState.saveToHistory();
-            const indexToRemove = tableState.headers.length - 1; // remove last
-            tableState.headers.splice(indexToRemove, 1);
-            tableState.alignments.splice(indexToRemove, 1);
-            tableState.rows.forEach(row => row.splice(indexToRemove, 1));
+            const columnIndex = tableState.headers.length - 1;
+            tableState.headers.splice(columnIndex, 1);
+            tableState.alignments.splice(columnIndex, 1);
+            tableState.rows.forEach(row => row.splice(columnIndex, 1));
+            
             tableRenderer.render();
-            analyzer.analyzeIfOpen();
-            notification.show('Last column removed');
+            tableAnalyzer.analyzeIfOpen();
+            notifications.success('Column removed successfully');
         },
+
         removeRow: () => {
             if (tableState.isReorderMode) return;
+            
             if (tableState.rows.length === 0) {
-                notification.show('No rows to remove', NOTIFICATION_TYPES.WARNING);
+                notifications.warning('No rows to remove');
                 return;
             }
+            
             tableState.saveToHistory();
-            tableState.rows.pop(); // remove last
+            tableState.rows.pop();
+            
             tableRenderer.render();
-            analyzer.analyzeIfOpen();
-            notification.show('Last row removed');
+            tableAnalyzer.analyzeIfOpen();
+            notifications.success('Row removed successfully');
         },
+
         sortRows: () => {
             if (tableState.isReorderMode) return;
-            if (!tableState.rows.length) {
-                notification.show('No rows to sort', NOTIFICATION_TYPES.WARNING);
+            
+            if (tableState.rows.length === 0) {
+                notifications.warning('No rows to sort');
                 return;
             }
+            
             tableState.saveToHistory();
-            tableState.rows.sort((a, b) =>
-                (a[0]?.toLowerCase() || '').localeCompare(b[0]?.toLowerCase() || '')
-            );
+            tableState.rows.sort((a, b) => {
+                const aVal = (a[0] || '').toLowerCase();
+                const bVal = (b[0] || '').toLowerCase();
+                return aVal.localeCompare(bVal);
+            });
+            
             tableRenderer.render();
-            notification.show('Rows sorted by first column');
+            notifications.success('Rows sorted alphabetically');
         },
+
         reorderColumns: (fromIndex, toIndex) => {
-            const move = (arr) => {
-                const el = arr.splice(fromIndex, 1)[0];
-                arr.splice(toIndex, 0, el);
+            const moveArrayElement = (arr) => {
+                const element = arr.splice(fromIndex, 1)[0];
+                arr.splice(toIndex, 0, element);
             };
-            move(tableState.headers);
-            move(tableState.alignments);
-            tableState.rows.forEach(row => move(row));
+            
+            moveArrayElement(tableState.headers);
+            moveArrayElement(tableState.alignments);
+            tableState.rows.forEach(row => moveArrayElement(row));
         },
+
         reorderRows: (fromIndex, toIndex) => {
-            const el = tableState.rows.splice(fromIndex, 1)[0];
-            tableState.rows.splice(toIndex, 0, el);
+            const element = tableState.rows.splice(fromIndex, 1)[0];
+            tableState.rows.splice(toIndex, 0, element);
         },
-        // New: Add Provider (integrates Tool 2 logic)
+
         addProviderAndUpdateTable: () => {
             if (tableState.isReorderMode) return;
-            const newProviderName = elements.newProviderNameInput.value.trim();
-            const supportedServicesCsv = elements.supportedServicesInput.value.trim();
-
-            if (!newProviderName) {
-                notification.show("New Provider Name is required.", NOTIFICATION_TYPES.ERROR);
-                elements.newProviderNameInput.focus();
+            
+            const providerName = coreElements.newProviderName.value.trim();
+            const supportedServices = coreElements.supportedServices.value.trim();
+            
+            if (!providerName) {
+                notifications.error('New Provider Name is required.');
+                coreElements.newProviderName.focus();
                 return;
             }
-            if (!supportedServicesCsv) {
-                notification.show("Supported Services list is required.", NOTIFICATION_TYPES.ERROR);
-                elements.supportedServicesInput.focus();
+            
+            if (!supportedServices) {
+                notifications.error('Supported Services list is required.');
+                coreElements.supportedServices.focus();
                 return;
             }
+            
             if (tableState.headers.length === 0) {
-                notification.show("Cannot add provider to an empty table. Parse or create a table first.", NOTIFICATION_TYPES.ERROR);
+                notifications.error('Cannot add provider to an empty table. Parse or create a table first.');
                 return;
             }
-
-
+            
             try {
                 tableState.saveToHistory();
-                // 1. Convert current table to Service/Provider JSON
-                const currentSpJson = serviceProviderConverter.tableToServiceProviderJson(tableState.headers, tableState.rows);
-
-                // 2. Apply update logic
-                const updatedSpJson = serviceProviderConverter.updateServiceProviderJson(currentSpJson, newProviderName, supportedServicesCsv);
-
-                // 3. Convert updated JSON back to table structure
-                const { headers, rows, alignments } = serviceProviderConverter.serviceProviderJsonToTable(updatedSpJson);
-
-                // 4. Update tableState and re-render
-                tableState.headers = headers;
-                tableState.rows = rows;
-                tableState.alignments = alignments; // Use new alignments or derive them
-
+                const currentJSON = jsonConverter.tableToServiceProviderJSON(tableState.headers, tableState.rows);
+                const updatedJSON = jsonConverter.addProviderToJSON(currentJSON, providerName, supportedServices);
+                const newTableData = jsonConverter.serviceProviderJSONToTable(updatedJSON);
+                
+                tableState.headers = newTableData.headers;
+                tableState.rows = newTableData.rows;
+                tableState.alignments = newTableData.alignments;
+                
                 tableRenderer.render();
-                analyzer.analyzeIfOpen();
-                notification.show(`Provider "${newProviderName}" added/updated.`, NOTIFICATION_TYPES.SUCCESS);
-                elements.newProviderNameInput.value = ''; // Clear inputs
-                elements.supportedServicesInput.value = '';
+                tableAnalyzer.analyzeIfOpen();
+                
+                // Clear form
+                coreElements.newProviderName.value = '';
+                coreElements.supportedServices.value = '';
+                
+                notifications.success(`Provider "${providerName}" added successfully with ${supportedServices.split(',').length} supported services`);
             } catch (error) {
-                console.error("Error adding provider:", error);
-                notification.show(`Error: ${error.message}`, NOTIFICATION_TYPES.ERROR, 5000);
-                // No undo history save on error, or potentially pop the last history item if it was optimistic.
-                // For now, let's just not save to history if an error occurs mid-way
-                if (tableState.historyIndex > 0 && tableState.history[tableState.historyIndex].headers.length === 0) {
-                    tableState.history.pop();
-                    tableState.historyIndex--;
-                }
+                notifications.error(`Error adding provider: ${error.message}`);
             }
         }
     };
 
-    const outputManager = {
+    // Enhanced output generator
+    const outputGenerator = {
         generate: () => {
-            if (tableState.isEmpty()) { // Fix: simplified condition
-                elements.outputTextArea.value = '';
+            if (tableState.isEmpty()) {
+                coreElements.output.value = '';
                 return;
             }
+            
             if (!tableState.isValid()) {
-                elements.outputTextArea.value = 'Table data is currently invalid. Cannot generate output.';
+                coreElements.output.value = 'Table data is currently invalid. Cannot generate output.';
                 return;
             }
-
-            const generator = outputGenerators[tableState.outputFormat];
-            if (generator) {
-                elements.outputTextArea.value = generator();
-            } else {
-                console.error(`Unknown output format: ${tableState.outputFormat}`);
-                elements.outputTextArea.value = outputGenerators[OUTPUT_FORMATS.MARKDOWN]();
+            
+            const formatter = outputFormatters[tableState.outputFormat];
+            const output = formatter ? formatter() : outputFormatters[OUTPUT_FORMATS.MARKDOWN]();
+            coreElements.output.value = output;
+            
+            // Update output stats
+            if (coreElements.outputStats) {
+                const size = new Blob([output]).size;
+                const sizeText = utils.formatFileSize(size);
+                coreElements.outputStats.textContent = `${tableState.stats.rows} rows × ${tableState.stats.columns} columns • ${sizeText}`;
             }
         },
+
         setFormat: (format) => {
             if (Object.values(OUTPUT_FORMATS).includes(format)) {
                 tableState.outputFormat = format;
-                outputManager.generate();
+                outputGenerator.generate();
+                notifications.info(`Output format changed to ${format.replace('_', ' ')}`);
             }
         }
     };
 
-    // Table analyzer (from Tool 1, minor updates)
-    const analyzer = {
-        analyze: () => {
-            if (tableState.rows.length === 0 || tableState.headers.length === 0) {
-                elements.analysisMarkdownOutput.textContent = 'No data to analyze. Table is empty.';
-                return;
-            }
-            if (!tableState.isValid()) {
-                elements.analysisMarkdownOutput.textContent = 'Table structure is invalid. Cannot analyze.';
-                return;
-            }
-
-            const totalRows = tableState.rows.length;
-
-            // Build the compact analysis table
-            let analysisOutput = '| ';
-
-            // First column: Total count
-            analysisOutput += `**Total** = \`${totalRows}\` | `;
-
-            // Skip first header (Service Name) and analyze provider columns
-            const providerHeaders = tableState.headers.slice(1);
-            const analysisCells = [];
-
-            providerHeaders.forEach((header, i) => {
-                const columnIndex = i + 1; // +1 because we skip first column
-                const yesCount = tableState.rows.reduce((count, row) => {
-                    return count + (row[columnIndex]?.trim().toLowerCase() === 'yes' ? 1 : 0);
-                }, 0);
-                analysisCells.push(`\`${yesCount}/${totalRows}\``);
-            });
-
-            analysisOutput += analysisCells.join(' | ') + ' |';
-
-            elements.analysisMarkdownOutput.textContent = analysisOutput;
-            notification.show('Table analyzed!', NOTIFICATION_TYPES.INFO);
-        },
-        analyzeIfOpen: () => {
-            if (elements.analysisDetails && elements.analysisDetails.open) {
-                analyzer.analyze();
-            }
-        }
-    };
-
-    const app = {
-
-        init: () => {
-            // Fix: Better initialization order
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    themeManager.init();
-                    app.bindEvents();
-                    app.initializeKeyboardShortcuts();
-                    tableRenderer.render();
-                    if (elements.outputFormatSelect?.value) {
-                        outputManager.setFormat(elements.outputFormatSelect.value);
-                    }
-                });
-            } else {
-                themeManager.init();
-                app.bindEvents();
-                app.initializeKeyboardShortcuts();
-                tableRenderer.render();
-                if (elements.outputFormatSelect?.value) {
-                    outputManager.setFormat(elements.outputFormatSelect.value);
+    
+        // Enhanced table analyzer
+        const tableAnalyzer = {
+            analyze: () => {
+                if (tableState.rows.length === 0 || tableState.headers.length === 0) {
+                    coreElements.analysisMarkdownOutput.textContent = 'No data to analyze. Table is empty.';
+                    return;
+                }
+                
+                if (!tableState.isValid()) {
+                    coreElements.analysisMarkdownOutput.textContent = 'Table structure is invalid. Cannot analyze.';
+                    return;
+                }
+                
+                const totalRows = tableState.rows.length;
+                let markdownOutput = `| **Total** = \`${totalRows}\` |`;
+    
+                // Start from the second column (index 1) - skip service name column
+                for (let i = 1; i < tableState.headers.length; i++) {
+                    const yesCount = tableState.rows.reduce((count, row) => {
+                        return count + (row[i]?.toLowerCase().trim() === 'yes' ? 1 : 0);
+                    }, 0);
+                    markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
+                }
+    
+                coreElements.analysisMarkdownOutput.textContent = markdownOutput;
+                notifications.info('Table analysis complete!');
+            },
+    
+            analyzeIfOpen: () => {
+                if (coreElements.analysisDetails?.open) {
+                    tableAnalyzer.analyze();
                 }
             }
+        };
+    
+
+
+    // Global table state
+    const tableState = new TableState();
+
+    // Enhanced application controller
+    const app = {
+        init: () => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', app.setup);
+            } else {
+                app.setup();
+            }
         },
-        parseTable: () => {
-            const inputText = elements.inputTextArea.value.trim();
-            if (!inputText) {
-                notification.show('Input is empty. Nothing to parse.', NOTIFICATION_TYPES.WARNING);
+
+        setup: () => {
+            themeManager.init();
+            app.bindEvents();
+            app.initializeKeyboardShortcuts();
+            app.initializeAccessibility();
+            tableRenderer.render();
+            
+            // Set initial output format
+            if (coreElements.outputFormat?.value) {
+                outputGenerator.setFormat(coreElements.outputFormat.value);
+            }
+            
+            // Auto-save functionality
+            app.initializeAutoSave();
+            
+            notifications.success('Application loaded successfully', 2000);
+        },
+
+        parseTable: utils.debounce(() => {
+            const input = coreElements.input.value.trim();
+            
+            if (!input) {
+                notifications.warning('Input is empty. Nothing to parse.');
                 return;
             }
+            
+            utils.showLoading(true);
+            
             try {
-                const parsed = tableParser.parse(inputText);
-                tableState.saveToHistory(); // Save *before* changing state
-                Object.assign(tableState, parsed); // This overwrites current state
+                const parsed = markdownParser.parse(input);
+                tableState.saveToHistory();
+                tableState.headers = parsed.headers;
+                tableState.alignments = parsed.alignments;
+                tableState.rows = parsed.rows;
+                
                 tableRenderer.render();
-                analyzer.analyzeIfOpen();
-                notification.show('Table parsed successfully!');
+                tableAnalyzer.analyzeIfOpen();
+                notifications.success(`Table parsed successfully! ${parsed.rows.length} rows, ${parsed.headers.length} columns`);
             } catch (error) {
-                notification.show(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR, 5000);
-                console.error('Parsing error:', error);
+                console.error('Parse error:', error);
+                notifications.error(`Parse error: ${error.message}`);
+            } finally {
+                utils.showLoading(false);
             }
-        },
+        }, 300),
+
         copyOutputToClipboard: async () => {
-            if (!elements.outputTextArea.value) {
-                notification.show('Nothing to copy from output.', NOTIFICATION_TYPES.WARNING);
+            if (!coreElements.output.value) {
+                notifications.warning('Nothing to copy from output.');
                 return;
             }
-            const success = await utils.copyToClipboard(elements.outputTextArea.value);
-            notification.show(
-                success ? 'Output copied to clipboard!' : 'Failed to copy output.',
-                success ? NOTIFICATION_TYPES.SUCCESS : NOTIFICATION_TYPES.ERROR
+
+            const success = await utils.copyToClipboard(coreElements.output.value);
+            notifications[success ? 'success' : 'error'](
+                success ? 'Output copied to clipboard!' : 'Failed to copy output.'
             );
         },
+
         clearAll: () => {
-            if (confirm('Are you sure you want to clear all input, table data, and output?')) {
-                tableState.saveToHistory(); // Save current state before clearing for undo
-                elements.inputTextArea.value = '';
-                elements.outputTextArea.value = '';
-                // elements.tableContainer.innerHTML = ''; // render will handle this
-                elements.analysisMarkdownOutput.textContent = 'Analysis results will appear here.';
-                tableState.reset();
-                tableRenderer.render(); // Re-render to show empty state
-                outputManager.generate(); // Clear output
-                notification.show('All cleared. You can undo this action.');
+            if (!confirm('Are you sure you want to clear all input, table data, and output?')) {
+                return;
             }
+
+            tableState.saveToHistory();
+            coreElements.input.value = '';
+            coreElements.output.value = '';
+            coreElements.analysisMarkdownOutput.textContent = 'Analysis results will appear here.';
+            
+            tableState.reset();
+            tableRenderer.render();
+            outputGenerator.generate();
+            
+            notifications.success('All data cleared. You can undo this action.');
         },
+
         toggleReorderMode: () => {
             tableState.isReorderMode = !tableState.isReorderMode;
-            elements.reorderBtn.innerHTML = `<span class="icon">${tableState.isReorderMode ? '✏️' : '✥'}</span> ${tableState.isReorderMode ? 'Edit Mode' : 'Re-order'}`;
-            elements.reorderBtn.setAttribute('aria-label', tableState.isReorderMode ? 'Switch to edit mode' : 'Switch to reorder mode');
-            tableRenderer.render(); // Re-render to update draggable attributes etc.
+            
+            const btn = coreElements.reorderBtn;
+            const icon = btn.querySelector('.icon svg');
+            const text = btn.querySelector('span:not(.icon)');
+            
+            if (tableState.isReorderMode) {
+                text.textContent = 'Edit Mode';
+                btn.setAttribute('aria-label', 'Switch to edit mode');
+                btn.classList.add('btn-secondary');
+                notifications.info('Reorder mode enabled. Drag rows and columns to rearrange.');
+            } else {
+                text.textContent = 'Re-order';
+                btn.setAttribute('aria-label', 'Switch to reorder mode');
+                btn.classList.remove('btn-secondary');
+                notifications.info('Edit mode enabled. Click cells to edit content.');
+            }
+            
+            tableRenderer.render();
         },
+
         undo: () => {
             if (tableState.undo()) {
                 tableRenderer.render();
-                analyzer.analyzeIfOpen();
-                notification.show('Action undone.', NOTIFICATION_TYPES.INFO);
+                tableAnalyzer.analyzeIfOpen();
+                notifications.info('Action undone.');
             } else {
-                notification.show('Nothing to undo.', NOTIFICATION_TYPES.WARNING);
+                notifications.warning('Nothing to undo.');
             }
         },
+
         redo: () => {
             if (tableState.redo()) {
                 tableRenderer.render();
-                analyzer.analyzeIfOpen();
-                notification.show('Action redone.', NOTIFICATION_TYPES.INFO);
+                tableAnalyzer.analyzeIfOpen();
+                notifications.info('Action redone.');
             } else {
-                notification.show('Nothing to redo.', NOTIFICATION_TYPES.WARNING);
+                notifications.warning('Nothing to redo.');
             }
         },
-        bindEvents: () => {
-            // Fix: Add null checks for all elements
-            elements.themeToggle?.addEventListener('click', themeManager.toggle);
-            elements.parseBtn?.addEventListener('click', app.parseTable);
-            elements.analyzeBtn?.addEventListener('click', analyzer.analyze);
-            elements.copyOutputBtn?.addEventListener('click', app.copyOutputToClipboard);
-            elements.clearBtn?.addEventListener('click', app.clearAll);
-            elements.addColumnBtn?.addEventListener('click', tableOperations.addColumn);
-            elements.addRowBtn?.addEventListener('click', tableOperations.addRow);
-            elements.sortRowsBtn?.addEventListener('click', tableOperations.sortRows);
-            elements.removeColumnBtn?.addEventListener('click', tableOperations.removeColumn);
-            elements.removeRowBtn?.addEventListener('click', tableOperations.removeRow);
-            elements.reorderBtn?.addEventListener('click', app.toggleReorderMode);
-            elements.addProviderBtn?.addEventListener('click', tableOperations.addProviderAndUpdateTable);
 
-            // Fix: Better debounced input handling
-            if (elements.inputTextArea) {
-                elements.inputTextArea.addEventListener('input', utils.debounce(() => {
-                    if (elements.inputTextArea.value.trim() === '') {
+        bindEvents: () => {
+            // Theme toggle
+            coreElements.themeToggle?.addEventListener('click', themeManager.toggle);
+
+            // Main action buttons
+            coreElements.parseBtn?.addEventListener('click', app.parseTable);
+            coreElements.analyzeBtn?.addEventListener('click', tableAnalyzer.analyze);
+            coreElements.copyOutputBtn?.addEventListener('click', app.copyOutputToClipboard);
+            coreElements.clearBtn?.addEventListener('click', app.clearAll);
+
+            // Table operation buttons
+            coreElements.addColumnBtn?.addEventListener('click', tableOperations.addColumn);
+            coreElements.addRowBtn?.addEventListener('click', tableOperations.addRow);
+            coreElements.sortRowsBtn?.addEventListener('click', tableOperations.sortRows);
+            coreElements.removeColumnBtn?.addEventListener('click', tableOperations.removeColumn);
+            coreElements.removeRowBtn?.addEventListener('click', tableOperations.removeRow);
+            coreElements.reorderBtn?.addEventListener('click', app.toggleReorderMode);
+            coreElements.addProviderBtn?.addEventListener('click', tableOperations.addProviderAndUpdateTable);
+
+            // Auto-parse on input
+            if (coreElements.input) {
+                coreElements.input.addEventListener('input', utils.debounce(() => {
+                    if (coreElements.input.value.trim() === '') {
                         tableState.reset();
                         tableRenderer.render();
-                        analyzer.analyzeIfOpen();
-                        outputManager.generate();
+                        tableAnalyzer.analyzeIfOpen();
+                        outputGenerator.generate();
                     } else {
                         app.parseTable();
                     }
                 }, 500));
             }
 
-            elements.outputFormatSelect?.addEventListener('change', (e) => outputManager.setFormat(e.target.value));
+            // Output format change
+            coreElements.outputFormat?.addEventListener('change', (e) => {
+                outputGenerator.setFormat(e.target.value);
+            });
 
-            // Fix: Use proper event for initialization
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', themeManager.init);
-            } else {
-                themeManager.init();
-            }
-
+            // Prevent data loss
             window.addEventListener('beforeunload', (e) => {
-                if (!tableState.isEmpty()) {
+                if (tableState.isModified && !tableState.isEmpty()) {
                     e.preventDefault();
                     e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                 }
             });
 
-            [elements.advancedOpsDetails, elements.analysisDetails].forEach(details => {
+            // Details toggle improvements
+            [coreElements.advancedOpsDetails, coreElements.analysisDetails].forEach(details => {
                 if (details) {
-                    details.addEventListener('toggle', () => {
-                        if (details.id === 'analysisDetails' && details.open) {
-                            analyzer.analyze();
+                    details.addEventListener('toggle', (e) => {
+                        const summary = e.target.querySelector('summary');
+                        summary.setAttribute('aria-expanded', e.target.open);
+                        
+                        if (e.target.open && e.target.id === 'analysisDetails') {
+                            tableAnalyzer.analyze();
                         }
                     });
                 }
             });
         },
+
         initializeKeyboardShortcuts: () => {
             document.addEventListener('keydown', (e) => {
-                const isInInput = e.target.closest('textarea, input, [contenteditable="true"]');
+                // Don't interfere with form inputs
+                const activeElement = document.activeElement;
+                const isInInput = activeElement && (
+                    activeElement.closest('textarea, input, [contenteditable="true"]') ||
+                    activeElement.isContentEditable
+                );
 
                 if (isInInput) {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                        e.target.blur();
-                        return;
-                    } else if (e.key === 'Escape' && e.target.hasAttribute('contenteditable')) {
-                        e.target.blur();
-                        return;
+                    // Allow some shortcuts even in inputs
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'C') {
+                        e.preventDefault();
+                        app.copyOutputToClipboard();
                     }
-
-                    // Don't handle global shortcuts in input fields except for contenteditable
-                    if (!e.target.hasAttribute('contenteditable')) {
-                        return;
-                    }
+                    return;
                 }
-                // Global keyboard shortcuts
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+
+                // Global shortcuts
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
                     e.preventDefault();
                     app.undo();
                 } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
                     e.preventDefault();
                     app.redo();
-                } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isInInput) {
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
                     app.parseTable();
                 } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'C') {
                     e.preventDefault();
                     app.copyOutputToClipboard();
+                } else if (e.key === 'Escape') {
+                    notifications.hide();
                 }
             });
         },
+
+        initializeAccessibility: () => {
+            // Add ARIA live regions for dynamic content
+            const liveRegion = document.createElement('div');
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            liveRegion.id = 'status-live-region';
+            document.body.appendChild(liveRegion);
+
+            // Announce table changes
+            const originalRender = tableRenderer.render;
+            tableRenderer.render = function() {
+                originalRender.call(this);
+                if (!tableState.isEmpty()) {
+                    liveRegion.textContent = `Table updated: ${tableState.stats.rows} rows, ${tableState.stats.columns} columns`;
+                }
+            };
+
+            // Enhanced focus management
+            app.setupFocusManagement();
+        },
+
+        setupFocusManagement: () => {
+            // Trap focus in modals/dialogs
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    const focusableElements = document.querySelectorAll(
+                        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), details:not([disabled]), summary:not(:disabled)'
+                    );
+                    
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+
+                    if (e.shiftKey && document.activeElement === firstElement) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    } else if (!e.shiftKey && document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            });
+        },
+
+        initializeAutoSave: () => {
+            // Auto-save to localStorage
+            const saveToStorage = utils.debounce(() => {
+                if (!tableState.isEmpty()) {
+                    const data = {
+                        headers: tableState.headers,
+                        rows: tableState.rows,
+                        alignments: tableState.alignments,
+                        inputValue: coreElements.input.value,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('md-table-editor-autosave', JSON.stringify(data));
+                }
+            }, 2000);
+
+            // Load from storage on init
+            const savedData = localStorage.getItem('md-table-editor-autosave');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const ageHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+                    
+                    // Only restore if less than 24 hours old
+                    if (ageHours < 24 && data.headers && data.rows) {
+                        if (confirm('Restore your previous session?')) {
+                            tableState.headers = data.headers;
+                            tableState.rows = data.rows;
+                            tableState.alignments = data.alignments || [];
+                            coreElements.input.value = data.inputValue || '';
+                            tableRenderer.render();
+                            outputGenerator.generate();
+                            notifications.success('Previous session restored');
+                        } else {
+                            localStorage.removeItem('md-table-editor-autosave');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to restore session:', e);
+                    localStorage.removeItem('md-table-editor-autosave');
+                }
+            }
+
+            // Bind auto-save to state changes
+            const originalSaveToHistory = tableState.saveToHistory;
+            tableState.saveToHistory = function() {
+                originalSaveToHistory.call(this);
+                saveToStorage();
+            };
+        }
     };
 
+    // Initialize the application
     app.init();
+
 })();
