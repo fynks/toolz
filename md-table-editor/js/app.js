@@ -1,70 +1,72 @@
 (() => {
     "use strict";
 
-    // Enhanced Constants
-    const THEMES = Object.freeze({ DARK: 'dark', LIGHT: 'light' });
+    // Constants
+    const THEMES = Object.freeze({
+        DARK: 'dark',
+        LIGHT: 'light'
+    });
+
     const OUTPUT_FORMATS = Object.freeze({
         MARKDOWN: 'markdown',
-        GENERIC_JSON: 'generic_json',
-        SERVICE_PROVIDER_JSON: 'service_provider_json',
+        JSON: 'json',
         HTML: 'html'
     });
-    const ALIGNMENTS = Object.freeze({ CENTER: 'center', RIGHT: 'right', LEFT: 'left' });
+
+    const ALIGNMENTS = Object.freeze({
+        CENTER: 'center',
+        RIGHT: 'right',
+        LEFT: 'left'
+    });
+
     const ALIGNMENT_MARKERS = Object.freeze({
         [ALIGNMENTS.CENTER]: ':---:',
         [ALIGNMENTS.RIGHT]: '---:',
         [ALIGNMENTS.LEFT]: ':---'
     });
-    const NOTIFICATION_TYPES = Object.freeze({ 
-        SUCCESS: 'success', 
-        ERROR: 'error', 
-        WARNING: 'warning', 
-        INFO: 'info' 
+
+    const NOTIFICATION_TYPES = Object.freeze({
+        SUCCESS: 'success',
+        ERROR: 'error',
+        WARNING: 'warning',
+        INFO: 'info'
     });
 
-    // Performance-optimized element cache
-    const elements = new Proxy({}, {
-        get(target, prop) {
-            if (!(prop in target)) {
-                target[prop] = document.getElementById(prop) || 
-                              document.querySelector(`[data-element="${prop}"]`) ||
-                              document.querySelector(`.${prop}`);
-            }
-            return target[prop];
-        }
-    });
-
-    // Initialize core elements
-    const coreElements = {
+    // DOM element references - using more efficient query patterns
+    const elements = {
+        // Theme elements
         themeToggle: document.getElementById('themeToggle'),
         get sunPath() { return this.themeToggle?.querySelector('.sun'); },
         get moonPath() { return this.themeToggle?.querySelector('.moon'); },
-        input: document.getElementById("input"),
-        output: document.getElementById("output"),
+
+        // Input/Output elements
+        inputTextArea: document.getElementById("input"),
+        outputTextArea: document.getElementById("output"),
+
+        // Table elements
         tableContainer: document.getElementById("tableContainer"),
+        analysisSection: document.getElementById('analysisSection'),
         analysisMarkdownOutput: document.getElementById('analysisMarkdownOutput'),
+
+        // Control buttons
         parseBtn: document.getElementById("parseBtn"),
         analyzeBtn: document.getElementById("analyzeBtn"),
-        copyOutputBtn: document.getElementById("copyOutputBtn"),
+        copyBtn: document.getElementById("copyBtn"),
         clearBtn: document.getElementById("clearBtn"),
+
+        // Table editing buttons
         addColumnBtn: document.getElementById("addColumnBtn"),
         addRowBtn: document.getElementById("addRowBtn"),
         sortRowsBtn: document.getElementById("sortRowsBtn"),
         removeColumnBtn: document.getElementById("removeColumnBtn"),
         removeRowBtn: document.getElementById("removeRowBtn"),
         reorderBtn: document.getElementById("reorderBtn"),
-        notification: document.getElementById("notification"),
-        outputFormat: document.getElementById('outputFormat'),
-        newProviderName: document.getElementById('newProviderName'),
-        supportedServices: document.getElementById('supportedServices'),
-        addProviderBtn: document.getElementById('addProviderBtn'),
-        analysisDetails: document.getElementById('analysisDetails'),
-        advancedOpsDetails: document.getElementById('advancedOpsDetails'),
-        outputStats: document.getElementById('outputStats'),
-        loadingIndicator: document.getElementById('loadingIndicator')
+
+        // Notification element
+        notificationDiv: document.getElementById("notification")
     };
 
-    // Enhanced Table State with better performance tracking
+    // Application state
     class TableState {
         constructor() {
             this.headers = [];
@@ -74,76 +76,52 @@
             this.outputFormat = OUTPUT_FORMATS.MARKDOWN;
             this.history = [];
             this.historyIndex = -1;
-            this.isModified = false;
-            this.lastSaveTime = Date.now();
-            this.stats = { rows: 0, columns: 0, cells: 0 };
         }
 
+        // Save current state to history for undo functionality
         saveToHistory() {
             const state = {
-                headers: structuredClone(this.headers),
-                rows: structuredClone(this.rows),
-                alignments: structuredClone(this.alignments),
-                timestamp: Date.now()
+                headers: [...this.headers],
+                rows: this.rows.map(row => [...row]),
+                alignments: [...this.alignments]
             };
-            
-            // Remove future history if we're in the middle
+
+            // Remove any future history if we're not at the end
             this.history = this.history.slice(0, this.historyIndex + 1);
             this.history.push(state);
             this.historyIndex++;
-            
-            // Limit history size for performance
+
+            // Limit history size
             if (this.history.length > 50) {
                 this.history.shift();
                 this.historyIndex--;
             }
-            
-            this.isModified = true;
-            this.updateStats();
         }
 
+        // Undo last action
         undo() {
             if (this.historyIndex > 0) {
                 this.historyIndex--;
                 const state = this.history[this.historyIndex];
-                this.restoreState(state);
+                this.headers = [...state.headers];
+                this.rows = state.rows.map(row => [...row]);
+                this.alignments = [...state.alignments];
                 return true;
             }
             return false;
         }
 
+        // Redo last undone action
         redo() {
             if (this.historyIndex < this.history.length - 1) {
                 this.historyIndex++;
                 const state = this.history[this.historyIndex];
-                this.restoreState(state);
+                this.headers = [...state.headers];
+                this.rows = state.rows.map(row => [...row]);
+                this.alignments = [...state.alignments];
                 return true;
             }
             return false;
-        }
-
-        restoreState(state) {
-            this.headers = structuredClone(state.headers);
-            this.rows = structuredClone(state.rows);
-            this.alignments = structuredClone(state.alignments);
-            this.updateStats();
-        }
-
-        updateStats() {
-            this.stats = {
-                rows: this.rows.length,
-                columns: this.headers.length,
-                cells: this.rows.length * this.headers.length
-            };
-            this.updateStatsDisplay();
-        }
-
-        updateStatsDisplay() {
-            if (coreElements.outputStats) {
-                const { rows, columns, cells } = this.stats;
-                coreElements.outputStats.textContent = 
-                    `${rows} rows × ${columns} columns = ${cells} cells`;
-            }
         }
 
         reset() {
@@ -151,10 +129,9 @@
             this.rows = [];
             this.alignments = [];
             this.isReorderMode = false;
+            this.outputFormat = OUTPUT_FORMATS.MARKDOWN;
             this.history = [];
             this.historyIndex = -1;
-            this.isModified = false;
-            this.updateStats();
         }
 
         isEmpty() {
@@ -166,20 +143,25 @@
         }
     }
 
-    // Enhanced utility functions
+    // Initialize application state
+    const tableState = new TableState();
+
+    // Utility functions
     const utils = {
-        sanitizeHTML: (str) => {
+        sanitizeInput: (str) => {
             if (typeof str !== 'string') return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return str
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         },
 
         debounce: (func, delay) => {
-            let timeoutId;
+            let timeout;
             return (...args) => {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func.apply(null, args), delay);
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
             };
         },
 
@@ -187,11 +169,39 @@
             let inThrottle;
             return (...args) => {
                 if (!inThrottle) {
-                    func.apply(null, args);
+                    func.apply(this, args);
                     inThrottle = true;
                     setTimeout(() => inThrottle = false, limit);
                 }
             };
+        },
+
+        escapeCSV: (str) => {
+            if (typeof str !== 'string') return '';
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        },
+
+        validateTableStructure: (headers, rows) => {
+            if (!Array.isArray(headers) || headers.length === 0) {
+                throw new Error('Headers must be a non-empty array');
+            }
+            
+            if (!Array.isArray(rows)) {
+                throw new Error('Rows must be an array');
+            }
+
+            const headerCount = headers.length;
+            rows.forEach((row, index) => {
+                if (!Array.isArray(row)) {
+                    throw new Error(`Row ${index + 1} must be an array`);
+                }
+                if (row.length !== headerCount) {
+                    throw new Error(`Row ${index + 1} has ${row.length} cells, expected ${headerCount}`);
+                }
+            });
         },
 
         copyToClipboard: async (text) => {
@@ -204,113 +214,43 @@
                 textarea.value = text;
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = '0';
-                textarea.style.left = '-9999px';
                 document.body.appendChild(textarea);
                 textarea.select();
-                try {
-                    const success = document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    return success;
-                } catch (e) {
-                    document.body.removeChild(textarea);
-                    return false;
-                }
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return success;
             }
-        },
-
-        normalizeString: (str) => str.toLowerCase().trim().replace(/\s+/g, ''),
-
-        titleCase: (str) => {
-            return str.replace(/\b\w/g, c => c.toUpperCase())
-                     .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
-                     .replace(/\b\w/g, c => c.toUpperCase())
-                     .replace(/\s+/g, '');
-        },
-
-        showLoading: (show = true) => {
-            if (coreElements.loadingIndicator) {
-                coreElements.loadingIndicator.style.display = show ? 'flex' : 'none';
-                coreElements.loadingIndicator.setAttribute('aria-hidden', !show);
-            }
-        },
-
-        formatFileSize: (bytes) => {
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            if (bytes === 0) return '0 Bytes';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
         }
     };
 
+    // Notification system
+    const notification = {
+        show: (message, type = NOTIFICATION_TYPES.SUCCESS, duration = 3000) => {
+            if (!elements.notificationDiv) return;
 
-
-        
-            // Enhanced notification system
-            const notifications = {
-                show: (message, type = NOTIFICATION_TYPES.SUCCESS, duration = 4000) => {
-                    if (!coreElements.notification) {
-                        console.warn('Notification element not found');
-                        return;
-                    }
-        
-                    // Clear any existing notification
-                    notifications.hide();
-        
-                    const notification = coreElements.notification;
-                    
-                    // Clear previous content and classes
-                    notification.innerHTML = '';
-                    notification.className = 'notification';
-                    
-                    // Set the message
-                    notification.textContent = message;
-                    
-                    // Add classes
-                    notification.classList.add('show', type);
-                    notification.setAttribute('aria-live', type === NOTIFICATION_TYPES.ERROR ? 'assertive' : 'polite');
-        
-                    // Auto-hide with custom duration
-                    if (duration > 0) {
-                        setTimeout(() => notifications.hide(), duration);
-                    }
-                },
-        
-                hide: () => {
-                    if (!coreElements.notification) return;
-                    
-                    const notification = coreElements.notification;
-                    notification.classList.remove('show', ...Object.values(NOTIFICATION_TYPES));
-                    notification.innerHTML = '';
-                },
-        
-                success: (message, duration = 4000) => notifications.show(message, NOTIFICATION_TYPES.SUCCESS, duration),
-                error: (message, duration = 6000) => notifications.show(message, NOTIFICATION_TYPES.ERROR, duration),
-                warning: (message, duration = 5000) => notifications.show(message, NOTIFICATION_TYPES.WARNING, duration),
-                info: (message, duration = 4000) => notifications.show(message, NOTIFICATION_TYPES.INFO, duration)
+            const colors = {
+                [NOTIFICATION_TYPES.SUCCESS]: '#4CAF50',
+                [NOTIFICATION_TYPES.ERROR]: '#dc3545',
+                [NOTIFICATION_TYPES.WARNING]: '#ff9800',
+                [NOTIFICATION_TYPES.INFO]: '#2196F3'
             };
-        
 
-    // Enhanced theme management
+            elements.notificationDiv.textContent = message;
+            elements.notificationDiv.style.backgroundColor = colors[type] || colors[NOTIFICATION_TYPES.SUCCESS];
+            elements.notificationDiv.style.display = 'block';
+            elements.notificationDiv.setAttribute('aria-live', 'polite');
+
+            setTimeout(() => {
+                elements.notificationDiv.style.display = 'none';
+            }, duration);
+        }
+    };
+
+    // Theme management
     const themeManager = {
-        init: () => {
-            const savedTheme = localStorage.getItem('theme');
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (systemPrefersDark ? THEMES.DARK : THEMES.LIGHT);
-            
-            themeManager.set(theme);
-            
-            // Listen for system theme changes
-            window.matchMedia('(prefers-color-scheme: dark)')
-                  .addEventListener('change', (e) => {
-                      if (!localStorage.getItem('theme')) {
-                          themeManager.set(e.matches ? THEMES.DARK : THEMES.LIGHT);
-                      }
-                  });
-        },
-
         toggle: () => {
-            const current = document.documentElement.getAttribute('data-theme');
-            const newTheme = current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
             themeManager.set(newTheme);
         },
 
@@ -318,546 +258,333 @@
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
             themeManager.updateIcons(theme);
-            
-            // Update meta theme-color
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                metaThemeColor.content = theme === THEMES.DARK ? '#0d1117' : '#0969da';
-            }
         },
 
         updateIcons: (theme) => {
-            if (coreElements.sunPath && coreElements.moonPath) {
-                coreElements.sunPath.style.display = theme === THEMES.DARK ? 'block' : 'none';
-                coreElements.moonPath.style.display = theme === THEMES.DARK ? 'none' : 'block';
-            }
+            if (!elements.sunPath || !elements.moonPath) return;
+            
+            elements.sunPath.style.display = theme === THEMES.DARK ? 'block' : 'none';
+            elements.moonPath.style.display = theme === THEMES.DARK ? 'none' : 'block';
+        },
+
+        init: () => {
+            const savedTheme = localStorage.getItem('theme') ||
+                              (window.matchMedia('(prefers-color-scheme: dark)').matches ? THEMES.DARK : THEMES.LIGHT);
+            themeManager.set(savedTheme);
         }
     };
 
-    // Enhanced markdown parser with better error handling
-    const markdownParser = {
-        parse: (input) => {
-            if (!input?.trim()) {
-                throw new Error('Input is empty or contains only whitespace.');
+    // Table parsing with improved error handling
+    const tableParser = {
+        parse: (inputText) => {
+            if (!inputText?.trim()) {
+                throw new Error('Please enter a markdown table');
             }
 
-            const lines = input.trim().split('\n')
-                              .map(line => line.trim())
-                              .filter(line => line);
-
-            if (lines.length < 1) {
-                throw new Error('No valid content found in input.');
-            }
-
-            // Find the first line that looks like a table header
-            const headerIndex = lines.findIndex(line => line.includes('|') && !line.match(/^\|?\s*:?-+:?/));
+            const lines = inputText.trim().split('\n').filter(line => line.trim());
             
-            if (headerIndex === -1) {
-                throw new Error('No valid table header found. Make sure your table uses pipe (|) separators.');
+            if (lines.length < 2) {
+                throw new Error('Table must have at least a header and separator row');
             }
 
-            const headers = markdownParser.parseRow(lines[headerIndex]);
-            let alignments, dataStartIndex = headerIndex + 1;
+            const headers = tableParser.parseRow(lines[0]);
+            const separatorCells = tableParser.parseRow(lines[1]);
+            
+            if (headers.length !== separatorCells.length) {
+                throw new Error('Header and separator row must have the same number of columns');
+            }
 
-            // Check for alignment row
-            if (dataStartIndex < lines.length) {
-                const potentialAlignmentRow = lines[dataStartIndex];
-                if (potentialAlignmentRow && potentialAlignmentRow.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/)) {
-                    const alignmentRow = markdownParser.parseRow(potentialAlignmentRow);
-                    if (alignmentRow.length === headers.length) {
-                        alignments = alignmentRow.map(cell => {
-                            const trimmed = cell.trim();
-                            if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
-                            if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
-                            return ALIGNMENTS.LEFT;
-                        });
-                        dataStartIndex++;
-                    }
+            const alignments = separatorCells.map(cell => {
+                const trimmed = cell.trim();
+                if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
+                if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
+                return ALIGNMENTS.LEFT;
+            });
+
+            const rows = lines.slice(2).map((line, index) => {
+                const row = tableParser.parseRow(line);
+                if (row.length !== headers.length) {
+                    console.warn(`Row ${index + 3} has ${row.length} columns, expected ${headers.length}. Padding with empty cells.`);
+                    // Pad or trim row to match header length
+                    while (row.length < headers.length) row.push('');
+                    if (row.length > headers.length) row.splice(headers.length);
                 }
-            }
-
-            // Default to left alignment if no alignment row found
-            if (!alignments || alignments.length !== headers.length) {
-                alignments = headers.map(() => ALIGNMENTS.LEFT);
-            }
-
-            // Parse data rows
-            const rows = lines.slice(dataStartIndex)
-                             .filter(line => !line.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/))
-                             .map(line => {
-                                 const row = markdownParser.parseRow(line);
-                                 // Pad or trim row to match header length
-                                 while (row.length < headers.length) row.push('');
-                                 if (row.length > headers.length) row.splice(headers.length);
-                                 return row;
-                             });
+                return row;
+            });
 
             return {
-                headers: headers.map(h => utils.sanitizeHTML(h.replace(/\*\*/g, ''))),
+                headers: headers.map(utils.sanitizeInput),
                 alignments,
-                rows: rows.map(row => row.map(cell => utils.sanitizeHTML(cell.replace(/\*\*/g, ''))))
+                rows: rows.map(row => row.map(utils.sanitizeInput))
             };
         },
 
         parseRow: (line) => {
-            const cells = line.split('|').map(cell => cell.trim());
-            let start = 0, end = cells.length;
-            
-            // Remove empty cells at start and end (from leading/trailing |)
-            if (cells[0] === '') start = 1;
-            if (cells[cells.length - 1] === '') end = cells.length - 1;
-            
-            return cells.slice(start, end);
+            return line.split('|')
+                      .filter((cell, index, array) => {
+                          // Remove empty cells at start and end (table borders)
+                          return !(index === 0 && cell.trim() === '') && 
+                                 !(index === array.length - 1 && cell.trim() === '');
+                      })
+                      .map(cell => cell.trim());
         }
     };
 
-    // Enhanced JSON conversion utilities
-    const jsonConverter = {
-        tableToServiceProviderJSON: (headers, rows) => {
-            if (!headers || headers.length === 0 || !rows) {
-                throw new Error('Invalid table data for Service/Provider JSON conversion.');
-            }
-
-            const result = {};
-            const providerColumns = headers.slice(1); // Skip service name column
-
-            rows.forEach(row => {
-                const serviceName = row[0]?.trim();
-                if (serviceName) {
-                    result[serviceName] = {};
-                    providerColumns.forEach((provider, index) => {
-                        const value = row[index + 1]?.toLowerCase().trim();
-                        result[serviceName][provider] = value === 'yes' ? 'yes' : 'no';
-                    });
-                }
-            });
-
-            return result;
-        },
-
-        serviceProviderJSONToTable: (jsonData) => {
-            if (Object.keys(jsonData).length === 0) {
-                return { headers: [], rows: [], alignments: [] };
-            }
-
-            const services = Object.keys(jsonData);
-            const providerSet = new Set();
-            
-            services.forEach(service => {
-                if (jsonData[service]) {
-                    Object.keys(jsonData[service]).forEach(provider => providerSet.add(provider));
-                }
-            });
-
-            const providers = Array.from(providerSet).sort();
-            const headers = ['Service Name', ...providers];
-            const alignments = headers.map(() => ALIGNMENTS.LEFT);
-
-            const rows = services.sort().map(service => {
-                const row = [service];
-                providers.forEach(provider => {
-                    const value = jsonData[service]?.[provider];
-                    row.push(value === 'yes' ? 'yes' : 'no');
-                });
-                return row;
-            });
-
-            return { headers, rows, alignments };
-        },
-
-        addProviderToJSON: (jsonData, providerName, supportedServices) => {
-            if (!providerName || !supportedServices) {
-                throw new Error('Provider name and supported services are required.');
-            }
-
-            const result = structuredClone(jsonData);
-            const normalizedProvider = utils.titleCase(providerName.trim());
-            const normalizedServices = supportedServices.split(',')
-                                                      .map(s => utils.normalizeString(s.trim()))
-                                                      .filter(Boolean);
-
-            // Create service map for faster lookup
-            const serviceMap = {};
-            Object.keys(result).forEach(service => {
-                const normalizedService = utils.normalizeString(service);
-                serviceMap[normalizedService] = { ...result[service], [normalizedProvider]: 'no' };
-            });
-
-            // Mark supported services as 'yes'
-            normalizedServices.forEach(service => {
-                if (serviceMap[service]) {
-                    serviceMap[service][normalizedProvider] = 'yes';
-                } else {
-                    // Add new service if it doesn't exist
-                    const titleCaseService = utils.titleCase(service);
-                    serviceMap[service] = {};
-                    Object.keys(result).forEach(existingService => {
-                        Object.keys(result[existingService]).forEach(provider => {
-                            serviceMap[service][provider] = 'no';
-                        });
-                    });
-                    serviceMap[service][normalizedProvider] = 'yes';
-                }
-            });
-
-            // Convert back to proper format
-            const finalResult = {};
-            Object.keys(serviceMap).sort().forEach(normalizedService => {
-                const titleCaseService = utils.titleCase(normalizedService);
-                finalResult[titleCaseService] = {};
-                Object.keys(serviceMap[normalizedService]).sort().forEach(provider => {
-                    finalResult[titleCaseService][provider] = serviceMap[normalizedService][provider];
-                });
-            });
-
-            return finalResult;
-        }
-    };
-
-    // Enhanced output formatters
-    const outputFormatters = {
+    // Output generators
+    const outputGenerators = {
         [OUTPUT_FORMATS.MARKDOWN]: () => {
-            if (!tableState.isValid()) return '';
-            
-            const alignmentRow = `| ${tableState.alignments.map(align => 
-                ALIGNMENT_MARKERS[align] || ALIGNMENT_MARKERS[ALIGNMENTS.LEFT]
-            ).join(' | ')} |`;
-            
-            const headerRow = `| ${tableState.headers.join(' | ')} |`;
-            const dataRows = tableState.rows.map(row => `| ${row.join(' | ')} |`).join('\\n');
-            
-            return [headerRow, alignmentRow, dataRows].filter(Boolean).join('\\n');
+            const separator = `| ${tableState.alignments.map(align => ALIGNMENT_MARKERS[align]).join(' | ')} |`;
+            const header = `| ${tableState.headers.join(' | ')} |`;
+            const rows = tableState.rows.map(row => `| ${row.join(' | ')} |`).join('\n');
+            return [header, separator, rows].filter(Boolean).join('\n');
         },
 
-        [OUTPUT_FORMATS.GENERIC_JSON]: () => {
-            if (!tableState.isValid()) return JSON.stringify([], null, 2);
-            
-            const result = tableState.rows.map(row => {
-                const obj = {};
-                tableState.headers.forEach((header, index) => {
-                    obj[header] = row[index] || '';
-                });
-                return obj;
+        [OUTPUT_FORMATS.JSON]: () => {
+            const jsonOutput = {};
+            tableState.rows.forEach(row => {
+                const serviceName = row[0]?.replace(/\*\*/g, '');
+                if (serviceName) {
+                    jsonOutput[serviceName] = {};
+                    for (let i = 1; i < tableState.headers.length; i++) {
+                        const key = tableState.headers[i].replace(/\*\*/g, '');
+                        jsonOutput[serviceName][key] = row[i] ? row[i].toLowerCase() : 'no';
+                    }
+                }
             });
-            
-            return JSON.stringify(result, null, 2);
+            return JSON.stringify(jsonOutput, null, 2);
         },
-
-        [OUTPUT_FORMATS.SERVICE_PROVIDER_JSON]: () => {
-            if (!tableState.isValid()) return JSON.stringify({}, null, 2);
-            
-            try {
-                const result = jsonConverter.tableToServiceProviderJSON(tableState.headers, tableState.rows);
-                return JSON.stringify(result, null, 2);
-            } catch (error) {
-                notifications.error(`Error converting to Service/Provider JSON: ${error.message}`);
-                return JSON.stringify({ error: error.message }, null, 2);
-            }
-        },
-
         [OUTPUT_FORMATS.HTML]: () => {
-            if (!tableState.isValid()) return '';
+            const alignmentClass = (align) => align !== ALIGNMENTS.LEFT ? ` class="text-${align}"` : '';
             
-            const getAlignStyle = align => align !== ALIGNMENTS.LEFT ? ` style="text-align: ${align};"` : '';
+            const headerRow = tableState.headers
+                .map((header, i) => `<th${alignmentClass(tableState.alignments[i])}>${header}</th>`)
+                .join('');
             
-            const headerCells = tableState.headers.map((header, index) => 
-                `<th${getAlignStyle(tableState.alignments[index])}>${utils.sanitizeHTML(header)}</th>`
-            ).join('');
-            
-            const bodyRows = tableState.rows.map(row => 
-                `<tr>${row.map((cell, index) => 
-                    `<td${getAlignStyle(tableState.alignments[index])}>${utils.sanitizeHTML(cell)}</td>`
-                ).join('')}</tr>`
-            ).join('\n');
-            
-            return `<table>\n<thead>\n<tr>${headerCells}</tr>\n</thead>\n<tbody>\n${bodyRows}\n</tbody>\n</table>`;
+            const bodyRows = tableState.rows
+                .map(row => {
+                    const cells = row
+                        .map((cell, i) => `<td${alignmentClass(tableState.alignments[i])}>${cell}</td>`)
+                        .join('');
+                    return `<tr>${cells}</tr>`;
+                })
+                .join('');
+
+            return `<table>
+<thead>
+<tr>${headerRow}</tr>
+</thead>
+<tbody>
+${bodyRows}
+</tbody>
+</table>`;
         }
     };
 
-    // Enhanced table renderer with performance optimizations
+    // Table renderer with improved performance
     const tableRenderer = {
         render: () => {
-            if (tableState.isEmpty()) {
-                coreElements.tableContainer.innerHTML = `
-                    <div class="empty-table-message">
-                        <p>📋 No table data available</p>
-                        <p>Paste a Markdown table above or use the "Add Row/Column" buttons to start creating your table.</p>
-                    </div>
-                `;
-                outputGenerator.generate();
-                return;
-            }
-
             if (!tableState.isValid()) {
-                coreElements.tableContainer.innerHTML = `
-                    <div class="empty-table-message error-message">
-                        <p>⚠️ Invalid table structure</p>
-                        <p>The table data is inconsistent. Please check that headers and alignments match.</p>
-                    </div>
-                `;
-                outputGenerator.generate();
+                elements.tableContainer.innerHTML = '';
                 return;
             }
 
-            try {
-                const table = document.createElement('table');
-                table.setAttribute('role', 'table');
-                table.setAttribute('aria-label', 'Editable data table');
-                
-                const thead = tableRenderer.createHeader();
-                const tbody = tableRenderer.createBody();
-                
-                table.appendChild(thead);
-                table.appendChild(tbody);
-                
-                coreElements.tableContainer.innerHTML = '';
-                coreElements.tableContainer.appendChild(table);
-                
-                outputGenerator.generate();
-                tableState.updateStats();
-            } catch (error) {
-                console.error('Error rendering table:', error);
-                coreElements.tableContainer.innerHTML = `
-                    <div class="empty-table-message error-message">
-                        <p>❌ Error rendering table</p>
-                        <p>Please check your data and try again. Error: ${error.message}</p>
-                    </div>
-                `;
-            }
+            const table = tableRenderer.createTable();
+            elements.tableContainer.innerHTML = '';
+            elements.tableContainer.appendChild(table);
+            outputManager.generate();
+        },
+
+        createTable: () => {
+            const table = document.createElement('table');
+            table.appendChild(tableRenderer.createHeader());
+            table.appendChild(tableRenderer.createBody());
+            return table;
         },
 
         createHeader: () => {
             const thead = document.createElement('thead');
-            const tr = document.createElement('tr');
-            tr.setAttribute('role', 'row');
+            const headerRow = document.createElement('tr');
 
             tableState.headers.forEach((header, index) => {
-                const th = document.createElement('th');
-                th.setAttribute('role', 'columnheader');
-                th.setAttribute('scope', 'col');
-                th.textContent = header;
-                th.draggable = tableState.isReorderMode;
-                th.dataset.index = index;
-                th.classList.toggle('dragging-allowed', tableState.isReorderMode);
-                th.contentEditable = !tableState.isReorderMode;
-                th.tabIndex = tableState.isReorderMode ? -1 : 0;
-                
-                if (tableState.isReorderMode) {
-                    th.addEventListener('dragstart', dragDropHandler.handleDragStart);
-                    th.addEventListener('dragover', dragDropHandler.handleDragOver);
-                    th.addEventListener('drop', dragDropHandler.handleDrop);
-                    th.setAttribute('aria-label', `Draggable column header: ${header}`);
-                } else {
-                    th.setAttribute('aria-label', `Editable column header: ${header}`);
-                }
-
-                th.addEventListener('blur', (e) => {
-                    const newValue = e.target.textContent.trim();
-                    if (newValue !== tableState.headers[index]) {
-                        tableState.saveToHistory();
-                        tableState.headers[index] = newValue;
-                        outputGenerator.generate();
-                        notifications.success('Header updated');
-                    }
-                });
-
-                th.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        e.target.blur();
-                    }
-                    if (e.key === 'Escape') {
-                        e.target.textContent = tableState.headers[index];
-                        e.target.blur();
-                    }
-                });
-
-                tr.appendChild(th);
+                const th = tableRenderer.createHeaderCell(header, index);
+                headerRow.appendChild(th);
             });
 
-            thead.appendChild(tr);
+            thead.appendChild(headerRow);
             return thead;
+        },
+
+        createHeaderCell: (header, index) => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            th.draggable = tableState.isReorderMode;
+            th.dataset.index = index;
+            th.classList.toggle('dragging-allowed', tableState.isReorderMode);
+            th.contentEditable = !tableState.isReorderMode;
+            th.tabIndex = tableState.isReorderMode ? -1 : 0;
+
+            if (tableState.isReorderMode) {
+                th.addEventListener('dragstart', dragHandler.handleDragStart);
+                th.addEventListener('dragover', dragHandler.handleDragOver);
+                th.addEventListener('drop', dragHandler.handleDrop);
+            }
+
+            th.addEventListener('blur', () => {
+                if (!tableState.isReorderMode) {
+                    tableState.saveToHistory();
+                    tableState.headers[index] = utils.sanitizeInput(th.textContent);
+                    outputManager.generate();
+                }
+            });
+
+            th.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !tableState.isReorderMode) {
+                    e.preventDefault();
+                    th.blur();
+                }
+            });
+
+            return th;
         },
 
         createBody: () => {
             const tbody = document.createElement('tbody');
 
             tableState.rows.forEach((row, rowIndex) => {
-                const tr = document.createElement('tr');
-                tr.setAttribute('role', 'row');
-                tr.draggable = tableState.isReorderMode;
-                tr.dataset.index = rowIndex;
-                tr.classList.toggle('dragging-allowed', tableState.isReorderMode);
-
-                if (tableState.isReorderMode) {
-                    tr.addEventListener('dragstart', dragDropHandler.handleDragStart);
-                    tr.addEventListener('dragover', dragDropHandler.handleDragOver);
-                    tr.addEventListener('drop', dragDropHandler.handleDrop);
-                    tr.setAttribute('aria-label', `Draggable row ${rowIndex + 1}`);
-                }
-
-                row.forEach((cell, cellIndex) => {
-                    const td = document.createElement('td');
-                    td.setAttribute('role', 'gridcell');
-                    td.textContent = cell;
-                    td.contentEditable = !tableState.isReorderMode;
-                    td.tabIndex = tableState.isReorderMode ? -1 : 0;
-                    
-                    if (!tableState.isReorderMode) {
-                        td.setAttribute('aria-label', `Editable cell: Row ${rowIndex + 1}, Column ${cellIndex + 1}`);
-                    }
-
-                    td.addEventListener('blur', (e) => {
-                        const newValue = e.target.textContent.trim();
-                        if (newValue !== tableState.rows[rowIndex][cellIndex]) {
-                            tableState.saveToHistory();
-                            tableState.rows[rowIndex][cellIndex] = newValue;
-                            outputGenerator.generate();
-                        }
-                    });
-
-                    td.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            e.target.blur();
-                        }
-                        if (e.key === 'Escape') {
-                            e.target.textContent = tableState.rows[rowIndex][cellIndex];
-                            e.target.blur();
-                        }
-                        if (e.key === 'Tab') {
-                            // Enhanced tab navigation
-                            e.preventDefault();
-                            const cells = Array.from(tbody.querySelectorAll('td[contenteditable="true"]'));
-                            const currentIndex = cells.indexOf(e.target);
-                            let nextIndex;
-                            
-                            if (e.shiftKey) {
-                                nextIndex = currentIndex > 0 ? currentIndex - 1 : cells.length - 1;
-                            } else {
-                                nextIndex = currentIndex < cells.length - 1 ? currentIndex + 1 : 0;
-                            }
-                            
-                            cells[nextIndex]?.focus();
-                        }
-                    });
-
-                    tr.appendChild(td);
-                });
-
+                const tr = tableRenderer.createRow(row, rowIndex);
                 tbody.appendChild(tr);
             });
 
             return tbody;
+        },
+
+        createRow: (row, rowIndex) => {
+            const tr = document.createElement('tr');
+            tr.draggable = tableState.isReorderMode;
+            tr.dataset.index = rowIndex;
+            tr.classList.toggle('dragging-allowed', tableState.isReorderMode);
+
+            if (tableState.isReorderMode) {
+                tr.addEventListener('dragstart', dragHandler.handleDragStart);
+                tr.addEventListener('dragover', dragHandler.handleDragOver);
+                tr.addEventListener('drop', dragHandler.handleDrop);
+            }
+
+            row.forEach((cell, cellIndex) => {
+                const td = tableRenderer.createCell(cell, rowIndex, cellIndex);
+                tr.appendChild(td);
+            });
+
+            return tr;
+        },
+
+        createCell: (cell, rowIndex, cellIndex) => {
+            const td = document.createElement('td');
+            td.contentEditable = !tableState.isReorderMode;
+            td.tabIndex = tableState.isReorderMode ? -1 : 0;
+            td.textContent = cell;
+
+            td.addEventListener('blur', () => {
+                if (!tableState.isReorderMode) {
+                    tableState.saveToHistory();
+                    tableState.rows[rowIndex][cellIndex] = utils.sanitizeInput(td.textContent);
+                    outputManager.generate();
+                }
+            });
+
+            td.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !tableState.isReorderMode) {
+                    e.preventDefault();
+                    td.blur();
+                }
+            });
+
+            return td;
         }
     };
 
-    // Enhanced drag and drop handler
-    const dragDropHandler = {
-        currentDraggedElement: null,
-        placeholder: null,
-
-        handleDragStart: (e) => {
-            dragDropHandler.currentDraggedElement = e.target;
-            e.target.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', e.target.dataset.index);
-            e.dataTransfer.setData('type', e.target.tagName.toLowerCase());
-            e.dataTransfer.effectAllowed = 'move';
-            
-            // Create visual placeholder
-            dragDropHandler.placeholder = e.target.cloneNode(true);
-            dragDropHandler.placeholder.classList.add('placeholder');
-            dragDropHandler.placeholder.style.opacity = '0.5';
+    // Drag and drop handler
+    const dragHandler = {
+        handleDragStart: (event) => {
+            event.target.classList.add('dragging');
+            event.dataTransfer.setData('text/plain', event.target.dataset.index);
+            event.dataTransfer.setData('type', event.target.tagName.toLowerCase());
         },
 
-        handleDragOver: (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-
-            const target = e.target.closest('tr, th');
-            if (!target || target === dragDropHandler.currentDraggedElement) return;
-
-            const dragType = e.dataTransfer.getData('type');
+        handleDragOver: (event) => {
+            event.preventDefault();
+            const draggableType = event.dataTransfer.getData('type');
             
-            if (dragType === 'tr' && target.tagName === 'TR') {
-                const container = target.parentNode;
-                const afterElement = dragDropHandler.getDragAfterElement(container, e.clientY, 'tr');
+            if (draggableType === 'tr') {
+                const container = elements.tableContainer.querySelector('tbody');
+                const afterElement = dragHandler.getDragAfterElement(container, event.clientY);
+                const draggable = document.querySelector('.dragging');
                 
-                if (dragDropHandler.currentDraggedElement) {
-                    if (!afterElement) {
-                        container.appendChild(dragDropHandler.currentDraggedElement);
-                    } else {
-                        container.insertBefore(dragDropHandler.currentDraggedElement, afterElement);
-                    }
+                if (afterElement == null) {
+                    container.appendChild(draggable);
+                } else {
+                    container.insertBefore(draggable, afterElement);
                 }
             }
         },
 
-        handleDrop: (e) => {
-            e.preventDefault();
-            
-            if (!dragDropHandler.currentDraggedElement) return;
-            
-            dragDropHandler.currentDraggedElement.classList.remove('dragging');
-            
-            const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            const dragType = e.dataTransfer.getData('type');
-            
-            let target = e.target.closest('tr, th');
-            if (!target) {
-                dragDropHandler.currentDraggedElement = null;
-                tableRenderer.render();
-                return;
-            }
+        handleDrop: (event) => {
+            event.preventDefault();
+            const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
+            const toIndex = parseInt(event.target.dataset.index);
+            const type = event.dataTransfer.getData('type');
 
-            const dropIndex = parseInt(target.dataset.index);
-            
-            if (dragIndex !== dropIndex) {
+            if (fromIndex !== toIndex) {
                 tableState.saveToHistory();
                 
-                if (dragType === 'th') {
-                    tableOperations.reorderColumns(dragIndex, dropIndex);
-                } else if (dragType === 'tr') {
-                    tableOperations.reorderRows(dragIndex, dropIndex);
+                if (type === 'th') {
+                    tableOperations.reorderColumns(fromIndex, toIndex);
+                } else if (type === 'tr') {
+                    const tbody = elements.tableContainer.querySelector('tbody');
+                    const droppedRow = tbody.querySelector('tr.dragging');
+                    if (droppedRow) {
+                        const newIndex = Array.from(tbody.children).indexOf(droppedRow);
+                        tableOperations.reorderRows(fromIndex, newIndex);
+                    }
                 }
                 
                 tableRenderer.render();
-                tableAnalyzer.analyzeIfOpen();
-                notifications.success(`${dragType === 'th' ? 'Column' : 'Row'} reordered successfully`);
+                analyzer.analyze();
             }
-            
-            dragDropHandler.currentDraggedElement = null;
+
+            // Clean up dragging classes
+            document.querySelectorAll('.dragging').forEach(el => {
+                el.classList.remove('dragging');
+            });
         },
 
-        getDragAfterElement: (container, y, selector) => {
-            const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
-            
+        getDragAfterElement: (container, y) => {
+            const draggableElements = [...container.querySelectorAll('tr:not(.dragging)')];
+
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
                 
                 if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
+                    return { offset, element: child };
                 }
+                return closest;
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
     };
 
-    // Enhanced table operations
+    // Table operations
     const tableOperations = {
         addColumn: () => {
             if (tableState.isReorderMode) return;
             
             tableState.saveToHistory();
-            const columnName = `Column ${tableState.headers.length + 1}`;
-            tableState.headers.push(columnName);
+            tableState.headers.push('New Column');
             tableState.alignments.push(ALIGNMENTS.LEFT);
             tableState.rows.forEach(row => row.push(''));
             
             tableRenderer.render();
-            notifications.success('Column added successfully');
+            notification.show('Column added');
         },
 
         addRow: () => {
@@ -868,33 +595,33 @@
             tableState.rows.push(newRow);
             
             tableRenderer.render();
-            notifications.success('Row added successfully');
+            notification.show('Row added');
         },
 
         removeColumn: () => {
             if (tableState.isReorderMode) return;
             
             if (tableState.headers.length <= 1) {
-                notifications.warning('Cannot remove the last column');
+                notification.show('Cannot remove the last column', NOTIFICATION_TYPES.ERROR);
                 return;
             }
             
             tableState.saveToHistory();
-            const columnIndex = tableState.headers.length - 1;
-            tableState.headers.splice(columnIndex, 1);
-            tableState.alignments.splice(columnIndex, 1);
-            tableState.rows.forEach(row => row.splice(columnIndex, 1));
+            const indexToRemove = tableState.headers.length - 1;
+            tableState.headers.splice(indexToRemove, 1);
+            tableState.alignments.splice(indexToRemove, 1);
+            tableState.rows.forEach(row => row.splice(indexToRemove, 1));
             
             tableRenderer.render();
-            tableAnalyzer.analyzeIfOpen();
-            notifications.success('Column removed successfully');
+            analyzer.analyze();
+            notification.show('Column removed');
         },
 
         removeRow: () => {
             if (tableState.isReorderMode) return;
             
             if (tableState.rows.length === 0) {
-                notifications.warning('No rows to remove');
+                notification.show('No rows to remove', NOTIFICATION_TYPES.ERROR);
                 return;
             }
             
@@ -902,484 +629,282 @@
             tableState.rows.pop();
             
             tableRenderer.render();
-            tableAnalyzer.analyzeIfOpen();
-            notifications.success('Row removed successfully');
+            analyzer.analyze();
+            notification.show('Row removed');
         },
 
         sortRows: () => {
             if (tableState.isReorderMode) return;
             
-            if (tableState.rows.length === 0) {
-                notifications.warning('No rows to sort');
+            if (!tableState.rows.length) {
+                notification.show('No rows to sort', NOTIFICATION_TYPES.ERROR);
                 return;
             }
             
             tableState.saveToHistory();
-            tableState.rows.sort((a, b) => {
-                const aVal = (a[0] || '').toLowerCase();
-                const bVal = (b[0] || '').toLowerCase();
-                return aVal.localeCompare(bVal);
-            });
+            tableState.rows.sort((a, b) => 
+                (a[0]?.toLowerCase() || '').localeCompare(b[0]?.toLowerCase() || '')
+            );
             
             tableRenderer.render();
-            notifications.success('Rows sorted alphabetically');
+            notification.show('Rows sorted alphabetically');
         },
 
         reorderColumns: (fromIndex, toIndex) => {
-            const moveArrayElement = (arr) => {
-                const element = arr.splice(fromIndex, 1)[0];
+            const move = (arr) => {
+                const element = arr[fromIndex];
+                arr.splice(fromIndex, 1);
                 arr.splice(toIndex, 0, element);
             };
-            
-            moveArrayElement(tableState.headers);
-            moveArrayElement(tableState.alignments);
-            tableState.rows.forEach(row => moveArrayElement(row));
+
+            move(tableState.headers);
+            move(tableState.alignments);
+            tableState.rows.forEach(row => move(row));
         },
 
         reorderRows: (fromIndex, toIndex) => {
-            const element = tableState.rows.splice(fromIndex, 1)[0];
+            const element = tableState.rows[fromIndex];
+            tableState.rows.splice(fromIndex, 1);
             tableState.rows.splice(toIndex, 0, element);
         },
 
-        addProviderAndUpdateTable: () => {
+        duplicateRow: (rowIndex) => {
             if (tableState.isReorderMode) return;
             
-            const providerName = coreElements.newProviderName.value.trim();
-            const supportedServices = coreElements.supportedServices.value.trim();
+            tableState.saveToHistory();
+            const rowToDuplicate = [...tableState.rows[rowIndex]];
+            tableState.rows.splice(rowIndex + 1, 0, rowToDuplicate);
             
-            if (!providerName) {
-                notifications.error('New Provider Name is required.');
-                coreElements.newProviderName.focus();
-                return;
-            }
+            tableRenderer.render();
+            notification.show('Row duplicated');
+        },
+
+        insertRowAfter: (rowIndex) => {
+            if (tableState.isReorderMode) return;
             
-            if (!supportedServices) {
-                notifications.error('Supported Services list is required.');
-                coreElements.supportedServices.focus();
-                return;
-            }
+            tableState.saveToHistory();
+            const newRow = Array(tableState.headers.length).fill('');
+            tableState.rows.splice(rowIndex + 1, 0, newRow);
             
-            if (tableState.headers.length === 0) {
-                notifications.error('Cannot add provider to an empty table. Parse or create a table first.');
-                return;
-            }
-            
-            try {
-                tableState.saveToHistory();
-                const currentJSON = jsonConverter.tableToServiceProviderJSON(tableState.headers, tableState.rows);
-                const updatedJSON = jsonConverter.addProviderToJSON(currentJSON, providerName, supportedServices);
-                const newTableData = jsonConverter.serviceProviderJSONToTable(updatedJSON);
-                
-                tableState.headers = newTableData.headers;
-                tableState.rows = newTableData.rows;
-                tableState.alignments = newTableData.alignments;
-                
-                tableRenderer.render();
-                tableAnalyzer.analyzeIfOpen();
-                
-                // Clear form
-                coreElements.newProviderName.value = '';
-                coreElements.supportedServices.value = '';
-                
-                notifications.success(`Provider "${providerName}" added successfully with ${supportedServices.split(',').length} supported services`);
-            } catch (error) {
-                notifications.error(`Error adding provider: ${error.message}`);
-            }
+            tableRenderer.render();
+            notification.show('Row inserted');
         }
     };
 
-    // Enhanced output generator
-    const outputGenerator = {
+    // Output manager
+    const outputManager = {
         generate: () => {
-            if (tableState.isEmpty()) {
-                coreElements.output.value = '';
-                return;
-            }
-            
             if (!tableState.isValid()) {
-                coreElements.output.value = 'Table data is currently invalid. Cannot generate output.';
+                elements.outputTextArea.value = '';
                 return;
             }
-            
-            const formatter = outputFormatters[tableState.outputFormat];
-            const output = formatter ? formatter() : outputFormatters[OUTPUT_FORMATS.MARKDOWN]();
-            coreElements.output.value = output;
-            
-            // Update output stats
-            if (coreElements.outputStats) {
-                const size = new Blob([output]).size;
-                const sizeText = utils.formatFileSize(size);
-                coreElements.outputStats.textContent = `${tableState.stats.rows} rows × ${tableState.stats.columns} columns • ${sizeText}`;
+
+            const generator = outputGenerators[tableState.outputFormat];
+            if (generator) {
+                elements.outputTextArea.value = generator();
+            } else {
+                console.error(`Unknown output format: ${tableState.outputFormat}`);
+                elements.outputTextArea.value = outputGenerators[OUTPUT_FORMATS.MARKDOWN]();
             }
         },
 
         setFormat: (format) => {
             if (Object.values(OUTPUT_FORMATS).includes(format)) {
                 tableState.outputFormat = format;
-                outputGenerator.generate();
-                notifications.info(`Output format changed to ${format.replace('_', ' ')}`);
+                outputManager.generate();
             }
         }
     };
 
-    
-        // Enhanced table analyzer
-        const tableAnalyzer = {
-            analyze: () => {
-                if (tableState.rows.length === 0 || tableState.headers.length === 0) {
-                    coreElements.analysisMarkdownOutput.textContent = 'No data to analyze. Table is empty.';
-                    return;
-                }
-                
-                if (!tableState.isValid()) {
-                    coreElements.analysisMarkdownOutput.textContent = 'Table structure is invalid. Cannot analyze.';
-                    return;
-                }
-                
-                const totalRows = tableState.rows.length;
-                let markdownOutput = `| **Total** = \`${totalRows}\` |`;
-    
-                // Start from the second column (index 1) - skip service name column
-                for (let i = 1; i < tableState.headers.length; i++) {
-                    const yesCount = tableState.rows.reduce((count, row) => {
-                        return count + (row[i]?.toLowerCase().trim() === 'yes' ? 1 : 0);
-                    }, 0);
-                    markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
-                }
-    
-                coreElements.analysisMarkdownOutput.textContent = markdownOutput;
-                notifications.info('Table analysis complete!');
-            },
-    
-            analyzeIfOpen: () => {
-                if (coreElements.analysisDetails?.open) {
-                    tableAnalyzer.analyze();
-                }
+    // Table analyzer
+    const analyzer = {
+        analyze: () => {
+            if (tableState.rows.length === 0 || tableState.headers.length === 0) {
+                elements.analysisMarkdownOutput.textContent = '';
+                return;
             }
-        };
-    
 
+            const totalRows = tableState.rows.length;
+            let markdownOutput = `| **Total** = \`${totalRows}\` |`;
 
-    // Global table state
-    const tableState = new TableState();
-
-    // Enhanced application controller
-    const app = {
-        init: () => {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', app.setup);
-            } else {
-                app.setup();
+            // Start from the second column (index 1)
+            for (let i = 1; i < tableState.headers.length; i++) {
+                const yesCount = tableState.rows.reduce((count, row) => {
+                    return count + (row[i]?.toLowerCase() === 'yes' ? 1 : 0);
+                }, 0);
+                markdownOutput += ` \`${yesCount}/${totalRows}\` |`;
             }
+
+            elements.analysisMarkdownOutput.textContent = markdownOutput;
+            notification.show('Table analyzed!');
         },
 
-        setup: () => {
+        getColumnStats: (columnIndex) => {
+            if (columnIndex >= tableState.headers.length) return null;
+
+            const values = tableState.rows.map(row => row[columnIndex] || '');
+            const uniqueValues = [...new Set(values)];
+            const emptyCells = values.filter(val => !val.trim()).length;
+
+            return {
+                columnName: tableState.headers[columnIndex],
+                totalCells: values.length,
+                uniqueValues: uniqueValues.length,
+                emptyCells,
+                mostCommon: analyzer.getMostCommonValue(values)
+            };
+        },
+
+        getMostCommonValue: (values) => {
+            const frequency = {};
+            values.forEach(val => {
+                frequency[val] = (frequency[val] || 0) + 1;
+            });
+
+            return Object.entries(frequency)
+                .sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+        }
+    };
+
+    // Main application controller
+    const app = {
+        init: () => {
             themeManager.init();
             app.bindEvents();
             app.initializeKeyboardShortcuts();
-            app.initializeAccessibility();
-            tableRenderer.render();
-            
-            // Set initial output format
-            if (coreElements.outputFormat?.value) {
-                outputGenerator.setFormat(coreElements.outputFormat.value);
-            }
-            
-            // Auto-save functionality
-            app.initializeAutoSave();
-            
-            notifications.success('Application loaded successfully', 2000);
         },
 
-        parseTable: utils.debounce(() => {
-            const input = coreElements.input.value.trim();
-            
-            if (!input) {
-                notifications.warning('Input is empty. Nothing to parse.');
-                return;
-            }
-            
-            utils.showLoading(true);
+        parseTable: () => {
+            const inputText = elements.inputTextArea.value.trim();
             
             try {
-                const parsed = markdownParser.parse(input);
+                const parsed = tableParser.parse(inputText);
                 tableState.saveToHistory();
-                tableState.headers = parsed.headers;
-                tableState.alignments = parsed.alignments;
-                tableState.rows = parsed.rows;
-                
+                Object.assign(tableState, parsed);
                 tableRenderer.render();
-                tableAnalyzer.analyzeIfOpen();
-                notifications.success(`Table parsed successfully! ${parsed.rows.length} rows, ${parsed.headers.length} columns`);
+                notification.show('Table parsed successfully!');
             } catch (error) {
-                console.error('Parse error:', error);
-                notifications.error(`Parse error: ${error.message}`);
-            } finally {
-                utils.showLoading(false);
+                notification.show(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+                console.error('Parsing error:', error);
             }
-        }, 300),
+        },
 
-        copyOutputToClipboard: async () => {
-            if (!coreElements.output.value) {
-                notifications.warning('Nothing to copy from output.');
-                return;
-            }
-
-            const success = await utils.copyToClipboard(coreElements.output.value);
-            notifications[success ? 'success' : 'error'](
-                success ? 'Output copied to clipboard!' : 'Failed to copy output.'
+        copyToClipboard: async () => {
+            const success = await utils.copyToClipboard(elements.outputTextArea.value);
+            notification.show(
+                success ? 'Copied to clipboard!' : 'Failed to copy to clipboard',
+                success ? NOTIFICATION_TYPES.SUCCESS : NOTIFICATION_TYPES.ERROR
             );
         },
 
         clearAll: () => {
-            if (!confirm('Are you sure you want to clear all input, table data, and output?')) {
-                return;
+            if (confirm('Are you sure you want to clear everything?')) {
+                elements.inputTextArea.value = '';
+                elements.outputTextArea.value = '';
+                elements.tableContainer.innerHTML = '';
+                elements.analysisMarkdownOutput.textContent = '';
+                tableState.reset();
+                notification.show('All cleared');
             }
-
-            tableState.saveToHistory();
-            coreElements.input.value = '';
-            coreElements.output.value = '';
-            coreElements.analysisMarkdownOutput.textContent = 'Analysis results will appear here.';
-            
-            tableState.reset();
-            tableRenderer.render();
-            outputGenerator.generate();
-            
-            notifications.success('All data cleared. You can undo this action.');
         },
 
         toggleReorderMode: () => {
             tableState.isReorderMode = !tableState.isReorderMode;
-            
-            const btn = coreElements.reorderBtn;
-            const icon = btn.querySelector('.icon svg');
-            const text = btn.querySelector('span:not(.icon)');
-            
-            if (tableState.isReorderMode) {
-                text.textContent = 'Edit Mode';
-                btn.setAttribute('aria-label', 'Switch to edit mode');
-                btn.classList.add('btn-secondary');
-                notifications.info('Reorder mode enabled. Drag rows and columns to rearrange.');
-            } else {
-                text.textContent = 'Re-order';
-                btn.setAttribute('aria-label', 'Switch to reorder mode');
-                btn.classList.remove('btn-secondary');
-                notifications.info('Edit mode enabled. Click cells to edit content.');
-            }
-            
+            elements.reorderBtn.textContent = tableState.isReorderMode ? 'Edit Table' : 'Re-order';
             tableRenderer.render();
         },
 
         undo: () => {
             if (tableState.undo()) {
                 tableRenderer.render();
-                tableAnalyzer.analyzeIfOpen();
-                notifications.info('Action undone.');
+                analyzer.analyze();
+                notification.show('Undone', NOTIFICATION_TYPES.INFO);
             } else {
-                notifications.warning('Nothing to undo.');
+                notification.show('Nothing to undo', NOTIFICATION_TYPES.WARNING);
             }
         },
 
         redo: () => {
             if (tableState.redo()) {
                 tableRenderer.render();
-                tableAnalyzer.analyzeIfOpen();
-                notifications.info('Action redone.');
+                analyzer.analyze();
+                notification.show('Redone', NOTIFICATION_TYPES.INFO);
             } else {
-                notifications.warning('Nothing to redo.');
+                notification.show('Nothing to redo', NOTIFICATION_TYPES.WARNING);
             }
         },
 
         bindEvents: () => {
             // Theme toggle
-            coreElements.themeToggle?.addEventListener('click', themeManager.toggle);
+            elements.themeToggle?.addEventListener('click', themeManager.toggle);
 
-            // Main action buttons
-            coreElements.parseBtn?.addEventListener('click', app.parseTable);
-            coreElements.analyzeBtn?.addEventListener('click', tableAnalyzer.analyze);
-            coreElements.copyOutputBtn?.addEventListener('click', app.copyOutputToClipboard);
-            coreElements.clearBtn?.addEventListener('click', app.clearAll);
+            // Table operations
+            elements.parseBtn?.addEventListener('click', app.parseTable);
+            elements.analyzeBtn?.addEventListener('click', () => {
+                analyzer.analyze();
+                if (elements.analysisSection) {
+                    elements.analysisSection.open = true;
+                }
+            });
+            elements.copyBtn?.addEventListener('click', app.copyToClipboard);
+            elements.clearBtn?.addEventListener('click', app.clearAll);
+            elements.addColumnBtn?.addEventListener('click', tableOperations.addColumn);
+            elements.addRowBtn?.addEventListener('click', tableOperations.addRow);
+            elements.sortRowsBtn?.addEventListener('click', tableOperations.sortRows);
+            elements.removeColumnBtn?.addEventListener('click', tableOperations.removeColumn);
+            elements.removeRowBtn?.addEventListener('click', tableOperations.removeRow);
+            elements.reorderBtn?.addEventListener('click', app.toggleReorderMode);
 
-            // Table operation buttons
-            coreElements.addColumnBtn?.addEventListener('click', tableOperations.addColumn);
-            coreElements.addRowBtn?.addEventListener('click', tableOperations.addRow);
-            coreElements.sortRowsBtn?.addEventListener('click', tableOperations.sortRows);
-            coreElements.removeColumnBtn?.addEventListener('click', tableOperations.removeColumn);
-            coreElements.removeRowBtn?.addEventListener('click', tableOperations.removeRow);
-            coreElements.reorderBtn?.addEventListener('click', app.toggleReorderMode);
-            coreElements.addProviderBtn?.addEventListener('click', tableOperations.addProviderAndUpdateTable);
-
-            // Auto-parse on input
-            if (coreElements.input) {
-                coreElements.input.addEventListener('input', utils.debounce(() => {
-                    if (coreElements.input.value.trim() === '') {
-                        tableState.reset();
-                        tableRenderer.render();
-                        tableAnalyzer.analyzeIfOpen();
-                        outputGenerator.generate();
-                    } else {
-                        app.parseTable();
-                    }
-                }, 500));
-            }
+            // Input handling
+            elements.inputTextArea?.addEventListener('input', 
+                utils.debounce(app.parseTable, 300)
+            );
 
             // Output format change
-            coreElements.outputFormat?.addEventListener('change', (e) => {
-                outputGenerator.setFormat(e.target.value);
-            });
-
-            // Prevent data loss
-            window.addEventListener('beforeunload', (e) => {
-                if (tableState.isModified && !tableState.isEmpty()) {
-                    e.preventDefault();
-                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            document.addEventListener('change', (e) => {
+                if (e.target?.id === 'outputFormat') {
+                    outputManager.setFormat(e.target.value);
                 }
             });
 
-            // Details toggle improvements
-            [coreElements.advancedOpsDetails, coreElements.analysisDetails].forEach(details => {
-                if (details) {
-                    details.addEventListener('toggle', (e) => {
-                        const summary = e.target.querySelector('summary');
-                        summary.setAttribute('aria-expanded', e.target.open);
-                        
-                        if (e.target.open && e.target.id === 'analysisDetails') {
-                            tableAnalyzer.analyze();
-                        }
-                    });
+            // Window events
+            window.addEventListener('DOMContentLoaded', themeManager.init);
+            window.addEventListener('beforeunload', (e) => {
+                if (!tableState.isEmpty()) {
+                    e.preventDefault();
+                    e.returnValue = '';
                 }
             });
         },
 
         initializeKeyboardShortcuts: () => {
             document.addEventListener('keydown', (e) => {
-                // Don't interfere with form inputs
-                const activeElement = document.activeElement;
-                const isInInput = activeElement && (
-                    activeElement.closest('textarea, input, [contenteditable="true"]') ||
-                    activeElement.isContentEditable
-                );
-
-                if (isInInput) {
-                    // Allow some shortcuts even in inputs
-                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'C') {
-                        e.preventDefault();
-                        app.copyOutputToClipboard();
-                    }
-                    return;
-                }
-
-                // Global shortcuts
-                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+                // Ctrl/Cmd + Z for undo
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
                     e.preventDefault();
                     app.undo();
-                } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+                }
+                
+                // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
+                if ((e.ctrlKey || e.metaKey) && (
+                    (e.key === 'z' && e.shiftKey) || e.key === 'y'
+                )) {
                     e.preventDefault();
                     app.redo();
-                } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                }
+                
+                // Ctrl/Cmd + Enter for parse
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
                     app.parseTable();
-                } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'C') {
+                }
+                
+                // Ctrl/Cmd + Shift + C for copy
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
                     e.preventDefault();
-                    app.copyOutputToClipboard();
-                } else if (e.key === 'Escape') {
-                    notifications.hide();
+                    app.copyToClipboard();
                 }
             });
-        },
-
-        initializeAccessibility: () => {
-            // Add ARIA live regions for dynamic content
-            const liveRegion = document.createElement('div');
-            liveRegion.setAttribute('aria-live', 'polite');
-            liveRegion.setAttribute('aria-atomic', 'true');
-            liveRegion.className = 'sr-only';
-            liveRegion.id = 'status-live-region';
-            document.body.appendChild(liveRegion);
-
-            // Announce table changes
-            const originalRender = tableRenderer.render;
-            tableRenderer.render = function() {
-                originalRender.call(this);
-                if (!tableState.isEmpty()) {
-                    liveRegion.textContent = `Table updated: ${tableState.stats.rows} rows, ${tableState.stats.columns} columns`;
-                }
-            };
-
-            // Enhanced focus management
-            app.setupFocusManagement();
-        },
-
-        setupFocusManagement: () => {
-            // Trap focus in modals/dialogs
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab') {
-                    const focusableElements = document.querySelectorAll(
-                        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), details:not([disabled]), summary:not(:disabled)'
-                    );
-                    
-                    const firstElement = focusableElements[0];
-                    const lastElement = focusableElements[focusableElements.length - 1];
-
-                    if (e.shiftKey && document.activeElement === firstElement) {
-                        e.preventDefault();
-                        lastElement.focus();
-                    } else if (!e.shiftKey && document.activeElement === lastElement) {
-                        e.preventDefault();
-                        firstElement.focus();
-                    }
-                }
-            });
-        },
-
-        initializeAutoSave: () => {
-            // Auto-save to localStorage
-            const saveToStorage = utils.debounce(() => {
-                if (!tableState.isEmpty()) {
-                    const data = {
-                        headers: tableState.headers,
-                        rows: tableState.rows,
-                        alignments: tableState.alignments,
-                        inputValue: coreElements.input.value,
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem('md-table-editor-autosave', JSON.stringify(data));
-                }
-            }, 2000);
-
-            // Load from storage on init
-            const savedData = localStorage.getItem('md-table-editor-autosave');
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    const ageHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
-                    
-                    // Only restore if less than 24 hours old
-                    if (ageHours < 24 && data.headers && data.rows) {
-                        if (confirm('Restore your previous session?')) {
-                            tableState.headers = data.headers;
-                            tableState.rows = data.rows;
-                            tableState.alignments = data.alignments || [];
-                            coreElements.input.value = data.inputValue || '';
-                            tableRenderer.render();
-                            outputGenerator.generate();
-                            notifications.success('Previous session restored');
-                        } else {
-                            localStorage.removeItem('md-table-editor-autosave');
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Failed to restore session:', e);
-                    localStorage.removeItem('md-table-editor-autosave');
-                }
-            }
-
-            // Bind auto-save to state changes
-            const originalSaveToHistory = tableState.saveToHistory;
-            tableState.saveToHistory = function() {
-                originalSaveToHistory.call(this);
-                saveToStorage();
-            };
         }
     };
 

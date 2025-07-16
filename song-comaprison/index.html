@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song List Comparison Tool</title>
+<link rel="stylesheet" href="css/styles-min.css">
+<script src="js/app-min.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Song List Comparison Tool</h1>
+            <p>Compare two song lists and find matches with intelligent fuzzy matching</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <h3>List A (Your Library)</h3>
+                    <div class="file-upload">
+                        <input type="file" id="fileA" class="file-input" accept=".txt" aria-label="Upload List A file">
+                        <label for="fileA" class="file-label">Choose File</label>
+                        <span class="file-name" id="fileNameA"></span>
+                    </div>
+                    <div class="divider">or paste text below</div>
+                    <textarea 
+                        id="textA" 
+                        class="text-input" 
+                        placeholder="Paste your song list here (one song per line)..."
+                        aria-label="List A text input"
+                    ></textarea>
+                </div>
+
+                <div class="input-group">
+                    <h3>List B (Compare Against)</h3>
+                    <div class="file-upload">
+                        <input type="file" id="fileB" class="file-input" accept=".txt" aria-label="Upload List B file">
+                        <label for="fileB" class="file-label">Choose File</label>
+                        <span class="file-name" id="fileNameB"></span>
+                    </div>
+                    <div class="divider">or paste text below</div>
+                    <textarea 
+                        id="textB" 
+                        class="text-input" 
+                        placeholder="Paste your song list here (one song per line)..."
+                        aria-label="List B text input"
+                    ></textarea>
+                </div>
+            </div>
+
+            <button id="compareBtn" class="compare-btn">Compare Lists</button>
+
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Comparing lists with fuzzy matching...</p>
+            </div>
+
+            <div id="results" class="results">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="matchCount">0</div>
+                        <div class="stat-label">Matches Found</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="uniqueACount">0</div>
+                        <div class="stat-label">Only in List A</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="uniqueBCount">0</div>
+                        <div class="stat-label">Only in List B</div>
+                    </div>
+                </div>
+
+                <div id="matchesSection" class="result-section">
+                    <h3>Matching Songs <span class="count-badge" id="matchBadge">0</span></h3>
+                    <div id="matchesList" class="song-list">
+                        <div class="empty-state">No matches found</div>
+                    </div>
+                    <button class="export-btn" onclick="exportList('matches')">Export Matches</button>
+                </div>
+
+                <div id="uniqueASection" class="result-section">
+                    <h3>Only in List A <span class="count-badge" id="uniqueABadge">0</span></h3>
+                    <div id="uniqueAList" class="song-list">
+                        <div class="empty-state">No unique songs in List A</div>
+                    </div>
+                    <button class="export-btn" onclick="exportList('uniqueA')">Export List A Unique</button>
+                </div>
+
+                <div id="uniqueBSection" class="result-section">
+                    <h3>Only in List B <span class="count-badge" id="uniqueBBadge">0</span></h3>
+                    <div id="uniqueBList" class="song-list">
+                        <div class="empty-state">No unique songs in List B</div>
+                    </div>
+                    <button class="export-btn" onclick="exportList('uniqueB')">Export List B Unique</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
