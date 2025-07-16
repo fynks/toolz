@@ -3,82 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <title>Demographic Calculator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f9fc;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            margin: 0;
-        }
-        main {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            max-width: 480px;
-            width: 100%;
-        }
-        h2 {
-            color: #333;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        select, input[type="number"], button {
-            padding: 12px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            width: 98%;
-            margin: 8px 0;
-            font-size: 16px;
-        }
-        button {
-            background-color: #0066cc;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        button:hover {
-            background-color: #00509d;
-        }
-        .calculator {
-            display: none;
-            margin-top: 15px;
-        }
-        .result {
-            font-weight: bold;
-            color: #0f0f0fde;
-            text-align: center;
-            margin-top: 12px;
-            font-size: 1.1em;
-        }
-        .visible {
-            display: block;
-        }
-        .result[aria-live="polite"] {
-            padding-top: 10px;
-        }
-        .label,
-        select, input[type="number"], button {
-            outline: none;
-        }
-        select:focus,
-        input[type="number"]:focus,
-        button:focus {
-            outline: 2px solid #0066cc;
-        }
-        @media (max-width: 600px) {
-            main {
-                padding: 15px;
-            }
-            select, input[type="number"], button {
-                font-size: 14px;
-            }
+ body{ font-family: Arial, sans-serif; background-color: #f7f9fc; color: #333; display: flex; justify-content: center; padding: 20px; margin: 0;} main{ background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); max-width: 480px; width: 100%;} h2{ color: #333; text-align: center; font-weight: bold; margin-bottom: 15px;} select, input[type="number"], button{ padding: 12px; border-radius: 5px; border: 1px solid #ddd; width: 98%; margin: 8px 0; font-size: 16px;} button{ background-color: #0066cc; color: #fff; border: none; cursor: pointer; font-weight: 600;} button:hover{ background-color: #00509d;} .calculator{ display: none; margin-top: 15px;} .result{ font-weight: bold; color: #0f0f0fde; text-align: center; margin-top: 12px; font-size: 1.1em;} .visible{ display: block;} .result[aria-live="polite"]{ padding-top: 10px;} .label, select, input[type="number"], button{ outline: none;} select:focus, input[type="number"]:focus, button:focus{ outline: 2px solid #0066cc;} @media (max-width: 600px){ main{ padding: 15px;} select, input[type="number"], button{ font-size: 14px;   }
         }
     </style>
 </head>
