@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>OPML Feed Manager - Free RSS Feed Editor & OPML File Manager</title>
+    <meta name="description"
+        content="Free online OPML editor and RSS feed manager. Upload, edit, organize, and export OPML files with ease. Manage your RSS feeds, podcasts, and news subscriptions efficiently.">
+    <meta name="keywords"
+        content="OPML editor, RSS feed manager, OPML file editor, RSS organizer, feed management tool, podcast manager, news feed organizer, XML editor">
+    <meta name="author" content="Your Name">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="en">
+
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://toolz1.netlify.app/opml-editor/">
+
+    <!-- Favicon -->
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+
+    <link rel="stylesheet" href="css/styles-min.css">
+    <script src="js/app-min.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📡 OPML Feed Manager</h1>
+            <p>Manage your RSS feeds with style and simplicity</p>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section" aria-label="File Upload">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Click to upload or drag & drop</div>
+                    <div class="upload-subtext">Select your OPML file to get started</div>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".opml,.xml"
+                    aria-label="Upload OPML file" />
+            </section>
+
+            <section id="feedsSection" style="display: none;" aria-label="Feed Management">
+                <div class="controls">
+                    <div class="search-box">
+                        <div class="search-icon">🔍</div>
+                        <input type="text" class="search-input" id="searchInput"
+                            placeholder="Search feeds by title or URL..." aria-label="Search feeds" />
+                    </div>
+                    <div class="bulk-actions">
+                        <button class="btn secondary" onclick="selectAll()" aria-label="Select all feeds">Select
+                            All</button>
+                        <button class="btn secondary" onclick="deselectAll()" aria-label="Deselect all feeds">Deselect
+                            All</button>
+                        <button class="btn secondary" onclick="removeSelected()"
+                            aria-label="Remove selected feeds">Remove Selected</button>
+                    </div>
+                </div>
+
+                <div class="feeds-header">
+                    <h2>Your RSS Feeds</h2>
+                    <div class="feeds-count" id="feedsCount">0 feeds loaded</div>
+                </div>
+
+                <div class="feeds-grid" id="feedsGrid" role="grid" aria-label="Feed collection"></div>
+
+                <section class="export-section" aria-label="Export Options">
+                    <div class="export-title">Export Your Feed Collection</div>
+                    <div class="export-description">
+                        Download your customized RSS feed collection as an OPML file
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalFeeds">0</span>
+                            <div class="stat-label">Total Feeds</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="selectedFeeds">0</span>
+                            <div class="stat-label">Selected</div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="exportOPML()" aria-label="Download OPML file">
+                        <span id="exportText">📥 Download OPML</span>
+                    </button>
+                </section>
+            </section>
+
+            <section id="emptyState" class="empty-state" aria-label="Empty state">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">No RSS feeds loaded yet</div>
+                <div class="empty-subtext">Upload an OPML file to get started managing your feeds</div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p>Free online OPML editor for RSS feeds, podcasts, and news subscriptions. No registration required.</p>
+        <p>Made with ❤️ by <a href="http://github.com/fynks">Fynks</a></p>
+    </footer>
+</body>
+
+</html>
