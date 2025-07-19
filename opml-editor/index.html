@@ -50,9 +50,15 @@
                     <div class="search-box">
                         <div class="search-icon">🔍</div>
                         <input type="text" class="search-input" id="searchInput"
-                            placeholder="Search feeds by title or URL..." aria-label="Search feeds" />
+                            placeholder="Search feeds by title, URL, category..." aria-label="Search feeds" />
                     </div>
                     <div class="bulk-actions">
+                        <button class="btn primary" onclick="showAddFeedModal()" aria-label="Add new RSS feed">
+                            ➕ Add Feed
+                        </button>
+                        <button class="btn secondary" onclick="validateAllFeeds()" aria-label="Validate all feeds">
+                            ✓ Validate Feeds
+                        </button>
                         <button class="btn secondary" onclick="selectAll()" aria-label="Select all feeds">Select
                             All</button>
                         <button class="btn secondary" onclick="deselectAll()" aria-label="Deselect all feeds">Deselect
@@ -98,8 +104,84 @@
         </main>
     </div>
 
+    <!-- Add/Edit Feed Modal -->
+    <div id="feedModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New RSS Feed</h3>
+                <button class="modal-close" onclick="closeFeedModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="feedForm">
+                    <div class="form-group">
+                        <label for="feedTitle">Feed Title *</label>
+                        <input type="text" id="feedTitle" name="title" placeholder="Enter feed title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedUrl">RSS Feed URL *</label>
+                        <input type="url" id="feedUrl" name="xmlUrl" placeholder="https://example.com/feed.xml" required>
+                        <button type="button" class="btn secondary small" onclick="validateFeedUrl()">
+                            🔍 Validate URL
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedWebsite">Website URL</label>
+                        <input type="url" id="feedWebsite" name="htmlUrl" placeholder="https://example.com">
+                        <button type="button" class="btn secondary small" onclick="autoFillWebsite()">
+                            🔗 Auto-fill
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedDescription">Description</label>
+                        <textarea id="feedDescription" name="description" placeholder="Brief description of the feed" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedCategory">Category/Tag</label>
+                        <input type="text" id="feedCategory" name="category" placeholder="e.g., News, Tech, Sports" list="categoryList">
+                        <datalist id="categoryList"></datalist>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn secondary" onclick="closeFeedModal()">Cancel</button>
+                        <button type="submit" class="btn primary">
+                            <span id="saveButtonText">Add Feed</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Preview Modal -->
+    <div id="previewModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="previewTitle">Feed Preview</h3>
+                <button class="modal-close" onclick="closePreviewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent" class="preview-content">
+                    <div class="loading-spinner">Loading feed preview...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validation Results Modal -->
+    <div id="validationModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Feed Validation Results</h3>
+                <button class="modal-close" onclick="closeValidationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="validationResults" class="validation-results"></div>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <p>Free online OPML editor for RSS feeds, podcasts, and news subscriptions. No registration required.</p>
+        <p>Keyboard shortcuts: Ctrl+N (Add Feed), Ctrl+A (Select All), Ctrl+D (Deselect All), Ctrl+S (Export), Ctrl+F (Search), Esc (Close Modals)</p>
         <p>Made with ❤️ by <a href="http://github.com/fynks">Fynks</a></p>
     </footer>
 </body>

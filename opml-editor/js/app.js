@@ -1,5 +1,7 @@
         let feeds = [];
         let filteredFeeds = [];
+        let editingFeedId = null;
+        let feedValidationCache = new Map();
 
         // File handling
         const fileInput = document.getElementById('fileInput');
@@ -75,8 +77,9 @@
                         xmlUrl: xmlUrl,
                         htmlUrl: htmlUrl || xmlUrl,
                         description: outline.getAttribute('description') || '',
-                        category: outline.getAttribute('category') || '',
-                        selected: true
+                        category: outline.getAttribute('category') || outline.getAttribute('type') || '',
+                        selected: true,
+                        validationStatus: 'unknown'
                     });
                 }
             }
@@ -109,16 +112,26 @@
             filteredFeeds.forEach(feed => {
                 const feedCard = document.createElement('div');
                 feedCard.className = `feed-card ${feed.selected ? 'selected' : ''} fade-in`;
+                
+                const validationStatus = getValidationStatusHtml(feed);
+                const categoryHtml = feed.category ? `<div class="feed-category">${escapeHtml(feed.category)}</div>` : '';
+                
                 feedCard.innerHTML = `
                     <div class="feed-header">
-                        <div class="feed-title">${escapeHtml(feed.title)}</div>
+                        <div class="feed-title">
+                            ${escapeHtml(feed.title)}
+                            ${validationStatus}
+                        </div>
                         <div class="checkbox ${feed.selected ? 'checked' : ''}" onclick="toggleFeed(${feed.id})"></div>
                     </div>
                     <div class="feed-url">${escapeHtml(feed.xmlUrl)}</div>
                     ${feed.description ? `<div class="feed-description">${escapeHtml(feed.description)}</div>` : ''}
+                    ${categoryHtml}
                     <div class="feed-actions">
-                        <a href="${escapeHtml(feed.htmlUrl)}" target="_blank" class="feed-link">🔗 Visit Site</a>
-                        <a href="${escapeHtml(feed.xmlUrl)}" target="_blank" class="feed-link">📡 RSS Feed</a>
+                        <button class="btn feed-edit-btn" onclick="editFeed(${feed.id})">✏️ Edit</button>
+                        <button class="btn feed-preview-btn" onclick="previewFeed(${feed.id})">👀 Preview</button>
+                        <a href="${escapeHtml(feed.htmlUrl)}" target="_blank" class="btn secondary">🔗 Visit</a>
+                        <a href="${escapeHtml(feed.xmlUrl)}" target="_blank" class="btn secondary">📡 RSS</a>
                     </div>
                 `;
                 feedsGrid.appendChild(feedCard);
@@ -170,7 +183,8 @@
             filteredFeeds = feeds.filter(feed => 
                 feed.title.toLowerCase().includes(searchTerm) ||
                 feed.xmlUrl.toLowerCase().includes(searchTerm) ||
-                feed.description.toLowerCase().includes(searchTerm)
+                feed.description.toLowerCase().includes(searchTerm) ||
+                (feed.category && feed.category.toLowerCase().includes(searchTerm))
             );
             renderFeeds();
         }
@@ -316,3 +330,370 @@
 
         // Initialize
         updateStats();
+
+        // New Feed Management Functions
+        function showAddFeedModal() {
+            editingFeedId = null;
+            document.getElementById('modalTitle').textContent = 'Add New RSS Feed';
+            document.getElementById('saveButtonText').textContent = 'Add Feed';
+            document.getElementById('feedForm').reset();
+            updateCategoryList();
+            document.getElementById('feedModal').style.display = 'flex';
+        }
+
+        function editFeed(feedId) {
+            const feed = feeds.find(f => f.id === feedId);
+            if (!feed) return;
+
+            editingFeedId = feedId;
+            document.getElementById('modalTitle').textContent = 'Edit RSS Feed';
+            document.getElementById('saveButtonText').textContent = 'Save Changes';
+            
+            document.getElementById('feedTitle').value = feed.title;
+            document.getElementById('feedUrl').value = feed.xmlUrl;
+            document.getElementById('feedWebsite').value = feed.htmlUrl || '';
+            document.getElementById('feedDescription').value = feed.description || '';
+            document.getElementById('feedCategory').value = feed.category || '';
+            
+            updateCategoryList();
+            document.getElementById('feedModal').style.display = 'flex';
+        }
+
+        function closeFeedModal() {
+            document.getElementById('feedModal').style.display = 'none';
+            editingFeedId = null;
+        }
+
+        function updateCategoryList() {
+            const categories = [...new Set(feeds.map(f => f.category).filter(Boolean))];
+            const datalist = document.getElementById('categoryList');
+            datalist.innerHTML = categories.map(cat => `<option value="${escapeHtml(cat)}">`).join('');
+        }
+
+        // Form submission handler
+        document.getElementById('feedForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const feedData = {
+                title: formData.get('title').trim(),
+                xmlUrl: formData.get('xmlUrl').trim(),
+                htmlUrl: formData.get('htmlUrl').trim() || formData.get('xmlUrl').trim(),
+                description: formData.get('description').trim(),
+                category: formData.get('category').trim()
+            };
+
+            if (!feedData.title || !feedData.xmlUrl) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+
+            if (editingFeedId !== null) {
+                // Update existing feed
+                const feed = feeds.find(f => f.id === editingFeedId);
+                if (feed) {
+                    Object.assign(feed, feedData);
+                    showNotification('Feed updated successfully!', 'success');
+                }
+            } else {
+                // Add new feed
+                const newId = Math.max(...feeds.map(f => f.id), 0) + 1;
+                feeds.push({
+                    id: newId,
+                    selected: true,
+                    validationStatus: 'unknown',
+                    ...feedData
+                });
+                showNotification('Feed added successfully!', 'success');
+            }
+
+            filterFeeds();
+            updateStats();
+            closeFeedModal();
+        });
+
+        function validateFeedUrl() {
+            const url = document.getElementById('feedUrl').value.trim();
+            if (!url) {
+                showNotification('Please enter a feed URL first', 'error');
+                return;
+            }
+
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Checking...';
+            button.disabled = true;
+
+            validateSingleFeed(url)
+                .then(result => {
+                    if (result.valid) {
+                        showNotification('Feed URL is valid!', 'success');
+                        if (result.title && !document.getElementById('feedTitle').value) {
+                            document.getElementById('feedTitle').value = result.title;
+                        }
+                        if (result.htmlUrl && !document.getElementById('feedWebsite').value) {
+                            document.getElementById('feedWebsite').value = result.htmlUrl;
+                        }
+                    } else {
+                        showNotification(`Feed validation failed: ${result.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification(`Validation error: ${error.message}`, 'error');
+                })
+                .finally(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                });
+        }
+
+        function autoFillWebsite() {
+            const feedUrl = document.getElementById('feedUrl').value.trim();
+            if (!feedUrl) {
+                showNotification('Please enter a feed URL first', 'error');
+                return;
+            }
+
+            try {
+                const url = new URL(feedUrl);
+                const baseUrl = `${url.protocol}//${url.host}`;
+                document.getElementById('feedWebsite').value = baseUrl;
+                showNotification('Website URL auto-filled', 'info');
+            } catch (error) {
+                showNotification('Could not extract website URL', 'error');
+            }
+        }
+
+        // Feed validation
+        async function validateSingleFeed(feedUrl) {
+            try {
+                // Check if URL is accessible and appears to be a feed
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+                const data = await response.json();
+                
+                if (!data.contents) {
+                    throw new Error('Unable to fetch feed content');
+                }
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/xml');
+                
+                // Check for RSS/Atom elements
+                const isRSS = doc.querySelector('rss, feed, channel');
+                if (!isRSS) {
+                    throw new Error('Not a valid RSS/Atom feed');
+                }
+
+                // Extract feed information
+                const title = doc.querySelector('title, channel > title')?.textContent?.trim();
+                const link = doc.querySelector('link, channel > link')?.textContent?.trim();
+                
+                return {
+                    valid: true,
+                    title: title,
+                    htmlUrl: link
+                };
+            } catch (error) {
+                return {
+                    valid: false,
+                    error: error.message
+                };
+            }
+        }
+
+        function validateAllFeeds() {
+            if (feeds.length === 0) {
+                showNotification('No feeds to validate', 'info');
+                return;
+            }
+
+            document.getElementById('validationResults').innerHTML = '<div class="loading-spinner">Validating feeds...</div>';
+            document.getElementById('validationModal').style.display = 'flex';
+
+            const validationPromises = feeds.map(feed => 
+                validateSingleFeed(feed.xmlUrl)
+                    .then(result => ({
+                        feed: feed,
+                        result: result
+                    }))
+            );
+
+            Promise.all(validationPromises).then(results => {
+                displayValidationResults(results);
+                
+                // Update feed validation status
+                results.forEach(({feed, result}) => {
+                    feed.validationStatus = result.valid ? 'valid' : 'invalid';
+                    feed.validationError = result.error;
+                    feedValidationCache.set(feed.xmlUrl, result);
+                });
+                
+                renderFeeds();
+            });
+        }
+
+        function displayValidationResults(results) {
+            const validFeeds = results.filter(r => r.result.valid);
+            const invalidFeeds = results.filter(r => !r.result.valid);
+
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <h4>Validation Summary</h4>
+                    <p>✅ ${validFeeds.length} valid feeds | ❌ ${invalidFeeds.length} invalid feeds</p>
+                </div>
+            `;
+
+            results.forEach(({feed, result}) => {
+                html += `
+                    <div class="validation-item">
+                        <div class="validation-icon">${result.valid ? '✅' : '❌'}</div>
+                        <div class="validation-details">
+                            <h4>${escapeHtml(feed.title)}</h4>
+                            <p>${escapeHtml(feed.xmlUrl)}</p>
+                            ${result.error ? `<p style="color: #d32f2f; font-weight: 500;">${escapeHtml(result.error)}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('validationResults').innerHTML = html;
+        }
+
+        function closeValidationModal() {
+            document.getElementById('validationModal').style.display = 'none';
+        }
+
+        function getValidationStatusHtml(feed) {
+            if (!feed.validationStatus || feed.validationStatus === 'unknown') return '';
+            
+            const statusMap = {
+                valid: { text: 'Valid', class: 'status-valid' },
+                invalid: { text: 'Invalid', class: 'status-invalid' },
+                checking: { text: 'Checking', class: 'status-checking' }
+            };
+            
+            const status = statusMap[feed.validationStatus];
+            return status ? `<span class="feed-validation-status ${status.class}">${status.text}</span>` : '';
+        }
+
+        // Feed preview functionality
+        async function previewFeed(feedId) {
+            const feed = feeds.find(f => f.id === feedId);
+            if (!feed) return;
+
+            document.getElementById('previewTitle').textContent = `Preview: ${feed.title}`;
+            document.getElementById('previewContent').innerHTML = '<div class="loading-spinner">Loading feed preview...</div>';
+            document.getElementById('previewModal').style.display = 'flex';
+
+            try {
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.xmlUrl)}`);
+                const data = await response.json();
+                
+                if (!data.contents) {
+                    throw new Error('Unable to fetch feed content');
+                }
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/xml');
+                
+                displayFeedPreview(feed, doc);
+            } catch (error) {
+                document.getElementById('previewContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #d32f2f;">
+                        <p>❌ Failed to load feed preview</p>
+                        <p style="font-size: 14px; color: #666;">${escapeHtml(error.message)}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayFeedPreview(feed, doc) {
+            const title = doc.querySelector('title, channel > title')?.textContent?.trim() || feed.title;
+            const description = doc.querySelector('description, channel > description')?.textContent?.trim() || '';
+            const items = doc.querySelectorAll('item, entry');
+
+            let html = `
+                <div class="preview-feed-info">
+                    <h3>${escapeHtml(title)}</h3>
+                    ${description ? `<p>${escapeHtml(description.substring(0, 200))}...</p>` : ''}
+                    <p><strong>Feed URL:</strong> <a href="${escapeHtml(feed.xmlUrl)}" target="_blank">${escapeHtml(feed.xmlUrl)}</a></p>
+                    ${feed.htmlUrl ? `<p><strong>Website:</strong> <a href="${escapeHtml(feed.htmlUrl)}" target="_blank">${escapeHtml(feed.htmlUrl)}</a></p>` : ''}
+                </div>
+            `;
+
+            if (items.length > 0) {
+                html += '<div class="preview-articles">';
+                html += `<h4>Recent Articles (${Math.min(items.length, 5)} of ${items.length})</h4>`;
+                
+                Array.from(items).slice(0, 5).forEach(item => {
+                    const itemTitle = item.querySelector('title')?.textContent?.trim() || 'Untitled';
+                    const itemDescription = item.querySelector('description, summary')?.textContent?.trim() || '';
+                    const itemDate = item.querySelector('pubDate, published, updated')?.textContent?.trim() || '';
+                    
+                    html += `
+                        <div class="preview-article">
+                            <h4>${escapeHtml(itemTitle)}</h4>
+                            ${itemDescription ? `<p>${escapeHtml(itemDescription.substring(0, 150))}...</p>` : ''}
+                            ${itemDate ? `<div class="article-meta">Published: ${escapeHtml(new Date(itemDate).toLocaleDateString())}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            } else {
+                html += '<p>No recent articles found in this feed.</p>';
+            }
+
+            document.getElementById('previewContent').innerHTML = html;
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const modals = ['feedModal', 'previewModal', 'validationModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Close modals with Escape key
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.modal[style*="flex"]');
+                if (openModal) {
+                    openModal.style.display = 'none';
+                    return;
+                }
+            }
+
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'a':
+                        e.preventDefault();
+                        selectAll();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        deselectAll();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        if (feeds.length > 0) exportOPML();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        document.getElementById('searchInput').focus();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        showAddFeedModal();
+                        break;
+                }
+            }
+        });
