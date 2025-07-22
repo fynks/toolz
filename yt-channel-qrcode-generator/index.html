@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Channel QR Codes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .description {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .qr-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .qr-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+        .qr-code {
+            flex-shrink: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .qr-code img {
+            display: block;
+            width: 120px;
+            height: 120px;
+        }
+        .url-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .channel-id {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .url-text {
+            font-size: 0.85em;
+            color: #333;
+            word-break: break-all;
+            line-height: 1.4;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+        }
+        .copy-btn:hover {
+            background: #5a67d8;
+        }
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            margin: 50px 0;
+        }
+        @media (max-width: 768px) {
+            .qr-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            .qr-code img {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 YouTube Channel QR Codes</h1>
+        <div class="description">
+            Scan any QR code below to visit the YouTube channel directly on your mobile device
+        </div>
+        
+        <div id="loading" class="loading">
+            ⏳ Generating QR codes...
+        </div>
+        
+        <div id="qr-grid" class="qr-grid" style="display: none;">
+        </div>
+    </div>
+
+    <script>
+        const urls = [
+            'https://www.youtube.com/channel/UCOhzOImpPwT1klYmttywq3w',
+            'https://www.youtube.com/channel/UCRG_N2uO405WO4P3Ruef9NA',
+            'https://www.youtube.com/channel/UCWsjjgyHya6TDKpZIHW3BrA'
+        ];
+
+        function extractChannelId(url) {
+            const match = url.match(/channel\/([^\/\?]+)/);
+            return match ? match[1] : 'Unknown';
+        }
+
+        function generateQRCode(url) {
+            // Using QR Server API for generating QR codes
+            const size = 120;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
+            return qrUrl;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Create temporary notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                `;
+                notification.textContent = 'URL copied to clipboard!';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy URL');
+            });
+        }
+
+        function createQRItem(url, index) {
+            const channelId = extractChannelId(url);
+            const qrCodeUrl = generateQRCode(url);
+            
+            const item = document.createElement('div');
+            item.className = 'qr-item';
+            
+            item.innerHTML = `
+                <div class="qr-code">
+                    <img src="${qrCodeUrl}" alt="QR Code for ${channelId}" loading="lazy">
+                </div>
+                <div class="url-info">
+                    <div class="channel-id">Channel #${index + 1}: ${channelId}</div>
+                    <div class="url-text">${url}</div>
+                    <button class="copy-btn" onclick="copyToClipboard('${url}')">📋 Copy URL</button>
+                </div>
+            `;
+            
+            return item;
+        }
+
+        function loadQRCodes() {
+            const grid = document.getElementById('qr-grid');
+            const loading = document.getElementById('loading');
+            
+            urls.forEach((url, index) => {
+                const item = createQRItem(url, index);
+                grid.appendChild(item);
+            });
+            
+            // Hide loading and show grid
+            loading.style.display = 'none';
+            grid.style.display = 'grid';
+        }
+
+        // Load QR codes when page is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadQRCodes, 500); // Small delay for better UX
+        });
+
+        // Make copyToClipboard available globally
+        window.copyToClipboard = copyToClipboard;
+    </script>
+</body>
+</html> 
