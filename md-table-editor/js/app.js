@@ -274,33 +274,45 @@
         }
     };
 
-    // Table parsing with improved error handling
+    
+    // Table parsing with improved error handling and HTML support
     const tableParser = {
         parse: (inputText) => {
             if (!inputText?.trim()) {
-                throw new Error('Please enter a markdown table');
+                throw new Error('Please enter a markdown or HTML table');
             }
-
+    
+            const trimmedInput = inputText.trim();
+            
+            // Detect if input is HTML table
+            if (trimmedInput.toLowerCase().includes('<table')) {
+                return tableParser.parseHTML(trimmedInput);
+            } else {
+                return tableParser.parseMarkdown(trimmedInput);
+            }
+        },
+    
+        parseMarkdown: (inputText) => {
             const lines = inputText.trim().split('\n').filter(line => line.trim());
             
             if (lines.length < 2) {
-                throw new Error('Table must have at least a header and separator row');
+                throw new Error('Markdown table must have at least a header and separator row');
             }
-
+    
             const headers = tableParser.parseRow(lines[0]);
             const separatorCells = tableParser.parseRow(lines[1]);
             
             if (headers.length !== separatorCells.length) {
                 throw new Error('Header and separator row must have the same number of columns');
             }
-
+    
             const alignments = separatorCells.map(cell => {
                 const trimmed = cell.trim();
                 if (trimmed.startsWith(':') && trimmed.endsWith(':')) return ALIGNMENTS.CENTER;
                 if (trimmed.endsWith(':')) return ALIGNMENTS.RIGHT;
                 return ALIGNMENTS.LEFT;
             });
-
+    
             const rows = lines.slice(2).map((line, index) => {
                 const row = tableParser.parseRow(line);
                 if (row.length !== headers.length) {
@@ -311,14 +323,81 @@
                 }
                 return row;
             });
-
+    
             return {
                 headers: headers.map(utils.sanitizeInput),
                 alignments,
                 rows: rows.map(row => row.map(utils.sanitizeInput))
             };
         },
-
+    
+        parseHTML: (htmlText) => {
+            try {
+                // Create a temporary DOM element to parse HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlText;
+                
+                const table = tempDiv.querySelector('table');
+                if (!table) {
+                    throw new Error('No table element found in HTML input');
+                }
+    
+                // Extract headers
+                const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+                if (!headerRow) {
+                    throw new Error('No header row found in HTML table');
+                }
+    
+                const headers = Array.from(headerRow.querySelectorAll('th, td')).map(cell => 
+                    cell.textContent.trim()
+                );
+    
+                if (headers.length === 0) {
+                    throw new Error('No headers found in HTML table');
+                }
+    
+                // Extract alignments from CSS classes or styles (default to left)
+                const alignments = Array.from(headerRow.querySelectorAll('th, td')).map(cell => {
+                    const classList = cell.classList;
+                    const style = cell.style.textAlign || '';
+                    
+                    if (classList.contains('text-center') || style === 'center') return ALIGNMENTS.CENTER;
+                    if (classList.contains('text-right') || style === 'right') return ALIGNMENTS.RIGHT;
+                    return ALIGNMENTS.LEFT;
+                });
+    
+                // Extract body rows
+                const tbody = table.querySelector('tbody');
+                const bodyRows = tbody ? 
+                    Array.from(tbody.querySelectorAll('tr')) :
+                    Array.from(table.querySelectorAll('tr')).slice(1); // Skip first row if no tbody
+    
+                const rows = bodyRows.map((row, index) => {
+                    const cells = Array.from(row.querySelectorAll('td, th')).map(cell => 
+                        cell.textContent.trim()
+                    );
+                    
+                    if (cells.length !== headers.length) {
+                        console.warn(`HTML row ${index + 1} has ${cells.length} columns, expected ${headers.length}. Padding with empty cells.`);
+                        // Pad or trim row to match header length
+                        while (cells.length < headers.length) cells.push('');
+                        if (cells.length > headers.length) cells.splice(headers.length);
+                    }
+                    
+                    return cells;
+                });
+    
+                return {
+                    headers: headers.map(utils.sanitizeInput),
+                    alignments,
+                    rows: rows.map(row => row.map(utils.sanitizeInput))
+                };
+    
+            } catch (error) {
+                throw new Error(`Error parsing HTML table: ${error.message}`);
+            }
+        },
+    
         parseRow: (line) => {
             return line.split('|')
                       .filter((cell, index, array) => {
@@ -329,7 +408,7 @@
                       .map(cell => cell.trim());
         }
     };
-
+    
     // Output generators
     const outputGenerators = {
         [OUTPUT_FORMATS.MARKDOWN]: () => {
