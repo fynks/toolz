@@ -277,19 +277,41 @@
     
     // Table parsing with improved error handling and HTML support
     const tableParser = {
+        // Replace the existing parse method
         parse: (inputText) => {
             if (!inputText?.trim()) {
                 throw new Error('Please enter a markdown or HTML table');
             }
-    
+        
             const trimmedInput = inputText.trim();
             
-            // Detect if input is HTML table
-            if (trimmedInput.toLowerCase().includes('<table')) {
+            // Enhanced detection logic
+            const isHTML = tableParser.detectHTMLTable(trimmedInput);
+            const isMarkdown = tableParser.detectMarkdownTable(trimmedInput);
+            
+            if (isHTML) {
                 return tableParser.parseHTML(trimmedInput);
-            } else {
+            } else if (isMarkdown) {
                 return tableParser.parseMarkdown(trimmedInput);
+            } else {
+                throw new Error('Input does not appear to be a valid HTML or Markdown table');
             }
+        },
+        
+        detectHTMLTable: (text) => {
+            const htmlRegex = /<table[\s\S]*?<\/table>/i;
+            return htmlRegex.test(text) || text.toLowerCase().includes('<table');
+        },
+        
+        detectMarkdownTable: (text) => {
+            const lines = text.split('\n').filter(line => line.trim());
+            if (lines.length < 2) return false;
+            
+            // Check if it has pipe characters and separator row
+            const hasPipes = lines.some(line => line.includes('|'));
+            const hasSeparator = lines.some(line => /^\s*\|?\s*:?-+:?\s*\|\s*/.test(line));
+            
+            return hasPipes && hasSeparator;
         },
     
         parseMarkdown: (inputText) => {
@@ -331,9 +353,10 @@
             };
         },
     
+        // Replace the existing parseHTML method with this improved version
         parseHTML: (htmlText) => {
             try {
-                // Create a temporary DOM element to parse HTML
+                // Create a temporary DOM element to parse HTML safely
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlText;
                 
@@ -341,58 +364,104 @@
                 if (!table) {
                     throw new Error('No table element found in HTML input');
                 }
-    
-                // Extract headers
-                const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+        
+                // Extract headers - try multiple strategies
+                let headerRow = table.querySelector('thead tr');
+                if (!headerRow) {
+                    // Try first row with th elements
+                    headerRow = table.querySelector('tr:has(th)');
+                }
+                if (!headerRow) {
+                    // Fallback to first row
+                    headerRow = table.querySelector('tr');
+                }
+                
                 if (!headerRow) {
                     throw new Error('No header row found in HTML table');
                 }
-    
-                const headers = Array.from(headerRow.querySelectorAll('th, td')).map(cell => 
-                    cell.textContent.trim()
-                );
-    
+        
+                const headers = Array.from(headerRow.querySelectorAll('th, td')).map(cell => {
+                    // Handle nested elements and preserve formatting
+                    return cell.textContent?.trim() || cell.innerText?.trim() || '';
+                });
+        
                 if (headers.length === 0) {
                     throw new Error('No headers found in HTML table');
                 }
-    
-                // Extract alignments from CSS classes or styles (default to left)
+        
+                // Enhanced alignment detection
                 const alignments = Array.from(headerRow.querySelectorAll('th, td')).map(cell => {
+                    // Check multiple sources for alignment
                     const classList = cell.classList;
-                    const style = cell.style.textAlign || '';
+                    const computedStyle = window.getComputedStyle(cell);
+                    const inlineStyle = cell.style.textAlign || '';
+                    const textAlign = computedStyle.textAlign || inlineStyle;
                     
-                    if (classList.contains('text-center') || style === 'center') return ALIGNMENTS.CENTER;
-                    if (classList.contains('text-right') || style === 'right') return ALIGNMENTS.RIGHT;
-                    return ALIGNMENTS.LEFT;
-                });
-    
-                // Extract body rows
-                const tbody = table.querySelector('tbody');
-                const bodyRows = tbody ? 
-                    Array.from(tbody.querySelectorAll('tr')) :
-                    Array.from(table.querySelectorAll('tr')).slice(1); // Skip first row if no tbody
-    
-                const rows = bodyRows.map((row, index) => {
-                    const cells = Array.from(row.querySelectorAll('td, th')).map(cell => 
-                        cell.textContent.trim()
-                    );
-                    
-                    if (cells.length !== headers.length) {
-                        console.warn(`HTML row ${index + 1} has ${cells.length} columns, expected ${headers.length}. Padding with empty cells.`);
-                        // Pad or trim row to match header length
-                        while (cells.length < headers.length) cells.push('');
-                        if (cells.length > headers.length) cells.splice(headers.length);
+                    // Check for Bootstrap/common CSS classes
+                    if (classList.contains('text-center') || classList.contains('center') || textAlign === 'center') {
+                        return ALIGNMENTS.CENTER;
+                    }
+                    if (classList.contains('text-right') || classList.contains('right') || textAlign === 'right') {
+                        return ALIGNMENTS.RIGHT;
+                    }
+                    if (classList.contains('text-left') || classList.contains('left') || textAlign === 'left') {
+                        return ALIGNMENTS.LEFT;
                     }
                     
-                    return cells;
+                    return ALIGNMENTS.LEFT; // Default
                 });
-    
+        
+                // Extract body rows with better logic
+                const tbody = table.querySelector('tbody');
+                let bodyRows;
+                
+                if (tbody) {
+                    bodyRows = Array.from(tbody.querySelectorAll('tr'));
+                } else {
+                    // Skip header row(s) if no tbody
+                    const allRows = Array.from(table.querySelectorAll('tr'));
+                    const headerRowIndex = allRows.indexOf(headerRow);
+                    bodyRows = allRows.slice(headerRowIndex + 1);
+                }
+        
+                const rows = bodyRows.map((row, index) => {
+                    const cells = Array.from(row.querySelectorAll('td, th')).map(cell => {
+                        // Better text extraction
+                        return cell.textContent?.trim() || cell.innerText?.trim() || '';
+                    });
+                    
+                    // Handle colspan/rowspan (basic support)
+                    const expandedCells = [];
+                    let cellIndex = 0;
+                    
+                    Array.from(row.querySelectorAll('td, th')).forEach(cell => {
+                        const colspan = parseInt(cell.getAttribute('colspan') || '1');
+                        const cellText = cell.textContent?.trim() || cell.innerText?.trim() || '';
+                        
+                        expandedCells.push(cellText);
+                        // Add empty cells for colspan > 1
+                        for (let i = 1; i < colspan; i++) {
+                            expandedCells.push('');
+                        }
+                    });
+                    
+                    // Ensure consistent column count
+                    while (expandedCells.length < headers.length) {
+                        expandedCells.push('');
+                    }
+                    if (expandedCells.length > headers.length) {
+                        expandedCells.splice(headers.length);
+                    }
+                    
+                    return expandedCells;
+                });
+        
                 return {
                     headers: headers.map(utils.sanitizeInput),
                     alignments,
                     rows: rows.map(row => row.map(utils.sanitizeInput))
                 };
-    
+        
             } catch (error) {
                 throw new Error(`Error parsing HTML table: ${error.message}`);
             }
@@ -853,17 +922,38 @@ ${bodyRows}
             app.initializeKeyboardShortcuts();
         },
 
+        // Improve the parseTable method in the app object
         parseTable: () => {
             const inputText = elements.inputTextArea.value.trim();
             
+            if (!inputText) {
+                notification.show('Please enter a table to parse', NOTIFICATION_TYPES.WARNING);
+                return;
+            }
+            
             try {
                 const parsed = tableParser.parse(inputText);
+                
+                // Validate parsed data
+                utils.validateTableStructure(parsed.headers, parsed.rows);
+                
                 tableState.saveToHistory();
                 Object.assign(tableState, parsed);
                 tableRenderer.render();
-                notification.show('Table parsed successfully!');
+                
+                const format = inputText.toLowerCase().includes('<table') ? 'HTML' : 'Markdown';
+                notification.show(`${format} table parsed successfully! (${parsed.headers.length} columns, ${parsed.rows.length} rows)`);
+                
             } catch (error) {
-                notification.show(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+                // More specific error messages
+                let errorMessage = error.message;
+                if (error.message.includes('HTML')) {
+                    errorMessage = `HTML parsing error: ${error.message}. Check that your HTML table is properly formatted.`;
+                } else if (error.message.includes('Markdown')) {
+                    errorMessage = `Markdown parsing error: ${error.message}. Ensure your table has proper pipe separators and alignment row.`;
+                }
+                
+                notification.show(errorMessage, NOTIFICATION_TYPES.ERROR, 5000);
                 console.error('Parsing error:', error);
             }
         },
