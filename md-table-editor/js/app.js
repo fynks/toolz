@@ -39,6 +39,7 @@
         get moonPath() { return this.themeToggle?.querySelector(".moon"); },
         inputTextArea: document.getElementById("input"),
         outputTextArea: document.getElementById("output"),
+        outputFormat: document.getElementById("outputFormat"),
         tableContainer: document.getElementById("tableContainer"),
         analysisSection: document.getElementById("analysisSection"),
         analysisMarkdownOutput: document.getElementById("analysisMarkdownOutput"),
@@ -403,12 +404,16 @@ ${tableModel.rows.map(row =>
         render() {
             if (!tableModel.isValid()) {
                 elements.tableContainer.innerHTML = "";
+                elements.outputTextArea.value = "";
                 return;
             }
             
             const table = this.createTable();
             elements.tableContainer.innerHTML = "";
             elements.tableContainer.appendChild(table);
+            
+            // Generate output after rendering the table
+            outputManager.generate();
         },
         
         createTable() {
@@ -458,6 +463,7 @@ ${tableModel.rows.map(row =>
                 if (!tableModel.isReorderMode) {
                     tableModel.saveToHistory();
                     tableModel.headers[index] = escapeHtml(th.textContent);
+                    outputManager.generate();
                 }
             });
             
@@ -524,6 +530,7 @@ ${tableModel.rows.map(row =>
                 if (!tableModel.isReorderMode) {
                     tableModel.saveToHistory();
                     tableModel.rows[rowIndex][cellIndex] = escapeHtml(td.textContent);
+                    outputManager.generate();
                 }
             });
             
@@ -888,6 +895,9 @@ ${tableModel.rows.map(row =>
             elements.removeRowBtn?.addEventListener("click", () => tableOperations.removeRow());
             elements.reorderBtn?.addEventListener("click", () => this.toggleReorderMode());
             elements.inputTextArea?.addEventListener("input", debounce(() => this.parseTable(), 300));
+            elements.outputFormat?.addEventListener("change", (event) => {
+                outputManager.setFormat(event.target.value);
+            });
             
             document.addEventListener("change", (event) => {
                 if (event.target?.id === "outputFormat") {
