@@ -126,8 +126,9 @@
     
     // Utility Functions
     const escapeHtml = (text) => {
-        if (typeof text !== "string") return "";
+        if (typeof text !== "string") return String(text || "");
         return text
+            .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
@@ -449,14 +450,6 @@ ${tableModel.rows.map(row =>
                 th.addEventListener("dragstart", dragManager.handleDragStart);
                 th.addEventListener("dragover", dragManager.handleDragOver);
                 th.addEventListener("drop", dragManager.handleDrop);
-            } else {
-                // Add click handler for column deletion
-                th.addEventListener("click", (event) => {
-                    if (event.ctrlKey || event.metaKey) {
-                        event.preventDefault();
-                        tableOperations.removeColumnAt(index);
-                    }
-                });
             }
             
             th.addEventListener("blur", () => {
@@ -515,16 +508,6 @@ ${tableModel.rows.map(row =>
             td.textContent = content;
             td.dataset.row = rowIndex;
             td.dataset.col = cellIndex;
-            
-            if (!tableModel.isReorderMode && cellIndex === 0) {
-                // Add click handler for row deletion on first cell
-                td.addEventListener("click", (event) => {
-                    if (event.ctrlKey || event.metaKey) {
-                        event.preventDefault();
-                        tableOperations.removeRowAt(rowIndex);
-                    }
-                });
-            }
             
             td.addEventListener("blur", () => {
                 if (!tableModel.isReorderMode) {
@@ -619,16 +602,24 @@ ${tableModel.rows.map(row =>
             tableModel.alignments.push(ALIGNMENTS.LEFT);
             tableModel.rows.forEach(row => row.push(""));
             tableRenderer.render();
+            outputManager.generate();
             showNotification("Column added");
         },
         
         addRow() {
             if (tableModel.isReorderMode) return;
             
+            // Ensure there are headers before adding a row
+            if (tableModel.headers.length === 0) {
+                showNotification("Please add headers first", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
+            
             tableModel.saveToHistory();
             const newRow = Array(tableModel.headers.length).fill("");
             tableModel.rows.push(newRow);
             tableRenderer.render();
+            outputManager.generate();
             showNotification("Row added");
         },
         
@@ -645,6 +636,7 @@ ${tableModel.rows.map(row =>
             tableModel.alignments.splice(lastIndex, 1);
             tableModel.rows.forEach(row => row.splice(lastIndex, 1));
             tableRenderer.render();
+            outputManager.generate();
             analysisManager.analyze();
             showNotification("Column removed");
         },
@@ -655,12 +647,17 @@ ${tableModel.rows.map(row =>
                 showNotification("Cannot remove the last column", NOTIFICATION_TYPES.ERROR);
                 return;
             }
+            if (index < 0 || index >= tableModel.headers.length) {
+                showNotification("Invalid column index", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
             
             tableModel.saveToHistory();
             tableModel.headers.splice(index, 1);
             tableModel.alignments.splice(index, 1);
             tableModel.rows.forEach(row => row.splice(index, 1));
             tableRenderer.render();
+            outputManager.generate();
             showNotification("Column removed");
         },
         
@@ -671,6 +668,7 @@ ${tableModel.rows.map(row =>
                 tableModel.saveToHistory();
                 tableModel.rows.pop();
                 tableRenderer.render();
+                outputManager.generate();
                 showNotification("Row removed");
             } else {
                 showNotification("No rows to remove", NOTIFICATION_TYPES.ERROR);
@@ -680,10 +678,16 @@ ${tableModel.rows.map(row =>
         removeRowAt(index) {
             if (tableModel.isReorderMode) return;
             
+            if (index < 0 || index >= tableModel.rows.length) {
+                showNotification("Invalid row index", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
+            
             if (tableModel.rows.length > 0) {
                 tableModel.saveToHistory();
                 tableModel.rows.splice(index, 1);
                 tableRenderer.render();
+                outputManager.generate();
                 showNotification("Row removed");
             } else {
                 showNotification("No rows to remove", NOTIFICATION_TYPES.ERROR);
@@ -693,15 +697,16 @@ ${tableModel.rows.map(row =>
         sortRows() {
             if (tableModel.isReorderMode) return;
             
-            if (tableModel.rows.length > 0) {
+            if (tableModel.rows.length > 1) {
                 tableModel.saveToHistory();
                 tableModel.rows.sort((a, b) => 
                     (a[0]?.toLowerCase() || "").localeCompare(b[0]?.toLowerCase() || "")
                 );
                 tableRenderer.render();
+                outputManager.generate();
                 showNotification("Rows sorted alphabetically");
             } else {
-                showNotification("No rows to sort", NOTIFICATION_TYPES.ERROR);
+                showNotification("Need at least 2 rows to sort", NOTIFICATION_TYPES.ERROR);
             }
         },
         
@@ -822,14 +827,21 @@ ${tableModel.rows.map(row =>
         },
         
         parseTable() {
-            const input = elements.inputTextArea.value.trim();
+            const input = elements.inputTextArea?.value?.trim();
+            if (!input) {
+                showNotification("Please enter a table to parse", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
+            
             try {
                 const parsedTable = tableParser.parse(input);
                 tableModel.saveToHistory();
                 Object.assign(tableModel, parsedTable);
                 tableRenderer.render();
+                outputManager.generate();
                 showNotification("Table parsed successfully!");
             } catch (error) {
+                console.error("Error parsing table:", error);
                 showNotification(`Error parsing table: ${error.message}`, NOTIFICATION_TYPES.ERROR);
             }
         },
@@ -843,20 +855,40 @@ ${tableModel.rows.map(row =>
         },
         
         clearAll() {
-            if (confirm("Are you sure you want to clear everything?")) {
-                elements.inputTextArea.value = "";
-                elements.outputTextArea.value = "";
-                elements.tableContainer.innerHTML = "";
-                elements.analysisMarkdownOutput.textContent = "";
-                tableModel.reset();
-                showNotification("All cleared");
+            const hasData = elements.inputTextArea?.value?.trim() || 
+                           !tableModel.isEmpty() || 
+                           elements.outputTextArea?.value?.trim();
+                           
+            if (hasData && !confirm("Are you sure you want to clear everything?")) {
+                return;
             }
+            
+            if (elements.inputTextArea) elements.inputTextArea.value = "";
+            if (elements.outputTextArea) elements.outputTextArea.value = "";
+            if (elements.tableContainer) elements.tableContainer.innerHTML = "";
+            if (elements.analysisMarkdownOutput) elements.analysisMarkdownOutput.textContent = "";
+            
+            tableModel.reset();
+            showNotification("All cleared");
         },
         
         toggleReorderMode() {
+            if (tableModel.isEmpty()) {
+                showNotification("Please create a table first", NOTIFICATION_TYPES.ERROR);
+                return;
+            }
+            
             tableModel.isReorderMode = !tableModel.isReorderMode;
-            elements.reorderBtn.textContent = tableModel.isReorderMode ? "Edit Table" : "Re-order";
+            if (elements.reorderBtn) {
+                elements.reorderBtn.textContent = tableModel.isReorderMode ? "Edit Table" : "Re-order";
+                elements.reorderBtn.classList.toggle("btn-secondary", tableModel.isReorderMode);
+            }
+            
             tableRenderer.render();
+            showNotification(
+                tableModel.isReorderMode ? "Reorder mode enabled" : "Edit mode enabled",
+                NOTIFICATION_TYPES.INFO
+            );
         },
         
         undo() {
