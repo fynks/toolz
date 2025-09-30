@@ -83,7 +83,16 @@
              const host = cells[0];
              jsonData[host] = {};
              for (let i = 1; i < cells.length; i++) {
-               jsonData[host][headers[i]] = cells[i].toLowerCase() === 'yes' ? 'yes' : 'no';
+               const cellValue = cells[i];
+               // Check for checkmark (✅) or cross mark (❌), or traditional yes/no
+               if (cellValue === '✅' || cellValue.toLowerCase() === 'yes') {
+                 jsonData[host][headers[i]] = '✅';
+               } else if (cellValue === '❌' || cellValue.toLowerCase() === 'no') {
+                 jsonData[host][headers[i]] = '❌';
+               } else {
+                 // Default to cross mark for empty or unknown values
+                 jsonData[host][headers[i]] = '❌';
+               }
              }
            }
          }
@@ -127,6 +136,13 @@
            string.slice(index + 1);
 }
 
+  // Helper function to normalize values to checkmarks
+  function normalizeValue(value) {
+    if (!value) return '❌';
+    const val = value.toString().toLowerCase().trim();
+    return (val === 'yes' || val === '✅') ? '✅' : '❌';
+  }
+
 try {
   let baseJSON = jsonInput ? JSON.parse(jsonInput) : currentJSON;
   if (Object.keys(baseJSON).length === 0) {
@@ -136,16 +152,19 @@ try {
   const supportedServicesList = supportedServices.split(',').map(s => normalizeServiceName(s));
   const updatedJSON = {};
   
-  // First normalize existing services
+  // First normalize existing services and convert values to checkmarks
   Object.entries(baseJSON).forEach(([service, providers]) => {
       const normalizedService = normalizeServiceName(service);
-      updatedJSON[normalizedService] = providers;
+      updatedJSON[normalizedService] = {};
+      Object.entries(providers).forEach(([provider, value]) => {
+          updatedJSON[normalizedService][provider] = normalizeValue(value);
+      });
   });
 
   // Update existing services
   Object.keys(updatedJSON).forEach(service => {
       updatedJSON[service][newProviderName] = 
-          supportedServicesList.includes(normalizeServiceName(service)) ? 'yes' : 'no';
+          supportedServicesList.includes(normalizeServiceName(service)) ? '✅' : '❌';
   });
 
   // Add new services if they don't exist
@@ -156,9 +175,9 @@ try {
           // Copy providers from first existing service
           const firstService = Object.keys(updatedJSON)[0];
           Object.keys(updatedJSON[firstService]).forEach(provider => {
-              updatedJSON[normalizedService][provider] = 'no';
+              updatedJSON[normalizedService][provider] = '❌';
           });
-          updatedJSON[normalizedService][newProviderName] = 'yes';
+          updatedJSON[normalizedService][newProviderName] = '✅';
       }
   });
 
@@ -188,17 +207,25 @@ try {
          throw new Error("No valid JSON data provided");
        }
 
-       const services = Object.keys(jsonData);
-       const providers = Object.keys(jsonData[services[0]]);
+       // Normalize the JSON data to use checkmarks
+       const normalizedData = {};
+       Object.entries(jsonData).forEach(([service, providers]) => {
+         normalizedData[service] = {};
+         Object.entries(providers).forEach(([provider, value]) => {
+           normalizedData[service][provider] = normalizeValue(value);
+         });
+       });
+
+       const services = Object.keys(normalizedData);
+       const providers = Object.keys(normalizedData[services[0]]);
 
        // Create markdown table
        let markdownTable = [
          `| **Service Name** | ${providers.map(p => `**${p}**`).join(' | ')} |`,
-         `| ${'-'.repeat(15)} | ${providers.map(() => '-'.repeat(15)).join(' | ')} |`,
+         `| ${':---'.repeat(1)} | ${providers.map(() => ':---').join(' | ')} |`,
          ...services.map(service => 
-           `| **${service}** | ${providers.map(provider => 
-             (jsonData[service][provider] || 'no').charAt(0).toUpperCase() + 
-             (jsonData[service][provider] || 'no').slice(1)
+           `| ${service} | ${providers.map(provider => 
+             normalizedData[service][provider] || '❌'
            ).join(' | ')} |`
          )
        ].join('\n');
