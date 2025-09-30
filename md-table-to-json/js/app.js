@@ -49,6 +49,29 @@
      }
    };
 
+   // Helper functions
+   function normalizeServiceName(name) {
+     return name.toLowerCase().trim();
+   }
+   
+   function capitalizeFirstLetter(string) {
+     // Find first letter using regex
+     const match = string.match(/[a-zA-Z]/);
+     if (!match) return string; // Return unchanged if no letters found
+     
+     const index = match.index;
+     return string.slice(0, index) + 
+            string[index].toUpperCase() + 
+            string.slice(index + 1);
+   }
+
+   // Helper function to normalize values to checkmarks
+   function normalizeValue(value) {
+     if (!value) return '❌';
+     const val = value.toString().toLowerCase().trim();
+     return (val === 'yes' || val === '✅') ? '✅' : '❌';
+   }
+
    // Markdown to JSON conversion
    document.getElementById('convertToJsonBtn').addEventListener('click', () => {
      const markdownText = document.getElementById('markdownInput').value.trim();
@@ -120,28 +143,6 @@
        selectUpdatedJsonBtn.style.display = 'none';
        return;
      }
-
-  function normalizeServiceName(name) {
-      return name.toLowerCase().trim();
-  }
-  
-  function capitalizeFirstLetter(string) {
-    // Find first letter using regex
-    const match = string.match(/[a-zA-Z]/);
-    if (!match) return string; // Return unchanged if no letters found
-    
-    const index = match.index;
-    return string.slice(0, index) + 
-           string[index].toUpperCase() + 
-           string.slice(index + 1);
-}
-
-  // Helper function to normalize values to checkmarks
-  function normalizeValue(value) {
-    if (!value) return '❌';
-    const val = value.toString().toLowerCase().trim();
-    return (val === 'yes' || val === '✅') ? '✅' : '❌';
-  }
 
 try {
   let baseJSON = jsonInput ? JSON.parse(jsonInput) : currentJSON;
