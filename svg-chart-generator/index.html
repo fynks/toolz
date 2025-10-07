@@ -63,17 +63,6 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="addEntry()">
-                        <i class="fas fa-plus"></i>
-                        Add Data Entry
-                    </button>
-                    <button class="btn btn-success" onclick="generateChart()">
-                        <i class="fas fa-chart-bar"></i>
-                        Generate Chart
-                    </button>
-                </div>
             </div>
 
             <div class="entries-section" id="entriesSection" style="display: none;">
@@ -83,6 +72,19 @@
                     <span id="entryCount" class="stat-value" style="margin-left: auto; font-size: 1rem;">0</span>
                 </h3>
                 <div id="entries"></div>
+                <div class="action-buttons" style="margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="addEntry()">
+                        <i class="fas fa-plus"></i>
+                        Add Data Entry
+                    </button>
+                </div>
+            </div>
+
+            <div class="generate-section">
+                <button class="btn btn-success btn-large" onclick="generateChart()">
+                    <i class="fas fa-chart-bar"></i>
+                    Generate Chart
+                </button>
             </div>
 
             <div class="chart-section">

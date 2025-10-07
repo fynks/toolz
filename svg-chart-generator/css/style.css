@@ -306,9 +306,19 @@ body.dark-theme {
         }
 
         .entry-item {
-            grid-template-columns: 1fr;
+            grid-template-columns: auto 1fr;
             gap: 0.5rem;
             text-align: center;
+        }
+
+        .entry-item input[type="number"],
+        .entry-item .color-input-wrapper,
+        .entry-item .btn-danger {
+            grid-column: 2;
+        }
+
+        .drag-handle {
+            grid-row: 1 / -1;
         }
 
         .action-buttons {
@@ -471,6 +481,18 @@ body.dark-theme {
         background: #059669;
     }
 
+    .btn-large {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .generate-section {
+        display: flex;
+        justify-content: center;
+        margin: 1rem 0;
+    }
+
     .action-buttons {
         display: flex;
         gap: 1rem;
@@ -497,7 +519,7 @@ body.dark-theme {
 
     .entry-item {
         display: grid;
-        grid-template-columns: 1fr 120px 80px auto;
+        grid-template-columns: auto 1fr 120px 80px auto;
         gap: 0.75rem;
         align-items: center;
         padding: 1rem;
@@ -506,6 +528,7 @@ body.dark-theme {
         margin-bottom: 0.75rem;
         border: 1px solid var(--border-color);
         transition: all 0.2s ease;
+        cursor: move;
     }
 
     .entry-item:hover {
@@ -515,6 +538,36 @@ body.dark-theme {
 
     .entry-item:last-child {
         margin-bottom: 0;
+    }
+
+    .entry-item.dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+
+    .entry-item.drag-over {
+        border-color: var(--primary-color);
+        background: var(--secondary-color);
+        border-style: dashed;
+        border-width: 2px;
+    }
+
+    .drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        cursor: grab;
+        padding: 0.5rem;
+        transition: color 0.2s;
+    }
+
+    .drag-handle:hover {
+        color: var(--primary-color);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
     }
 
     .color-input-wrapper {
