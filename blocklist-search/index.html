@@ -1,395 +1,678 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="../favicon.ico" sizes="any">
-    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-    <title>Blocklist Search</title>
-    <style> 
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-     :root{ --primary: #6366f1; --primary-dark: #4f46e5; --primary-light: #818cf8; --success: #10b981; --error: #ef4444; --warning: #f59e0b; --bg-primary: #0a0f1e; --bg-secondary: #151b2e; --bg-tertiary: #1e2640; --bg-card: #1a2035; --text-primary: #f8fafc; --text-secondary: #cbd5e1; --text-muted: #64748b; --border: #2d3748; --border-hover: #4f46e5; --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2); --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2); --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);} *{ margin: 0; padding: 0; box-sizing: border-box;} body{ font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, var(--bg-primary) 0%, #0f172a 100%); min-height: 100vh; color: var(--text-primary); line-height: 1.6; position: relative; overflow-x: hidden;} .container{ max-width: 1600px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3rem); position: relative; z-index: 1;} .header{ text-align: center; margin-bottom: clamp(2rem, 5vw, 4rem);} .logo-wrapper{ display: inline-flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 1rem 2rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 100px; box-shadow: var(--shadow-sm);} .logo{ font-size: 2.5rem;} .header h1{ font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.03em;} .header p{ color: var(--text-secondary); font-size: clamp(0.875rem, 2vw, 1.125rem); margin-top: 0.5rem; font-weight: 500;} .main-grid{ display: grid; grid-template-columns: 1fr; gap: 1.5rem;} @media (min-width: 1200px){ .main-grid{ grid-template-columns: 380px 1fr; gap: 2rem;}} .sidebar{ display: flex; flex-direction: column; gap: 1.5rem;} .card{ background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 1.75rem); box-shadow: var(--shadow-sm); transition: var(--transition);} .card:hover{ border-color: var(--border-hover); box-shadow: var(--shadow-md);} .card-header{ display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);} .card-icon{ font-size: 1.5rem;} .card-title{ font-size: 1.125rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;} .stats-grid{ display: grid; grid-template-columns: 1fr; gap: 1rem;} .stat-card{ background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; transition: var(--transition);} .stat-card:hover{ border-color: var(--primary); transform: translateY(-2px);} .stat-value{ font-size: 2rem; font-weight: 800; color: var(--primary-light); margin-bottom: 0.25rem; line-height: 1;} .stat-label{ font-size: 0.8125rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;} .form-group{ margin-bottom: 1rem;} .form-label{ display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;} .input-wrapper{ position: relative;} input[type="text"], input[type="url"], textarea{ width: 100%; padding: 0.875rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.9375rem; font-family: inherit; transition: var(--transition);} input[type="text"]:focus, input[type="url"]:focus, textarea:focus{ outline: none; border-color: var(--primary); background: var(--bg-tertiary);} input::placeholder, textarea::placeholder{ color: var(--text-muted);} textarea{ resize: vertical; min-height: 180px; font-family: 'SF Mono', monospace; font-size: 0.875rem; line-height: 1.7;} .search-input-wrapper{ position: relative;} .search-input-wrapper::before{ content: '🔍'; position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-size: 1.25rem; opacity: 0.5; pointer-events: none;} .search-input-wrapper input{ padding-left: 3rem; font-size: 1rem; height: 56px;} .btn{ display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border: none; border-radius: var(--radius-md); font-size: 0.9375rem; font-weight: 600; cursor: pointer; transition: var(--transition); font-family: inherit; white-space: nowrap;} .btn:disabled{ opacity: 0.5; cursor: not-allowed;} .btn-primary{ background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);} .btn-primary:hover:not(:disabled){ background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);} .btn-secondary{ background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);} .btn-secondary:hover:not(:disabled){ background: var(--bg-secondary); border-color: var(--border-hover);} .btn-group{ display: flex; gap: 0.75rem; flex-wrap: wrap;} .btn-full{ width: 100%;} .btn-icon{ font-size: 1.125rem;} .results-card{ min-height: 600px; display: flex; flex-direction: column;} .results-header{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;} .badge{ display: inline-flex; align-items: center; padding: 0.375rem 0.875rem; background: rgba(99, 102, 241, 0.15); color: var(--primary-light); border-radius: 100px; font-size: 0.8125rem; font-weight: 600; border: 1px solid rgba(99, 102, 241, 0.2);} .badge.active{ background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.2);} .results-container{ flex: 1; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; overflow-y: auto; max-height: 500px; font-family: 'SF Mono', monospace; font-size: 0.875rem; position: relative;} .results-container::-webkit-scrollbar{ width: 8px;} .results-container::-webkit-scrollbar-track{ background: var(--bg-secondary); border-radius: var(--radius-sm);} .results-container::-webkit-scrollbar-thumb{ background: var(--primary); border-radius: var(--radius-sm);} .result-item{ padding: 0.625rem 0.875rem; margin-bottom: 0.5rem; background: var(--bg-secondary); border-left: 2px solid var(--primary); border-radius: var(--radius-sm); transition: var(--transition); word-break: break-all; color: var(--text-secondary);} .result-item:hover{ background: var(--bg-tertiary); border-left-color: var(--primary-light); transform: translateX(2px); color: var(--text-primary);} .empty-state{ display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; text-align: center; padding: 3rem 2rem;} .empty-icon{ font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.4;} .empty-state p{ font-size: 1.125rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;} .empty-state small{ font-size: 0.875rem; color: var(--text-muted);} .alert-container{ position: fixed; top: 2rem; right: 2rem; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; max-width: 400px;} .alert{ padding: 1rem 1.25rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.75rem; animation: slideInRight 0.3s ease-out; border: 1px solid; box-shadow: var(--shadow-md);} .alert-error{ background: rgba(239, 68, 68, 0.15); border-color: var(--error); color: #fca5a5;} .alert-success{ background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: #6ee7b7;} .alert-icon{ font-size: 1.25rem; flex-shrink: 0;} .alert-message{ flex: 1; font-size: 0.9375rem; font-weight: 500;} .loading-overlay{ position: absolute; inset: 0; background: rgba(10, 15, 30, 0.85); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-lg); z-index: 10;} .spinner{ width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;} @keyframes slideInRight{ from{ opacity: 0; transform: translateX(100px);} to{ opacity: 1; transform: translateX(0);}} @keyframes spin{ to{ transform: rotate(360deg);}} @media (max-width: 768px){ .btn-group{ flex-direction: column;} .btn{ width: 100%;} .alert-container{ left: 1rem; right: 1rem; top: 1rem;} .results-header{ flex-direction: column; align-items: flex-start;}}  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blocklist Filter — search &amp; export DNS blocklists</title>
+<style>
+ :root{ --bg:#0b0e14; --bg-soft:#11151f; --surface:#151a24; --surface-2:#1b2230; --surface-3:#222b3b; --line:#28313f; --line-soft:#1f2735; --text:#e8edf4; --text-dim:#9aa6b8; --text-faint:#64708291; --muted:#6b7686; --accent:#5b9dff; --accent-strong:#3b82f6; --accent-ghost:rgba(91,157,255,.12); --green:#3ecf8e; --amber:#e3b341; --red:#f06a5c; --radius:14px; --radius-sm:10px; --shadow:0 8px 30px rgba(0,0,0,.35); --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace; --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;} *{box-sizing:border-box} html,body{height:100%} body{ margin:0; font-family:var(--sans); color:var(--text); font-size:14px; line-height:1.5; background: radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(62,207,142,.06), transparent 55%), var(--bg); -webkit-font-smoothing:antialiased;} ::selection{background:var(--accent-ghost)} *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px;border:2px solid transparent;background-clip:padding-box} *::-webkit-scrollbar-thumb:hover{background:#2c3850;background-clip:padding-box} .topbar{ height:60px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; z-index:20; background:rgba(11,14,20,.72); backdrop-filter:blur(14px) saturate(160%);} .logo{ width:32px;height:32px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center; background:linear-gradient(145deg,#3b82f6,#1d4ed8); box-shadow:0 4px 14px rgba(59,130,246,.4); font-size:17px;} .brand h1{margin:0;font-size:15px;font-weight:650;letter-spacing:-.01em} .brand p{margin:0;font-size:11.5px;color:var(--muted)} .topbar .spacer{flex:1} .pill{ font-size:11.5px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:5px 11px; border-radius:20px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;} .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)} .pill.live .dot{background:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18)} .app{display:grid; grid-template-columns:340px 1fr; min-height:calc(100vh - 60px)} @media (max-width:860px){ .app{grid-template-columns:1fr}} .sidebar{ border-right:1px solid var(--line-soft); padding:20px; display:flex; flex-direction:column; gap:18px; background:linear-gradient(180deg, rgba(21,26,36,.5), transparent 120px);} @media (max-width:860px){ .sidebar{border-right:none;border-bottom:1px solid var(--line-soft)}} .section-label{ font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px;} .section-label .count{ margin-left:auto; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:1px 8px; border-radius:20px; letter-spacing:0; text-transform:none;} .seg{display:flex; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px} .seg button{ flex:1; background:transparent; border:none; color:var(--text-dim); font-size:13px; font-weight:550; padding:7px 10px; border-radius:7px; cursor:pointer; font-family:inherit; transition:.15s;} .seg button.active{background:var(--surface-3); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.3)} .panel{display:flex; flex-direction:column; gap:10px} .field-label{font-size:12px;color:var(--text-dim)} input[type=text], input[type=url], textarea, select{ width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--text); border-radius:var(--radius-sm); padding:10px 12px; font-size:13.5px; font-family:inherit; outline:none; transition:.15s;} input::placeholder, textarea::placeholder{color:#5a6677} input:focus, textarea:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ghost)} textarea{resize:vertical; min-height:96px; font-family:var(--mono); font-size:12.5px; line-height:1.55} button.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; background:var(--accent-strong); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 14px; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; white-space:nowrap;} button.btn:hover{background:#4b8ff5} button.btn:active{transform:translateY(1px)} button.btn.block{width:100%} button.btn.ghost{background:var(--surface-2); border:1px solid var(--line); color:var(--text)} button.btn.ghost:hover{background:var(--surface-3); border-color:var(--line)} button.btn.subtle{background:transparent; color:var(--text-dim); padding:8px 10px} button.btn.subtle:hover{color:var(--text); background:var(--surface-2)} button.btn:disabled{opacity:.4; cursor:not-allowed; transform:none} .icon-btn{ background:transparent; border:none; color:var(--muted); cursor:pointer; width:28px;height:28px; border-radius:7px; display:grid; place-items:center; font-size:14px; transition:.15s; flex:0 0 auto;} .icon-btn:hover{background:var(--surface-3); color:var(--text)} .icon-btn.danger:hover{background:rgba(240,106,92,.14); color:var(--red)} .url-row{display:flex; gap:7px; align-items:center; margin-bottom:7px} .url-row input{flex:1} .presets{display:flex; flex-wrap:wrap; gap:7px} .chip{ font-size:12px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:6px;} .chip:hover{color:var(--text); border-color:var(--accent); background:var(--accent-ghost)} .chip .plus{color:var(--accent); font-weight:700} .sources{display:flex; flex-direction:column; gap:8px} .source{ display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; transition:.15s;} .source:hover{border-color:var(--line)} .source .ico{width:30px;height:30px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;font-size:14px;background:var(--surface-3)} .source .meta{flex:1; min-width:0} .source .nm{font-size:13px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .source .sub{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px} .source .swatch{width:8px;height:8px;border-radius:3px;flex:0 0 auto} .empty-sources{ border:1px dashed var(--line); border-radius:var(--radius-sm); padding:22px 16px; text-align:center; color:var(--muted); font-size:12.5px;} .empty-sources .big{font-size:22px; margin-bottom:6px; opacity:.7} .main{display:flex; flex-direction:column; min-width:0} .searchbar{ padding:18px 24px; border-bottom:1px solid var(--line-soft); position:sticky; top:60px; z-index:10; background:rgba(11,14,20,.72); backdrop-filter:blur(14px) saturate(160%); display:flex; flex-direction:column; gap:12px;} .search-input-wrap{position:relative; display:flex; align-items:center; gap:10px} .search-input-wrap .mag{position:absolute; left:15px; color:var(--muted); font-size:16px; pointer-events:none} .search-input-wrap input{ height:48px; padding-left:44px; padding-right:42px; font-size:15.5px; border-radius:12px; background:var(--surface);} .search-input-wrap .clear{position:absolute; right:120px;} .search-actions{display:flex; gap:10px; align-items:center} .opts-toggle{ background:transparent; border:1px solid var(--line); color:var(--text-dim); font-size:12.5px; font-weight:550; padding:0 14px; height:48px; border-radius:12px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:inherit; transition:.15s; white-space:nowrap;} .opts-toggle:hover{color:var(--text); border-color:var(--accent)} .opts-toggle .arr{transition:.2s; font-size:10px} .opts-toggle.open .arr{transform:rotate(180deg)} .options{ display:none; gap:18px 22px; flex-wrap:wrap; padding:4px 2px 2px;} .options.open{display:flex} .opt{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); cursor:pointer; user-select:none} .opt input{appearance:none; width:34px; height:19px; border-radius:20px; background:var(--surface-3); border:1px solid var(--line); position:relative; cursor:pointer; transition:.15s; flex:0 0 auto} .opt input::after{content:"";position:absolute; top:1.5px; left:2px; width:14px; height:14px; border-radius:50%; background:#8893a5; transition:.15s} .opt input:checked{background:var(--accent-strong); border-color:var(--accent-strong)} .opt input:checked::after{transform:translateX(14px); background:#fff} .results-area{padding:18px 24px 120px; flex:1} .results-head{display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap} .metric{display:flex; align-items:baseline; gap:7px} .metric b{font-size:20px; font-weight:700; letter-spacing:-.02em} .metric span{font-size:12px; color:var(--muted)} .metric.accent b{color:var(--accent)} .results-head .divider{width:1px; height:24px; background:var(--line)} .results{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--bg-soft);} .results-scroll{max-height:calc(100vh - 320px); min-height:200px; overflow:auto} .rline{ display:flex; align-items:center; gap:10px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; border-bottom:1px solid var(--line-soft); border-left:3px solid transparent; word-break:break-all;} .rline:last-child{border-bottom:none} .rline:hover{background:rgba(91,157,255,.05)} .rline mark{background:rgba(227,179,65,.28); color:#ffdf8a; border-radius:3px; padding:0 1px} .rline .val{flex:1; min-width:0} .results .placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:64px 24px; text-align:center; color:var(--muted);} .results .placeholder .big{font-size:40px; opacity:.5} .results .placeholder h3{margin:0; font-size:14.5px; color:var(--text-dim); font-weight:600} .results .placeholder p{margin:0; font-size:12.5px; max-width:340px} .more-note{padding:12px 14px; text-align:center; font-size:12px; color:var(--muted); background:var(--surface)} .exportbar{ position:fixed; left:340px; right:0; bottom:0; z-index:15; padding:13px 24px; border-top:1px solid var(--line); display:flex; align-items:center; gap:12px; background:rgba(13,17,25,.86); backdrop-filter:blur(16px) saturate(160%); flex-wrap:wrap; box-shadow:0 -10px 30px rgba(0,0,0,.3);} @media (max-width:860px){ .exportbar{left:0}} .exportbar .lbl{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:7px} .exportbar select{width:auto; min-width:180px; padding:9px 12px; font-size:13px} .exportbar input{width:200px; padding:9px 12px; font-size:13px} .exportbar .spacer{flex:1} .exportbar .ready{font-size:12px; color:var(--text-dim)} .exportbar .ready b{color:var(--accent)} .toasts{position:fixed; bottom:78px; right:20px; z-index:50; display:flex; flex-direction:column; gap:8px; max-width:340px} .toast{ display:flex; align-items:flex-start; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px; box-shadow:var(--shadow); font-size:13px; animation:slidein .25s ease; border-left:3px solid var(--accent);} .toast.ok{border-left-color:var(--green)} .toast.err{border-left-color:var(--red)} .toast.info{border-left-color:var(--accent)} .toast .tico{font-size:15px; line-height:1.3} .toast .tmsg{flex:1; color:var(--text-dim)} @keyframes slidein{from{opacity:0; transform:translateX(16px)}to{opacity:1; transform:none}} .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px} @keyframes sp{to{transform:rotate(360deg)}} .hint{font-size:11.5px; color:var(--muted); line-height:1.5} .hint code{font-family:var(--mono); background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--accent); font-size:11px}
+</style>
 </head>
 <body>
-    <div class="alert-container" id="alertContainer"></div>
 
-    <div class="container">
-        <header class="header">
-            <div class="logo-wrapper">
-                <span class="logo">⚡</span>
-                <h1>Blocklist Search</h1>
-            </div>
-            <p>Lightning-fast domain filtering for massive blocklists</p>
-        </header>
+<div class="topbar">
+  <div class="logo">🛡️</div>
+  <div class="brand">
+    <h1>Blocklist Filter</h1>
+    <p>Search &amp; export DNS blocklists</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill" id="statePill"><span class="dot"></span><span id="statePillText">No lists loaded</span></div>
+</div>
 
-        <div class="main-grid">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <!-- Load Blocklist Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-icon">📥</span>
-                        <h2 class="card-title">Load Blocklist</h2>
-                    </div>
+<div class="app">
 
-                    <div class="form-group">
-                        <label class="form-label">From URL</label>
-                        <div class="input-wrapper">
-                            <input 
-                                type="url" 
-                                id="urlInput" 
-                                placeholder="https://raw.githubusercontent.com/..."
-                            >
-                        </div>
-                    </div>
+  <!-- ============ SIDEBAR : SOURCES ============ -->
+  <aside class="sidebar">
+    <div>
+      <div class="section-label">Add a list <span class="count" id="srcCount">0 loaded</span></div>
+      <div style="height:12px"></div>
 
-                    <button class="btn btn-primary btn-full" onclick="app.loadFromUrl()">
-                        <span class="btn-icon">🌐</span>
-                        <span>Load from URL</span>
-                    </button>
-
-                    <div style="margin: 1.5rem 0; text-align: center; color: var(--text-muted); font-size: 0.875rem; font-weight: 600;">
-                        OR
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Paste Content</label>
-                        <textarea 
-                            id="blocklistInput" 
-                            placeholder="Paste your blocklist here...&#10;&#10;• Lines starting with # will be ignored&#10;• Domains will be automatically extracted&#10;• Supports various formats"
-                        ></textarea>
-                    </div>
-
-                    <div class="btn-group">
-                        <button class="btn btn-primary" style="flex: 1;" onclick="app.processBlocklist()">
-                            <span class="btn-icon">⚙️</span>
-                            <span>Process</span>
-                        </button>
-                        <button class="btn btn-secondary" onclick="app.clearAll()">
-                            <span class="btn-icon">🗑️</span>
-                            <span>Clear</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Statistics Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-icon">📊</span>
-                        <h2 class="card-title">Statistics</h2>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="totalDomains">0</div>
-                            <div class="stat-label">Total Domains</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="matchedDomains">0</div>
-                            <div class="stat-label">Matches Found</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="searchTime">0ms</div>
-                            <div class="stat-label">Search Time</div>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Main Content -->
-            <main>
-                <!-- Search Card -->
-                <div class="card" style="margin-bottom: 1.5rem;">
-                    <div class="card-header">
-                        <span class="card-icon">🔍</span>
-                        <h2 class="card-title">Search Query</h2>
-                        <span class="badge" id="searchStatus" style="margin-left: auto;">Ready</span>
-                    </div>
-
-                    <div class="search-input-wrapper">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Enter search term (e.g., snapchat, google, facebook...)"
-                            oninput="app.performSearch()"
-                        >
-                    </div>
-                </div>
-
-                <!-- Results Card -->
-                <div class="card results-card">
-                    <div class="results-header">
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <span class="card-icon">📋</span>
-                            <h2 class="card-title" style="margin: 0;">Results</h2>
-                        </div>
-                        <span class="badge" id="resultCount">0 domains</span>
-                    </div>
-
-                    <div class="results-container" id="results">
-                        <div class="empty-state">
-                            <div class="empty-icon">📦</div>
-                            <p>No results yet</p>
-                            <small>Load a blocklist and start searching</small>
-                        </div>
-                    </div>
-
-                    <div class="btn-group" style="margin-top: 1rem;">
-                        <button class="btn btn-primary" style="flex: 1;" onclick="app.copyResults()" id="copyBtn" disabled>
-                            <span class="btn-icon">📋</span>
-                            <span>Copy to Clipboard</span>
-                        </button>
-                        <button class="btn btn-secondary" style="flex: 1;" onclick="app.downloadResults()" id="downloadBtn" disabled>
-                            <span class="btn-icon">💾</span>
-                            <span>Download Results</span>
-                        </button>
-                    </div>
-                </div>
-            </main>
-        </div>
+      <div class="seg" id="seg">
+        <button class="active" data-tab="url">From URL</button>
+        <button data-tab="paste">Paste text</button>
+      </div>
     </div>
 
-    <script>
-        const app = {
-            domains: [],
-            matchedResults: [],
+    <!-- URL tab -->
+    <div class="panel" id="tab-url">
+      <div class="field-label">Quick add a popular list</div>
+      <select id="presetSelect">
+        <option value="" disabled selected>Choose a popular blocklist…</option>
+      </select>
 
-            showAlert(message, type = 'error') {
-                const container = document.getElementById('alertContainer');
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
-                alert.innerHTML = `
-                    <span class="alert-icon">${type === 'error' ? '⚠️' : '✓'}</span>
-                    <span class="alert-message">${message}</span>
-                `;
-                container.appendChild(alert);
-                setTimeout(() => alert.remove(), 5000);
-            },
+      <div style="height:4px"></div>
+      <div class="field-label">Or enter blocklist URL(s)</div>
+      <div id="urlContainer">
+        <div class="url-row">
+          <input type="url" class="urlInput" placeholder="https://…/hosts.txt">
+        </div>
+      </div>
+      <div style="display:flex; gap:8px">
+        <button class="btn subtle" id="addUrlBtn" style="border:1px solid var(--line)">+ URL</button>
+        <button class="btn" id="fetchBtn" style="flex:1">Fetch list</button>
+      </div>
+      <label class="opt" style="margin-top:2px">
+        <input type="checkbox" id="proxyChk">
+        <span style="color:var(--text-dim); font-size:12px">Use CORS proxy if a fetch fails</span>
+      </label>
+    </div>
 
-            updateStats() {
-                document.getElementById('totalDomains').textContent = this.domains.length.toLocaleString();
-                document.getElementById('matchedDomains').textContent = this.matchedResults.length.toLocaleString();
-                document.getElementById('resultCount').textContent = `${this.matchedResults.length.toLocaleString()} domains`;
+    <!-- Paste tab -->
+    <div class="panel" id="tab-paste" style="display:none">
+      <div class="field-label">Paste blocklist text</div>
+      <textarea id="pasteArea" placeholder="0.0.0.0 ads.example.com&#10;||tracker.net^&#10;analytics.example.org"></textarea>
+      <input type="text" id="pasteName" placeholder="List name (optional)">
+      <button class="btn block" id="addPasteBtn">Add pasted list</button>
+    </div>
 
-                const statusBadge = document.getElementById('searchStatus');
-                if (this.domains.length > 0) {
-                    statusBadge.textContent = 'Active';
-                    statusBadge.classList.add('active');
-                } else {
-                    statusBadge.textContent = 'Ready';
-                    statusBadge.classList.remove('active');
-                }
-            },
+    <!-- Loaded sources -->
+    <div>
+      <div class="section-label">Loaded lists</div>
+      <div style="height:10px"></div>
+      <div class="sources" id="srcList"></div>
+    </div>
 
-            async loadFromUrl() {
-                const url = document.getElementById('urlInput').value.trim();
-                if (!url) {
-                    this.showAlert('Please enter a valid URL');
-                    return;
-                }
+    <div class="hint" style="margin-top:auto">
+      Runs 100% in your browser — nothing is uploaded. Supports <code>hosts</code>, plain domains,
+      <code>||domain^</code> and <code>dnsmasq</code> formats.
+    </div>
+  </aside>
 
-                const resultsContainer = document.getElementById('results');
-                const loadingOverlay = document.createElement('div');
-                loadingOverlay.className = 'loading-overlay';
-                loadingOverlay.innerHTML = '<div class="spinner"></div>';
-                resultsContainer.parentElement.style.position = 'relative';
-                resultsContainer.parentElement.appendChild(loadingOverlay);
+  <!-- ============ MAIN : SEARCH + RESULTS ============ -->
+  <section class="main">
+    <div class="searchbar">
+      <div class="search-input-wrap">
+        <span class="mag">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search domains…  e.g. google, doubleclick, ads" autocomplete="off">
+        <button class="icon-btn clear" id="clearSearch" title="Clear" style="display:none">✕</button>
+        <button class="opts-toggle" id="optsToggle">Options <span class="arr">▾</span></button>
+      </div>
+      <div class="options" id="options">
+        <label class="opt"><input type="checkbox" id="optParse" checked> Normalize to domains</label>
+        <label class="opt"><input type="checkbox" id="optDedup" checked> De-duplicate</label>
+        <label class="opt"><input type="checkbox" id="optCase"> Match case</label>
+        <label class="opt"><input type="checkbox" id="optWhole"> Whole label</label>
+        <label class="opt"><input type="checkbox" id="optRegex"> Regex</label>
+        <label class="opt"><input type="checkbox" id="optInvert"> Invert (exclude)</label>
+      </div>
+    </div>
 
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    
-                    const text = await response.text();
-                    document.getElementById('blocklistInput').value = text;
-                    this.showAlert(`Successfully loaded ${text.split('\n').length.toLocaleString()} lines`, 'success');
-                    this.processBlocklist();
-                } catch (error) {
-                    this.showAlert(`Failed to load URL: ${error.message}`);
-                } finally {
-                    loadingOverlay.remove();
-                }
-            },
+    <div class="results-area">
+      <div class="results-head">
+        <div class="metric accent"><b id="statMatch">0</b><span>matches</span></div>
+        <div class="divider"></div>
+        <div class="metric"><b id="statTotal">0</b><span>domains</span></div>
+        <div class="divider"></div>
+        <div class="metric"><b id="statSrc">0</b><span>lists</span></div>
+      </div>
 
-            processBlocklist() {
-                const text = document.getElementById('blocklistInput').value;
-                if (!text.trim()) {
-                    this.showAlert('Please paste a blocklist or load from URL');
-                    return;
-                }
+      <div class="results">
+        <div class="results-scroll" id="results">
+          <div class="placeholder">
+            <div class="big">📦</div>
+            <h3>No lists loaded yet</h3>
+            <p>Add a list from the sidebar — pick a popular one, paste a URL, or paste text directly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
 
-                const lines = text.split('\n');
-                this.domains = [];
+<!-- Export bar -->
+<div class="exportbar">
+  <span class="lbl">Export&nbsp;as</span>
+  <select id="exportFmt">
+    <option value="domains">Domains only</option>
+    <option value="hosts">Hosts — 0.0.0.0</option>
+    <option value="hosts127">Hosts — 127.0.0.1</option>
+    <option value="adblock">AdGuard / uBO — ||domain^</option>
+    <option value="dnsmasq">dnsmasq — address=/domain/0.0.0.0</option>
+    <option value="wildcard">Wildcard — *.domain</option>
+    <option value="raw">Raw original lines</option>
+  </select>
+  <input type="text" id="fileName" value="filtered-blocklist.txt">
+  <div class="spacer"></div>
+  <span class="ready"><b id="exportCount">0</b> entries ready</span>
+  <button class="btn ghost" id="copyBtn">📋 Copy</button>
+  <button class="btn" id="downloadBtn">⬇ Download</button>
+</div>
 
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (trimmed && !trimmed.startsWith('#') && trimmed.length > 0) {
-                        this.domains.push(trimmed.toLowerCase());
-                    }
-                }
+<div class="toasts" id="toasts"></div>
 
-                if (this.domains.length === 0) {
-                    this.showAlert('No valid domains found in blocklist');
-                    return;
-                }
+<script type="module">
+"use strict";
 
-                this.matchedResults = [];
-                this.updateStats();
-                this.displayResults();
-                this.showAlert(`Processed ${this.domains.length.toLocaleString()} domains successfully`, 'success');
-            },
+/* ============================================================
+   Blocklist Filter — modern, cache-driven architecture
+   Each list is parsed ONCE into a normalized domain index.
+   Searching only filters the precomputed index, so typing
+   stays fast even with millions of domains across many lists.
+   ============================================================ */
 
-            performSearch() {
-                const query = document.getElementById('searchInput').value.trim().toLowerCase();
-                
-                if (!query) {
-                    this.matchedResults = [];
-                    this.updateStats();
-                    this.displayResults();
-                    document.getElementById('searchTime').textContent = '0ms';
-                    return;
-                }
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-                if (this.domains.length === 0) {
-                    this.showAlert('Please load a blocklist first');
-                    return;
-                }
+const PRESETS = Object.freeze([
+  { name: 'StevenBlack hosts', url: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts' },
+  { name: 'HaGeZi Multi PRO',  url: 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt' },
+  { name: 'OISD small',        url: 'https://small.oisd.nl/domainswild' },
+  { name: 'AdGuard DNS',       url: 'https://raw.githubusercontent.com/AdguardTeam/AdguardSDNSFilter/master/Filters/filter.txt' },
+  { name: '1Hosts Lite',       url: 'https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/domains.txt' },
+]);
 
-                const startTime = performance.now();
-                this.matchedResults = this.domains.filter(domain => domain.includes(query));
-                const searchTime = (performance.now() - startTime).toFixed(2);
-                
-                document.getElementById('searchTime').textContent = `${searchTime}ms`;
-                this.updateStats();
-                this.displayResults();
-            },
+const COLORS = Object.freeze(['#5b9dff', '#3ecf8e', '#e3b341', '#b18cff', '#f06a5c', '#46d4d4', '#ff8aa0', '#7dd87d']);
 
-            displayResults() {
-                const container = document.getElementById('results');
-                const copyBtn = document.getElementById('copyBtn');
-                const downloadBtn = document.getElementById('downloadBtn');
+const RENDER_CAP = 4000;
+const SEARCH_DEBOUNCE = 110;
 
-                container.innerHTML = '';
+/* ---------- Export formatters (lookup map, no switch) ---------- */
+const FORMATTERS = Object.freeze({
+  domains:  d => d,
+  hosts:    d => `0.0.0.0 ${d}`,
+  hosts127: d => `127.0.0.1 ${d}`,
+  adblock:  d => `||${d}^`,
+  dnsmasq:  d => `address=/${d}/0.0.0.0`,
+  wildcard: d => `*.${d}`,
+  raw:      d => d,
+});
 
-                if (this.matchedResults.length === 0) {
-                    const query = document.getElementById('searchInput').value.trim();
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">${query ? '🔍' : '📦'}</div>
-                            <p>${query ? 'No matches found' : 'No results yet'}</p>
-                            <small>${query ? 'Try a different search term' : 'Load a blocklist and start searching'}</small>
-                        </div>
-                    `;
-                    copyBtn.disabled = true;
-                    downloadBtn.disabled = true;
-                    return;
-                }
+/* ---------- HTML escaping (cached regex) ---------- */
+const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+const ESCAPE_RE = /[&<>"]/g;
+const esc = (s) => String(s).replace(ESCAPE_RE, (c) => ESCAPE_MAP[c]);
 
-                copyBtn.disabled = false;
-                downloadBtn.disabled = false;
+/* ---------- Parsing helpers ---------- */
+const COMMENT_RE   = /^[!#[]/;
+const HOSTS_RE     = /^(?:0\.0\.0\.0|127\.0\.0\.1|255\.255\.255\.255|::1|::)\s+(.+)$/i;
+const DNSMASQ_RE   = /^(?:address|server|local)=\/([^/]+)\//i;
+const ADBLOCK_RE   = /^\|\|([^^/*$|]+)/;
+const SPECIAL_RE   = /[#@$]/;
+const LEAD_DOMAIN  = /^([a-z0-9.-]+\.[a-z]{2,})/i;
+const DOMAIN_VALID = /^[a-z0-9_]([a-z0-9_-]*\.)+[a-z]{2,}$/i;
+const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
 
-                const fragment = document.createDocumentFragment();
-                const displayLimit = Math.min(this.matchedResults.length, 1000);
+const cleanDomain = (raw) => {
+  const d = raw.toLowerCase().replace(/\.$/, '').replace(/^\*\./, '');
+  return DOMAIN_VALID.test(d) ? d : null;
+};
 
-                for (let i = 0; i < displayLimit; i++) {
-                    const item = document.createElement('div');
-                    item.className = 'result-item';
-                    item.textContent = this.matchedResults[i];
-                    fragment.appendChild(item);
-                }
+/** Normalize a single blocklist line to a bare domain, or null. */
+const lineToDomain = (line) => {
+  let t = line.trim();
+  if (!t || COMMENT_RE.test(t)) return null;
 
-                if (this.matchedResults.length > displayLimit) {
-                    const notice = document.createElement('div');
-                    notice.className = 'empty-state';
-                    notice.style.minHeight = '150px';
-                    notice.innerHTML = `
-                        <p>Showing first ${displayLimit.toLocaleString()} results</p>
-                        <small>${(this.matchedResults.length - displayLimit).toLocaleString()} more available for copy/download</small>
-                    `;
-                    fragment.appendChild(notice);
-                }
+  const hash = t.indexOf('#');
+  if (hash !== -1) { t = t.slice(0, hash).trim(); if (!t) return null; }
 
-                container.appendChild(fragment);
-            },
+  const hosts = HOSTS_RE.exec(t);
+  if (hosts) t = hosts[1].trimStart().split(/\s+/, 1)[0];
 
-            async copyResults() {
-                if (this.matchedResults.length === 0) {
-                    this.showAlert('No results to copy');
-                    return;
-                }
+  const dnsmasq = DNSMASQ_RE.exec(t);
+  if (dnsmasq) return cleanDomain(dnsmasq[1]);
 
-                const text = this.matchedResults.join('\n');
-                try {
-                    await navigator.clipboard.writeText(text);
-                    const btn = document.getElementById('copyBtn');
-                    const originalHTML = btn.innerHTML;
-                    
-                    btn.innerHTML = '<span class="btn-icon">✓</span><span>Copied!</span>';
-                    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                    
-                    setTimeout(() => {
-                        btn.innerHTML = originalHTML;
-                        btn.style.background = '';
-                    }, 2000);
-                    
-                    this.showAlert(`Copied ${this.matchedResults.length.toLocaleString()} domains to clipboard`, 'success');
-                } catch (error) {
-                    this.showAlert('Failed to copy to clipboard');
-                }
-            },
+  const adblock = ADBLOCK_RE.exec(t);
+  if (adblock) return cleanDomain(adblock[1]);
 
-            downloadResults() {
-                if (this.matchedResults.length === 0) {
-                    this.showAlert('No results to download');
-                    return;
-                }
+  t = t.replace(/^\*\./, '').replace(/^\./, '');
 
-                const text = this.matchedResults.join('\n');
-                const blob = new Blob([text], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                const query = document.getElementById('searchInput').value.trim();
-                
-                a.href = url;
-                a.download = `blocklist-${query || 'results'}-${Date.now()}.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                this.showAlert(`Downloaded ${this.matchedResults.length.toLocaleString()} domains`, 'success');
-            },
+  if (SPECIAL_RE.test(t)) {
+    const lead = LEAD_DOMAIN.exec(t);
+    return lead ? cleanDomain(lead[1]) : null;
+  }
+  return cleanDomain(t);
+};
 
-            clearSearch() {
-                document.getElementById('searchInput').value = '';
-                this.matchedResults = [];
-                this.updateStats();
-                this.displayResults();
-                document.getElementById('searchTime').textContent = '0ms';
-            },
+/* ============================================================
+   Source model — parses once, caches both raw + domain views
+   ============================================================ */
+let __id = 0;
+class Source {
+  constructor({ name, type, url = null, text, color }) {
+    this.id = ++__id;
+    this.name = name;
+    this.type = type;          // 'url' | 'paste'
+    this.url = url;
+    this.color = color;
+    this.rawLines = text.split(/\r?\n/);
 
-            clearAll() {
-                document.getElementById('blocklistInput').value = '';
-                document.getElementById('urlInput').value = '';
-                document.getElementById('searchInput').value = '';
-                this.domains = [];
-                this.matchedResults = [];
-                this.updateStats();
-                this.displayResults();
-                document.getElementById('searchTime').textContent = '0ms';
-                this.showAlert('All data cleared', 'success');
-            }
-        };
+    // Precompute normalized domains + a lowercase haystack for fast plain search.
+    this.domains = [];
+    for (const line of this.rawLines) {
+      const d = lineToDomain(line);
+      if (d !== null) this.domains.push(d);
+    }
+    this.lineCount = this.rawLines.reduce((n, l) => (l.trim() ? n + 1 : n), 0);
+  }
+}
 
-        // Event listeners
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') app.performSearch();
-        });
+/* ============================================================
+   App controller
+   ============================================================ */
+class BlocklistApp {
+  #sources = [];
+  #colorIndex = 0;
+  #debounceTimer = 0;
+  #lastResult = { items: [], total: 0, err: false }; // cached for export
 
-        document.getElementById('urlInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') app.loadFromUrl();
-        });
+  constructor() {
+    this.#cacheDom();
+    this.#buildPresets();
+    this.#bindEvents();
+    this.#renderSources();
+    this.#run();
+  }
 
-        // Initialize
-        app.updateStats();
-    </script>
-</body>
+  #cacheDom() {
+    this.el = {
+      seg:        $('#seg'),
+      tabUrl:     $('#tab-url'),
+      tabPaste:   $('#tab-paste'),
+      presetSel:  $('#presetSelect'),
+      urlBox:     $('#urlContainer'),
+      addUrl:     $('#addUrlBtn'),
+      fetch:      $('#fetchBtn'),
+      proxy:      $('#proxyChk'),
+      pasteArea:  $('#pasteArea'),
+      pasteName:  $('#pasteName'),
+      addPaste:   $('#addPasteBtn'),
+      srcList:    $('#srcList'),
+      srcCount:   $('#srcCount'),
+      statePill:  $('#statePill'),
+      statePillT: $('#statePillText'),
+      search:     $('#searchInput'),
+      clear:      $('#clearSearch'),
+      optsBtn:    $('#optsToggle'),
+      options:    $('#options'),
+      results:    $('#results'),
+      statMatch:  $('#statMatch'),
+      statTotal:  $('#statTotal'),
+      statSrc:    $('#statSrc'),
+      exportFmt:  $('#exportFmt'),
+      fileName:   $('#fileName'),
+      exportCnt:  $('#exportCount'),
+      copy:       $('#copyBtn'),
+      download:   $('#downloadBtn'),
+      toasts:     $('#toasts'),
+      opt: {
+        parse:  $('#optParse'),
+        dedup:  $('#optDedup'),
+        case:   $('#optCase'),
+        whole:  $('#optWhole'),
+        regex:  $('#optRegex'),
+        invert: $('#optInvert'),
+      },
+    };
+  }
+
+  /* ---------------- Presets (dropdown) ---------------- */
+  #buildPresets() {
+    const frag = document.createDocumentFragment();
+    for (const { name, url } of PRESETS) {
+      const opt = new Option(name, url);
+      opt.title = url;
+      frag.append(opt);
+    }
+    this.el.presetSel.append(frag);
+  }
+
+  /* ---------------- Events ---------------- */
+  #bindEvents() {
+    const { el } = this;
+
+    el.seg.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      for (const b of el.seg.children) b.classList.toggle('active', b === btn);
+      const isUrl = btn.dataset.tab === 'url';
+      el.tabUrl.style.display = isUrl ? 'flex' : 'none';
+      el.tabPaste.style.display = isUrl ? 'none' : 'flex';
+    });
+
+    el.presetSel.addEventListener('change', () => {
+      const { value } = el.presetSel;
+      if (!value) return;
+      this.#addUrlInput(value);
+      el.presetSel.selectedIndex = 0; // reset to placeholder
+    });
+
+    el.addUrl.addEventListener('click', () => this.#addUrlInput(''));
+    el.fetch.addEventListener('click', () => this.#fetchAll());
+    el.addPaste.addEventListener('click', () => this.#addPaste());
+
+    el.optsBtn.addEventListener('click', () => {
+      el.optsBtn.classList.toggle('open');
+      el.options.classList.toggle('open');
+    });
+
+    el.search.addEventListener('input', () => {
+      clearTimeout(this.#debounceTimer);
+      this.#debounceTimer = setTimeout(() => this.#run(), SEARCH_DEBOUNCE);
+    });
+    el.clear.addEventListener('click', () => {
+      el.search.value = '';
+      el.search.focus();
+      this.#run();
+    });
+
+    for (const cb of Object.values(el.opt)) {
+      cb.addEventListener('change', () => this.#run());
+    }
+
+    el.copy.addEventListener('click', () => this.#copy());
+    el.download.addEventListener('click', () => this.#download());
+  }
+
+  /* ---------------- Toasts ---------------- */
+  #toast(msg, type = 'info', ms = 3800) {
+    const icon = type === 'ok' ? '✓' : type === 'err' ? '⚠️' : 'ℹ️';
+    const node = document.createElement('div');
+    node.className = `toast ${type}`;
+    node.innerHTML = `<span class="tico">${icon}</span><span class="tmsg">${msg}</span>`;
+    this.el.toasts.append(node);
+    setTimeout(() => {
+      node.style.transition = '.25s';
+      node.style.opacity = '0';
+      node.style.transform = 'translateX(16px)';
+      setTimeout(() => node.remove(), 250);
+    }, ms);
+  }
+
+  /* ---------------- URL inputs ---------------- */
+  #addUrlInput(value) {
+    const empty = $$('.urlInput').find((i) => !i.value.trim());
+    if (empty) { empty.value = value; empty.focus(); return; }
+
+    const row = document.createElement('div');
+    row.className = 'url-row';
+    row.innerHTML = `<input type="url" class="urlInput"><button class="icon-btn danger" title="Remove">✕</button>`;
+    row.querySelector('input').value = value;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    this.el.urlBox.append(row);
+  }
+
+  #proxify(url) {
+    return this.el.proxy.checked
+      ? `https://corsproxy.io/?url=${encodeURIComponent(url)}`
+      : url;
+  }
+
+  static #prettyName(url) {
+    try {
+      const { pathname, hostname } = new URL(url);
+      const last = pathname.split('/').filter(Boolean).at(-1) || hostname;
+      return last.length > 34 ? `${last.slice(0, 32)}…` : last;
+    } catch {
+      return url.slice(0, 34);
+    }
+  }
+
+  /* ---------------- Fetching (parallel) ---------------- */
+  async #fetchAll() {
+    const urls = $$('.urlInput')
+      .map((i) => i.value.trim())
+      .filter((u) => u && !this.#sources.some((s) => s.url === u));
+
+    if (!urls.length) { this.#toast('Enter at least one new URL.', 'err'); return; }
+
+    const { fetch: btn } = this.el;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Fetching…';
+
+    const results = await Promise.allSettled(
+      urls.map(async (url) => {
+        const res = await fetch(this.#proxify(url), { redirect: 'follow' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return { url, text: await res.text() };
+      })
+    );
+
+    let ok = 0;
+    const failed = [];
+    for (const [i, r] of results.entries()) {
+      if (r.status === 'fulfilled') {
+        this.#addSource(BlocklistApp.#prettyName(r.value.url), 'url', r.value.text, r.value.url);
+        ok++;
+      } else {
+        failed.push(BlocklistApp.#prettyName(urls[i]));
+      }
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = original;
+    if (ok) this.#toast(`Loaded ${ok} list${ok > 1 ? 's' : ''}.`, 'ok');
+    if (failed.length) this.#toast(`Couldn't fetch: ${failed.join(', ')}. Try the CORS proxy or paste it.`, 'err', 6000);
+  }
+
+  /* ---------------- Paste ---------------- */
+  #addPaste() {
+    const text = this.el.pasteArea.value;
+    if (!text.trim()) { this.#toast('Paste box is empty.', 'err'); return; }
+    const n = this.#sources.filter((s) => s.type === 'paste').length + 1;
+    const name = this.el.pasteName.value.trim() || `Pasted list ${n}`;
+    this.#addSource(name, 'paste', text);
+    this.el.pasteArea.value = '';
+    this.el.pasteName.value = '';
+    this.#toast('Pasted list added.', 'ok');
+  }
+
+  /* ---------------- Source lifecycle ---------------- */
+  #addSource(name, type, text, url = null) {
+    const color = COLORS[this.#colorIndex++ % COLORS.length];
+    this.#sources.push(new Source({ name, type, url, text, color }));
+    this.#renderSources();
+    this.#run();
+  }
+
+  #removeSource(id) {
+    this.#sources = this.#sources.filter((s) => s.id !== id);
+    this.#renderSources();
+    this.#run();
+    this.#toast('List removed.', 'info', 2000);
+  }
+
+  #renderSources() {
+    const { srcList } = this.el;
+    srcList.replaceChildren();
+
+    if (!this.#sources.length) {
+      srcList.insertAdjacentHTML('beforeend',
+        `<div class="empty-sources"><div class="big">📥</div>No lists yet.<br>Add one above to begin.</div>`);
+    } else {
+      const frag = document.createDocumentFragment();
+      for (const s of this.#sources) {
+        const card = document.createElement('div');
+        card.className = 'source';
+        card.innerHTML = `
+          <div class="ico">${s.type === 'url' ? '🔗' : '📋'}</div>
+          <div class="meta">
+            <div class="nm" title="${esc(s.url ?? s.name)}">${esc(s.name)}</div>
+            <div class="sub"><span class="swatch" style="background:${s.color}"></span>${s.lineCount.toLocaleString()} lines · ${s.domains.length.toLocaleString()} domains</div>
+          </div>
+          <button class="icon-btn danger" title="Remove">✕</button>`;
+        card.querySelector('button').addEventListener('click', () => this.#removeSource(s.id));
+        frag.append(card);
+      }
+      srcList.append(frag);
+    }
+
+    const n = this.#sources.length;
+    this.el.statSrc.textContent = n;
+    this.el.srcCount.textContent = `${n} loaded`;
+    this.el.statePill.classList.toggle('live', n > 0);
+    this.el.statePillT.textContent = n ? `${n} list${n > 1 ? 's' : ''} loaded` : 'No lists loaded';
+  }
+
+  /* ---------------- Matcher ---------------- */
+  #buildMatcher() {
+    const q = this.el.search.value;
+    if (!q) return null;
+    const flags = this.el.opt.case.checked ? '' : 'i';
+
+    if (this.el.opt.regex.checked) {
+      try { return new RegExp(q, flags); } catch { return 'ERR'; }
+    }
+    let pattern = q.replace(REGEX_ESCAPE, '\\$&');
+    if (this.el.opt.whole.checked) pattern = `(^|[.-])${pattern}($|[.-])`;
+    return new RegExp(pattern, flags);
+  }
+
+  /* ---------------- Core filter (operates on cached index) ---------------- */
+  #compute() {
+    const matcher = this.#buildMatcher();
+    if (matcher === 'ERR') return (this.#lastResult = { items: [], total: 0, err: true });
+
+    const parse  = this.el.opt.parse.checked;
+    const dedup  = this.el.opt.dedup.checked;
+    const invert = this.el.opt.invert.checked;
+    const hasQuery = matcher !== null;
+
+    // Fast path for plain (non-regex, case-insensitive) substring search.
+    const plainNeedle = (!this.el.opt.regex.checked && !this.el.opt.case.checked && !this.el.opt.whole.checked)
+      ? this.el.search.value.toLowerCase()
+      : null;
+
+    const items = [];
+    const seen = dedup ? new Set() : null;
+    let total = 0;
+
+    for (const src of this.#sources) {
+      const color = src.color;
+
+      if (parse) {
+        const domains = src.domains;
+        for (let i = 0; i < domains.length; i++) {
+          const val = domains[i];
+          total++;
+          if (dedup && seen.has(val)) continue;
+          if (hasQuery) {
+            let hit = plainNeedle !== null ? val.includes(plainNeedle) : matcher.test(val);
+            if (invert) hit = !hit;
+            if (!hit) continue;
+          } else if (!dedup) {
+            continue; // no query, no dedup tracking needed beyond counting
+          }
+          if (dedup) seen.add(val);
+          if (hasQuery) items.push({ val, color });
+        }
+      } else {
+        const lines = src.rawLines;
+        for (let i = 0; i < lines.length; i++) {
+          const t = lines[i].trim();
+          if (!t || COMMENT_RE.test(t)) continue;
+          total++;
+          if (dedup && seen.has(t)) continue;
+          if (hasQuery) {
+            const hay = plainNeedle !== null ? t.toLowerCase() : t;
+            let hit = plainNeedle !== null ? hay.includes(plainNeedle) : matcher.test(t);
+            if (invert) hit = !hit;
+            if (!hit) continue;
+          } else if (!dedup) {
+            continue;
+          }
+          if (dedup) seen.add(t);
+          if (hasQuery) items.push({ val: t, color });
+        }
+      }
+    }
+
+    return (this.#lastResult = { items, total, err: false, matcher });
+  }
+
+  /* ---------------- Render ---------------- */
+  #run() {
+    const { items, total, err, matcher } = this.#compute();
+    const q = this.el.search.value;
+
+    this.el.statTotal.textContent  = total.toLocaleString();
+    this.el.statMatch.textContent  = items.length.toLocaleString();
+    this.el.exportCnt.textContent  = items.length.toLocaleString();
+    this.el.clear.style.display    = q ? 'grid' : 'none';
+
+    const { results } = this.el;
+    if (err)               return void (results.innerHTML = this.#placeholder('⚠️', 'Invalid regular expression', 'Check your regex syntax and try again.', '#f06a5c'));
+    if (!this.#sources.length) return void (results.innerHTML = this.#placeholder('📦', 'No lists loaded yet', 'Add a list from the sidebar — pick a popular one, paste a URL, or paste text directly.'));
+    if (!q)                return void (results.innerHTML = this.#placeholder('🔍', 'Ready to search', `Type a word above to filter ${total.toLocaleString()} domains across your loaded lists.`));
+    if (!items.length)     return void (results.innerHTML = this.#placeholder('🫥', 'No matches', `Nothing matched “${esc(q)}”. Try a different term or adjust options.`));
+
+    const highlightRe = this.el.opt.invert.checked ? null : matcher;
+    const frag = document.createDocumentFragment();
+    const cap = Math.min(items.length, RENDER_CAP);
+
+    for (let i = 0; i < cap; i++) {
+      const { val, color } = items[i];
+      const row = document.createElement('div');
+      row.className = 'rline';
+      row.style.borderLeftColor = color;
+      row.innerHTML = `<span class="val">${this.#highlight(val, highlightRe)}</span>`;
+      frag.append(row);
+    }
+    results.replaceChildren(frag);
+
+    if (items.length > cap) {
+      results.insertAdjacentHTML('beforeend',
+        `<div class="more-note">Showing first ${cap.toLocaleString()} of ${items.length.toLocaleString()} — all are included in copy/export.</div>`);
+    }
+  }
+
+  #placeholder(big, head, body, color) {
+    const bigStyle = color ? ' style="opacity:.7"' : '';
+    const headStyle = color ? ` style="color:${color}"` : '';
+    return `<div class="placeholder"><div class="big"${bigStyle}>${big}</div><h3${headStyle}>${head}</h3><p>${body}</p></div>`;
+  }
+
+  #highlight(text, re) {
+    if (!re) return esc(text);
+    const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+    let out = '', last = 0, m;
+    try {
+      while ((m = g.exec(text)) !== null) {
+        if (m.index === g.lastIndex) g.lastIndex++;
+        out += esc(text.slice(last, m.index)) + `<mark>${esc(m[0])}</mark>`;
+        last = m.index + m[0].length;
+      }
+    } catch { return esc(text); }
+    return (out + esc(text.slice(last))) || esc(text);
+  }
+
+  /* ---------------- Export ---------------- */
+  #buildExport() {
+    const fmt = FORMATTERS[this.el.exportFmt.value] ?? FORMATTERS.domains;
+    const { items } = this.#lastResult;
+    const out = new Array(items.length);
+    for (let i = 0; i < items.length; i++) out[i] = fmt(items[i].val);
+    return out.join('\n');
+  }
+
+  #download() {
+    const text = this.#buildExport();
+    if (!text.trim()) { this.#toast('Nothing to export — search first.', 'err'); return; }
+    const name = this.el.fileName.value.trim() || 'filtered-blocklist.txt';
+    const count = this.#lastResult.items.length;
+    const header = `# Filtered blocklist — ${new Date().toISOString()}\n# Search: "${this.el.search.value}"  ·  ${count} entries\n`;
+    const blob = new Blob([header, text, '\n'], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    a.click();
+    URL.revokeObjectURL(url);
+    this.#toast(`Downloaded ${name} (${count.toLocaleString()} entries).`, 'ok');
+  }
+
+  async #copy() {
+    const text = this.#buildExport();
+    if (!text.trim()) { this.#toast('Nothing to copy — search first.', 'err'); return; }
+    try {
+      await navigator.clipboard.writeText(text);
+      this.#toast(`Copied ${this.#lastResult.items.length.toLocaleString()} entries.`, 'ok');
+    } catch {
+      this.#toast('Copy failed — clipboard access blocked.', 'err');
+    }
+  }
+}
+
+new BlocklistApp();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a06deb646c4934e9',t:'MTc4MDY0OTMxOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-                
