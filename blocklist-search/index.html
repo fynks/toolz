@@ -5,20 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blocklist Filter — search &amp; export DNS blocklists</title>
 <style>
- :root{ --bg:#0b0e14; --bg-soft:#11151f; --surface:#151a24; --surface-2:#1b2230; --surface-3:#222b3b; --line:#28313f; --line-soft:#1f2735; --text:#e8edf4; --text-dim:#9aa6b8; --text-faint:#64708291; --muted:#6b7686; --accent:#5b9dff; --accent-strong:#3b82f6; --accent-ghost:rgba(91,157,255,.12); --green:#3ecf8e; --amber:#e3b341; --red:#f06a5c; --radius:14px; --radius-sm:10px; --shadow:0 8px 30px rgba(0,0,0,.35); --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace; --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;} *{box-sizing:border-box} html,body{height:100%} body{ margin:0; font-family:var(--sans); color:var(--text); font-size:14px; line-height:1.5; background: radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(62,207,142,.06), transparent 55%), var(--bg); -webkit-font-smoothing:antialiased;} ::selection{background:var(--accent-ghost)} *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px;border:2px solid transparent;background-clip:padding-box} *::-webkit-scrollbar-thumb:hover{background:#2c3850;background-clip:padding-box} .topbar{ height:60px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; z-index:20; background:rgba(11,14,20,.72); backdrop-filter:blur(14px) saturate(160%);} .logo{ width:32px;height:32px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center; background:linear-gradient(145deg,#3b82f6,#1d4ed8); box-shadow:0 4px 14px rgba(59,130,246,.4); font-size:17px;} .brand h1{margin:0;font-size:15px;font-weight:650;letter-spacing:-.01em} .brand p{margin:0;font-size:11.5px;color:var(--muted)} .topbar .spacer{flex:1} .pill{ font-size:11.5px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:5px 11px; border-radius:20px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;} .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)} .pill.live .dot{background:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18)} .app{display:grid; grid-template-columns:340px 1fr; min-height:calc(100vh - 60px)} @media (max-width:860px){ .app{grid-template-columns:1fr}} .sidebar{ border-right:1px solid var(--line-soft); padding:20px; display:flex; flex-direction:column; gap:18px; background:linear-gradient(180deg, rgba(21,26,36,.5), transparent 120px);} @media (max-width:860px){ .sidebar{border-right:none;border-bottom:1px solid var(--line-soft)}} .section-label{ font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px;} .section-label .count{ margin-left:auto; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:1px 8px; border-radius:20px; letter-spacing:0; text-transform:none;} .seg{display:flex; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px} .seg button{ flex:1; background:transparent; border:none; color:var(--text-dim); font-size:13px; font-weight:550; padding:7px 10px; border-radius:7px; cursor:pointer; font-family:inherit; transition:.15s;} .seg button.active{background:var(--surface-3); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.3)} .panel{display:flex; flex-direction:column; gap:10px} .field-label{font-size:12px;color:var(--text-dim)} input[type=text], input[type=url], textarea, select{ width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--text); border-radius:var(--radius-sm); padding:10px 12px; font-size:13.5px; font-family:inherit; outline:none; transition:.15s;} input::placeholder, textarea::placeholder{color:#5a6677} input:focus, textarea:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ghost)} textarea{resize:vertical; min-height:96px; font-family:var(--mono); font-size:12.5px; line-height:1.55} button.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; background:var(--accent-strong); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 14px; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; white-space:nowrap;} button.btn:hover{background:#4b8ff5} button.btn:active{transform:translateY(1px)} button.btn.block{width:100%} button.btn.ghost{background:var(--surface-2); border:1px solid var(--line); color:var(--text)} button.btn.ghost:hover{background:var(--surface-3); border-color:var(--line)} button.btn.subtle{background:transparent; color:var(--text-dim); padding:8px 10px} button.btn.subtle:hover{color:var(--text); background:var(--surface-2)} button.btn:disabled{opacity:.4; cursor:not-allowed; transform:none} .icon-btn{ background:transparent; border:none; color:var(--muted); cursor:pointer; width:28px;height:28px; border-radius:7px; display:grid; place-items:center; font-size:14px; transition:.15s; flex:0 0 auto;} .icon-btn:hover{background:var(--surface-3); color:var(--text)} .icon-btn.danger:hover{background:rgba(240,106,92,.14); color:var(--red)} .url-row{display:flex; gap:7px; align-items:center; margin-bottom:7px} .url-row input{flex:1} .presets{display:flex; flex-wrap:wrap; gap:7px} .chip{ font-size:12px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:6px;} .chip:hover{color:var(--text); border-color:var(--accent); background:var(--accent-ghost)} .chip .plus{color:var(--accent); font-weight:700} .sources{display:flex; flex-direction:column; gap:8px} .source{ display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; transition:.15s;} .source:hover{border-color:var(--line)} .source .ico{width:30px;height:30px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;font-size:14px;background:var(--surface-3)} .source .meta{flex:1; min-width:0} .source .nm{font-size:13px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .source .sub{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px} .source .swatch{width:8px;height:8px;border-radius:3px;flex:0 0 auto} .empty-sources{ border:1px dashed var(--line); border-radius:var(--radius-sm); padding:22px 16px; text-align:center; color:var(--muted); font-size:12.5px;} .empty-sources .big{font-size:22px; margin-bottom:6px; opacity:.7} .main{display:flex; flex-direction:column; min-width:0} .searchbar{ padding:18px 24px; border-bottom:1px solid var(--line-soft); position:sticky; top:60px; z-index:10; background:rgba(11,14,20,.72); backdrop-filter:blur(14px) saturate(160%); display:flex; flex-direction:column; gap:12px;} .search-input-wrap{position:relative; display:flex; align-items:center; gap:10px} .search-input-wrap .mag{position:absolute; left:15px; color:var(--muted); font-size:16px; pointer-events:none} .search-input-wrap input{ height:48px; padding-left:44px; padding-right:42px; font-size:15.5px; border-radius:12px; background:var(--surface);} .search-input-wrap .clear{position:absolute; right:120px;} .search-actions{display:flex; gap:10px; align-items:center} .opts-toggle{ background:transparent; border:1px solid var(--line); color:var(--text-dim); font-size:12.5px; font-weight:550; padding:0 14px; height:48px; border-radius:12px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:inherit; transition:.15s; white-space:nowrap;} .opts-toggle:hover{color:var(--text); border-color:var(--accent)} .opts-toggle .arr{transition:.2s; font-size:10px} .opts-toggle.open .arr{transform:rotate(180deg)} .options{ display:none; gap:18px 22px; flex-wrap:wrap; padding:4px 2px 2px;} .options.open{display:flex} .opt{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); cursor:pointer; user-select:none} .opt input{appearance:none; width:34px; height:19px; border-radius:20px; background:var(--surface-3); border:1px solid var(--line); position:relative; cursor:pointer; transition:.15s; flex:0 0 auto} .opt input::after{content:"";position:absolute; top:1.5px; left:2px; width:14px; height:14px; border-radius:50%; background:#8893a5; transition:.15s} .opt input:checked{background:var(--accent-strong); border-color:var(--accent-strong)} .opt input:checked::after{transform:translateX(14px); background:#fff} .results-area{padding:18px 24px 120px; flex:1} .results-head{display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap} .metric{display:flex; align-items:baseline; gap:7px} .metric b{font-size:20px; font-weight:700; letter-spacing:-.02em} .metric span{font-size:12px; color:var(--muted)} .metric.accent b{color:var(--accent)} .results-head .divider{width:1px; height:24px; background:var(--line)} .results{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--bg-soft);} .results-scroll{max-height:calc(100vh - 320px); min-height:200px; overflow:auto} .rline{ display:flex; align-items:center; gap:10px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; border-bottom:1px solid var(--line-soft); border-left:3px solid transparent; word-break:break-all;} .rline:last-child{border-bottom:none} .rline:hover{background:rgba(91,157,255,.05)} .rline mark{background:rgba(227,179,65,.28); color:#ffdf8a; border-radius:3px; padding:0 1px} .rline .val{flex:1; min-width:0} .results .placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:64px 24px; text-align:center; color:var(--muted);} .results .placeholder .big{font-size:40px; opacity:.5} .results .placeholder h3{margin:0; font-size:14.5px; color:var(--text-dim); font-weight:600} .results .placeholder p{margin:0; font-size:12.5px; max-width:340px} .more-note{padding:12px 14px; text-align:center; font-size:12px; color:var(--muted); background:var(--surface)} .exportbar{ position:fixed; left:340px; right:0; bottom:0; z-index:15; padding:13px 24px; border-top:1px solid var(--line); display:flex; align-items:center; gap:12px; background:rgba(13,17,25,.86); backdrop-filter:blur(16px) saturate(160%); flex-wrap:wrap; box-shadow:0 -10px 30px rgba(0,0,0,.3);} @media (max-width:860px){ .exportbar{left:0}} .exportbar .lbl{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:7px} .exportbar select{width:auto; min-width:180px; padding:9px 12px; font-size:13px} .exportbar input{width:200px; padding:9px 12px; font-size:13px} .exportbar .spacer{flex:1} .exportbar .ready{font-size:12px; color:var(--text-dim)} .exportbar .ready b{color:var(--accent)} .toasts{position:fixed; bottom:78px; right:20px; z-index:50; display:flex; flex-direction:column; gap:8px; max-width:340px} .toast{ display:flex; align-items:flex-start; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px; box-shadow:var(--shadow); font-size:13px; animation:slidein .25s ease; border-left:3px solid var(--accent);} .toast.ok{border-left-color:var(--green)} .toast.err{border-left-color:var(--red)} .toast.info{border-left-color:var(--accent)} .toast .tico{font-size:15px; line-height:1.3} .toast .tmsg{flex:1; color:var(--text-dim)} @keyframes slidein{from{opacity:0; transform:translateX(16px)}to{opacity:1; transform:none}} .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px} @keyframes sp{to{transform:rotate(360deg)}} .hint{font-size:11.5px; color:var(--muted); line-height:1.5} .hint code{font-family:var(--mono); background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--accent); font-size:11px}
+ :root{ --bg:#0b0e14; --bg-soft:#11151f; --surface:#151a24; --surface-2:#1b2230; --surface-3:#222b3b; --line:#28313f; --line-soft:#1f2735; --text:#e8edf4; --text-dim:#9aa6b8; --text-faint:#64708291; --muted:#6b7686; --accent:#5b9dff; --accent-strong:#3b82f6; --accent-ghost:rgba(91,157,255,.12); --green:#3ecf8e; --amber:#e3b341; --red:#f06a5c; --radius:14px; --radius-sm:10px; --shadow:0 8px 30px rgba(0,0,0,.35); --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace; --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;} *{box-sizing:border-box} html,body{height:100%} body{ margin:0; font-family:var(--sans); color:var(--text); font-size:14px; line-height:1.5; background: radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(62,207,142,.06), transparent 55%), var(--bg); -webkit-font-smoothing:antialiased;} ::selection{background:var(--accent-ghost)} *::-webkit-scrollbar{width:10px;height:10px} *::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:20px;border:2px solid transparent;background-clip:padding-box} *::-webkit-scrollbar-thumb:hover{background:#2c3850;background-clip:padding-box} .progress{ position:fixed; top:0; left:0; right:0; height:3px; z-index:60; pointer-events:none; background:transparent; overflow:hidden; opacity:0; transition:opacity .2s;} .progress.active{opacity:1} .progress::before{ content:""; position:absolute; inset:0; width:40%; border-radius:0 3px 3px 0; background:linear-gradient(90deg, transparent, var(--accent), #8ec5ff, var(--accent), transparent); box-shadow:0 0 12px rgba(91,157,255,.7); animation:indeterminate 1.15s cubic-bezier(.65,.05,.36,1) infinite;} @keyframes indeterminate{ 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)}} .topbar{ height:68px; display:flex; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; z-index:20; background: linear-gradient(180deg, rgba(59,130,246,.05), transparent), rgba(11,14,20,.78); backdrop-filter:blur(16px) saturate(170%);} .logo{ width:38px;height:38px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center; background:linear-gradient(145deg,#4f9bff,#1d4ed8); box-shadow:0 6px 18px rgba(59,130,246,.45), inset 0 1px 0 rgba(255,255,255,.25); position:relative;} .logo svg{width:21px;height:21px;display:block} .brand{display:flex; flex-direction:column; gap:1px} .brand h1{ margin:0; font-size:16.5px; font-weight:700; letter-spacing:-.02em; line-height:1.15; background:linear-gradient(90deg,#eef3fb,#a9c6f5); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;} .brand p{margin:0;font-size:11.5px;color:var(--muted); display:flex; align-items:center; gap:6px} .brand .kbd{ font-family:var(--mono); font-size:10px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 5px;} .topbar .spacer{flex:1} .hstats{display:flex; align-items:center; gap:4px} .hstat{display:flex; flex-direction:column; align-items:flex-end; padding:0 12px} .hstat b{font-size:15px; font-weight:700; letter-spacing:-.02em; line-height:1.1} .hstat.accent b{color:var(--accent)} .hstat span{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em} .hstat + .hstat{border-left:1px solid var(--line-soft)} @media (max-width:680px){ .hstats{display:none}} .pill{ font-size:11.5px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:6px 12px; border-radius:20px; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;} .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--muted); transition:.2s} .pill.live .dot{background:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18)} .pill.busy .dot{background:var(--accent); animation:pulse 1s ease-in-out infinite} @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(91,157,255,.5)}50%{box-shadow:0 0 0 5px rgba(91,157,255,0)}} .app{display:grid; grid-template-columns:340px 1fr; min-height:calc(100vh - 68px)} @media (max-width:860px){ .app{grid-template-columns:1fr}} .skeleton{ display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px;} .skeleton .sk-ico{width:30px;height:30px;border-radius:8px;flex:0 0 auto} .skeleton .sk-lines{flex:1; display:flex; flex-direction:column; gap:7px} .sk-bar{height:9px; border-radius:6px} .sk-bar.w70{width:70%} .sk-bar.w40{width:40%} .shimmer{ background:linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%); background-size:400% 100%; animation:shimmer 1.3s ease infinite;} @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}} .sidebar{ border-right:1px solid var(--line-soft); padding:22px 20px; display:flex; flex-direction:column; gap:22px; background:linear-gradient(180deg, rgba(21,26,36,.5), transparent 120px);} @media (max-width:860px){ .sidebar{border-right:none;border-bottom:1px solid var(--line-soft)}} .section-label{ font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; margin-bottom:12px;} .section-label .count{ margin-left:auto; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); padding:1px 8px; border-radius:20px; letter-spacing:0; text-transform:none;} .seg{display:flex; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:3px} .seg button{ flex:1; background:transparent; border:none; color:var(--text-dim); font-size:13px; font-weight:550; padding:7px 10px; border-radius:7px; cursor:pointer; font-family:inherit; transition:.15s;} .seg button.active{background:var(--surface-3); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.3)} .panel{display:flex; flex-direction:column; gap:10px} .field-label{font-size:12px;color:var(--text-dim)} input[type=text], input[type=url], textarea, select{ width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--text); border-radius:var(--radius-sm); padding:10px 12px; font-size:13.5px; font-family:inherit; outline:none; transition:.15s;} input::placeholder, textarea::placeholder{color:#5a6677} input:focus, textarea:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ghost)} textarea{resize:vertical; min-height:96px; font-family:var(--mono); font-size:12.5px; line-height:1.55} button.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; background:var(--accent-strong); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 14px; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; white-space:nowrap;} button.btn:hover{background:#4b8ff5} button.btn:active{transform:translateY(1px)} button.btn.block{width:100%} button.btn.ghost{background:var(--surface-2); border:1px solid var(--line); color:var(--text)} button.btn.ghost:hover{background:var(--surface-3); border-color:var(--line)} button.btn.subtle{background:transparent; color:var(--text-dim); padding:8px 10px} button.btn.subtle:hover{color:var(--text); background:var(--surface-2)} button.btn:disabled{opacity:.4; cursor:not-allowed; transform:none} .icon-btn{ background:transparent; border:none; color:var(--muted); cursor:pointer; width:28px;height:28px; border-radius:7px; display:grid; place-items:center; font-size:14px; transition:.15s; flex:0 0 auto;} .icon-btn:hover{background:var(--surface-3); color:var(--text)} .icon-btn.danger:hover{background:rgba(240,106,92,.14); color:var(--red)} .url-row{display:flex; gap:7px; align-items:center; margin-bottom:7px} .url-row input{flex:1} .presets{display:flex; flex-wrap:wrap; gap:7px} .chip{ font-size:12px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:5px 11px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:6px;} .chip:hover{color:var(--text); border-color:var(--accent); background:var(--accent-ghost)} .chip .plus{color:var(--accent); font-weight:700} .sources{display:flex; flex-direction:column; gap:8px} .source{ display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; transition:.15s;} .source:hover{border-color:var(--line)} .source .ico{width:30px;height:30px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;font-size:14px;background:var(--surface-3)} .source .meta{flex:1; min-width:0} .source .nm{font-size:13px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .source .sub{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px} .source .swatch{width:8px;height:8px;border-radius:3px;flex:0 0 auto} .empty-sources{ border:1px dashed var(--line); border-radius:var(--radius-sm); padding:22px 16px; text-align:center; color:var(--muted); font-size:12.5px;} .empty-sources .big{font-size:22px; margin-bottom:6px; opacity:.7} .main{display:flex; flex-direction:column; min-width:0} .searchbar{ padding:20px 28px; border-bottom:1px solid var(--line-soft); position:sticky; top:68px; z-index:10; background:rgba(11,14,20,.78); backdrop-filter:blur(16px) saturate(170%); display:flex; flex-direction:column; gap:14px;} .search-input-wrap{position:relative; display:flex; align-items:center; gap:10px} .search-input-wrap .mag{position:absolute; left:16px; color:var(--muted); font-size:16px; pointer-events:none} .search-input-wrap input{ height:50px; padding-left:46px; padding-right:46px; font-size:15.5px; border-radius:13px; background:var(--surface);} .search-input-wrap .clear{position:absolute; right:124px;} .search-actions{display:flex; gap:10px; align-items:center} .opts-toggle{ background:transparent; border:1px solid var(--line); color:var(--text-dim); font-size:12.5px; font-weight:550; padding:0 16px; height:50px; border-radius:13px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:inherit; transition:.15s; white-space:nowrap;} .opts-toggle .obadge{ font-size:10px; font-weight:700; background:var(--accent-strong); color:#fff; border-radius:20px; min-width:16px; height:16px; padding:0 4px; display:none; align-items:center; justify-content:center;} .opts-toggle .obadge.show{display:inline-flex} .opts-toggle:hover{color:var(--text); border-color:var(--accent)} .opts-toggle .arr{transition:.2s; font-size:10px} .opts-toggle.open .arr{transform:rotate(180deg)} .options{ display:none; gap:18px 22px; flex-wrap:wrap; padding:4px 2px 2px;} .options.open{display:flex} .opt{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); cursor:pointer; user-select:none} .opt input{appearance:none; width:34px; height:19px; border-radius:20px; background:var(--surface-3); border:1px solid var(--line); position:relative; cursor:pointer; transition:.15s; flex:0 0 auto} .opt input::after{content:"";position:absolute; top:1.5px; left:2px; width:14px; height:14px; border-radius:50%; background:#8893a5; transition:.15s} .opt input:checked{background:var(--accent-strong); border-color:var(--accent-strong)} .opt input:checked::after{transform:translateX(14px); background:#fff} .results-area{padding:22px 28px 128px; flex:1} .results-head{display:flex; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap} .metric{display:flex; align-items:baseline; gap:7px} .metric b{font-size:20px; font-weight:700; letter-spacing:-.02em} .metric span{font-size:12px; color:var(--muted)} .metric.accent b{color:var(--accent)} .results-head .divider{width:1px; height:24px; background:var(--line)} .results-head .grow{flex:1} .results-head .timing{font-size:11.5px; color:var(--muted); font-family:var(--mono)} .results{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--bg-soft); position:relative;} .results-scroll{max-height:calc(100vh - 340px); min-height:220px; overflow:auto} .res-overlay{ position:absolute; inset:0; z-index:4; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(17,21,31,.6); backdrop-filter:blur(2px);} .res-overlay.show{display:flex} .res-overlay .ring{ width:38px;height:38px;border-radius:50%;border:3px solid var(--surface-3); border-top-color:var(--accent); animation:sp .7s linear infinite;} .res-overlay .lbl{font-size:12.5px; color:var(--text-dim)} .rline{ display:flex; align-items:center; gap:10px; padding:7px 14px; font-family:var(--mono); font-size:12.5px; border-bottom:1px solid var(--line-soft); border-left:3px solid transparent; word-break:break-all;} .rline:last-child{border-bottom:none} .rline:hover{background:rgba(91,157,255,.05)} .rline mark{background:rgba(227,179,65,.28); color:#ffdf8a; border-radius:3px; padding:0 1px} .rline .val{flex:1; min-width:0} .results .placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:64px 24px; text-align:center; color:var(--muted);} .results .placeholder .big{font-size:40px; opacity:.5} .results .placeholder h3{margin:0; font-size:14.5px; color:var(--text-dim); font-weight:600} .results .placeholder p{margin:0; font-size:12.5px; max-width:340px} .more-note{padding:12px 14px; text-align:center; font-size:12px; color:var(--muted); background:var(--surface)} .exportbar{ position:fixed; left:340px; right:0; bottom:0; z-index:15; padding:13px 24px; border-top:1px solid var(--line); display:flex; align-items:center; gap:12px; background:rgba(13,17,25,.86); backdrop-filter:blur(16px) saturate(160%); flex-wrap:wrap; box-shadow:0 -10px 30px rgba(0,0,0,.3);} @media (max-width:860px){ .exportbar{left:0}} .exportbar .lbl{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:7px} .exportbar select{width:auto; min-width:180px; padding:9px 12px; font-size:13px} .exportbar input{width:200px; padding:9px 12px; font-size:13px} .exportbar .spacer{flex:1} .exportbar .ready{font-size:12px; color:var(--text-dim)} .exportbar .ready b{color:var(--accent)} .toasts{position:fixed; bottom:78px; right:20px; z-index:50; display:flex; flex-direction:column; gap:8px; max-width:340px} .toast{ display:flex; align-items:flex-start; gap:10px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px; box-shadow:var(--shadow); font-size:13px; animation:slidein .25s ease; border-left:3px solid var(--accent);} .toast.ok{border-left-color:var(--green)} .toast.err{border-left-color:var(--red)} .toast.info{border-left-color:var(--accent)} .toast .tico{font-size:15px; line-height:1.3} .toast .tmsg{flex:1; color:var(--text-dim)} @keyframes slidein{from{opacity:0; transform:translateX(16px)}to{opacity:1; transform:none}} .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px} @keyframes sp{to{transform:rotate(360deg)}} .hint{font-size:11.5px; color:var(--muted); line-height:1.5} .hint code{font-family:var(--mono); background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--accent); font-size:11px}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="logo">🛡️</div>
+<div class="progress" id="progress"></div>
+
+<header class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2.5 4 5.5v5.2c0 4.8 3.3 8.9 8 10.3 4.7-1.4 8-5.5 8-10.3V5.5L12 2.5Z"
+            fill="#fff" fill-opacity=".16" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="m8.6 12 2.3 2.3 4.5-4.6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
   <div class="brand">
     <h1>Blocklist Filter</h1>
-    <p>Search &amp; export DNS blocklists</p>
+    <p>Search &amp; export DNS blocklists <span class="kbd">/ to focus</span></p>
   </div>
+
   <div class="spacer"></div>
+
+  <div class="hstats">
+    <div class="hstat accent"><b id="hMatch">0</b><span>matches</span></div>
+    <div class="hstat"><b id="hTotal">0</b><span>domains</span></div>
+    <div class="hstat"><b id="hSrc">0</b><span>lists</span></div>
+  </div>
+
   <div class="pill" id="statePill"><span class="dot"></span><span id="statePillText">No lists loaded</span></div>
-</div>
+</header>
 
 <div class="app">
 
@@ -26,7 +42,6 @@
   <aside class="sidebar">
     <div>
       <div class="section-label">Add a list <span class="count" id="srcCount">0 loaded</span></div>
-      <div style="height:12px"></div>
 
       <div class="seg" id="seg">
         <button class="active" data-tab="url">From URL</button>
@@ -41,8 +56,7 @@
         <option value="" disabled selected>Choose a popular blocklist…</option>
       </select>
 
-      <div style="height:4px"></div>
-      <div class="field-label">Or enter blocklist URL(s)</div>
+      <div class="field-label" style="margin-top:6px">Or enter blocklist URL(s)</div>
       <div id="urlContainer">
         <div class="url-row">
           <input type="url" class="urlInput" placeholder="https://…/hosts.txt">
@@ -69,7 +83,6 @@
     <!-- Loaded sources -->
     <div>
       <div class="section-label">Loaded lists</div>
-      <div style="height:10px"></div>
       <div class="sources" id="srcList"></div>
     </div>
 
@@ -86,7 +99,7 @@
         <span class="mag">🔍</span>
         <input type="text" id="searchInput" placeholder="Search domains…  e.g. google, doubleclick, ads" autocomplete="off">
         <button class="icon-btn clear" id="clearSearch" title="Clear" style="display:none">✕</button>
-        <button class="opts-toggle" id="optsToggle">Options <span class="arr">▾</span></button>
+        <button class="opts-toggle" id="optsToggle">Options <span class="obadge" id="optsBadge">0</span><span class="arr">▾</span></button>
       </div>
       <div class="options" id="options">
         <label class="opt"><input type="checkbox" id="optParse" checked> Normalize to domains</label>
@@ -105,9 +118,15 @@
         <div class="metric"><b id="statTotal">0</b><span>domains</span></div>
         <div class="divider"></div>
         <div class="metric"><b id="statSrc">0</b><span>lists</span></div>
+        <div class="grow"></div>
+        <div class="timing" id="timing"></div>
       </div>
 
       <div class="results">
+        <div class="res-overlay" id="resOverlay">
+          <div class="ring"></div>
+          <div class="lbl" id="resOverlayLbl">Loading…</div>
+        </div>
         <div class="results-scroll" id="results">
           <div class="placeholder">
             <div class="big">📦</div>
@@ -281,14 +300,22 @@ class BlocklistApp {
       srcCount:   $('#srcCount'),
       statePill:  $('#statePill'),
       statePillT: $('#statePillText'),
+      progress:   $('#progress'),
       search:     $('#searchInput'),
       clear:      $('#clearSearch'),
       optsBtn:    $('#optsToggle'),
+      optsBadge:  $('#optsBadge'),
       options:    $('#options'),
       results:    $('#results'),
+      resOverlay: $('#resOverlay'),
+      resOverlayLbl: $('#resOverlayLbl'),
+      timing:     $('#timing'),
       statMatch:  $('#statMatch'),
       statTotal:  $('#statTotal'),
       statSrc:    $('#statSrc'),
+      hMatch:     $('#hMatch'),
+      hTotal:     $('#hTotal'),
+      hSrc:       $('#hSrc'),
       exportFmt:  $('#exportFmt'),
       fileName:   $('#fileName'),
       exportCnt:  $('#exportCount'),
@@ -362,6 +389,19 @@ class BlocklistApp {
 
     el.copy.addEventListener('click', () => this.#copy());
     el.download.addEventListener('click', () => this.#download());
+
+    // Keyboard shortcuts: "/" focuses search, Esc clears it.
+    document.addEventListener('keydown', (e) => {
+      const tag = document.activeElement?.tagName;
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      if (e.key === '/' && !typing) {
+        e.preventDefault();
+        el.search.focus();
+      } else if (e.key === 'Escape' && document.activeElement === el.search) {
+        el.search.value = '';
+        this.#run();
+      }
+    });
   }
 
   /* ---------------- Toasts ---------------- */
@@ -377,6 +417,17 @@ class BlocklistApp {
       node.style.transform = 'translateX(16px)';
       setTimeout(() => node.remove(), 250);
     }, ms);
+  }
+
+  /* ---------------- Loading indicators ---------------- */
+  #setBusy(busy, label = 'Loading lists…') {
+    this.el.progress.classList.toggle('active', busy);
+    this.el.statePill.classList.toggle('busy', busy);
+    this.el.resOverlay.classList.toggle('show', busy);
+    if (busy) {
+      this.el.resOverlayLbl.textContent = label;
+      this.el.statePillT.textContent = label;
+    }
   }
 
   /* ---------------- URL inputs ---------------- */
@@ -420,28 +471,37 @@ class BlocklistApp {
     const original = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spin"></span> Fetching…';
-
-    const results = await Promise.allSettled(
-      urls.map(async (url) => {
-        const res = await fetch(this.#proxify(url), { redirect: 'follow' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return { url, text: await res.text() };
-      })
-    );
+    this.#setBusy(true, `Fetching ${urls.length} list${urls.length > 1 ? 's' : ''}…`);
 
     let ok = 0;
     const failed = [];
-    for (const [i, r] of results.entries()) {
-      if (r.status === 'fulfilled') {
-        this.#addSource(BlocklistApp.#prettyName(r.value.url), 'url', r.value.text, r.value.url);
-        ok++;
-      } else {
-        failed.push(BlocklistApp.#prettyName(urls[i]));
+    try {
+      const results = await Promise.allSettled(
+        urls.map(async (url) => {
+          const res = await fetch(this.#proxify(url), { redirect: 'follow' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return { url, text: await res.text() };
+        })
+      );
+
+      for (const [i, r] of results.entries()) {
+        if (r.status === 'fulfilled') {
+          this.#addSource(BlocklistApp.#prettyName(r.value.url), 'url', r.value.text, r.value.url, /*silent*/ true);
+          ok++;
+        } else {
+          failed.push(BlocklistApp.#prettyName(urls[i]));
+        }
       }
+    } finally {
+      this.#setBusy(false);
+      btn.disabled = false;
+      btn.innerHTML = original;
     }
 
-    btn.disabled = false;
-    btn.innerHTML = original;
+    // Re-render once after the batch for efficiency.
+    this.#renderSources();
+    this.#run();
+
     if (ok) this.#toast(`Loaded ${ok} list${ok > 1 ? 's' : ''}.`, 'ok');
     if (failed.length) this.#toast(`Couldn't fetch: ${failed.join(', ')}. Try the CORS proxy or paste it.`, 'err', 6000);
   }
@@ -459,11 +519,10 @@ class BlocklistApp {
   }
 
   /* ---------------- Source lifecycle ---------------- */
-  #addSource(name, type, text, url = null) {
+  #addSource(name, type, text, url = null, silent = false) {
     const color = COLORS[this.#colorIndex++ % COLORS.length];
     this.#sources.push(new Source({ name, type, url, text, color }));
-    this.#renderSources();
-    this.#run();
+    if (!silent) { this.#renderSources(); this.#run(); }
   }
 
   #removeSource(id) {
@@ -500,6 +559,7 @@ class BlocklistApp {
 
     const n = this.#sources.length;
     this.el.statSrc.textContent = n;
+    this.el.hSrc.textContent = n.toLocaleString();
     this.el.srcCount.textContent = `${n} loaded`;
     this.el.statePill.classList.toggle('live', n > 0);
     this.el.statePillT.textContent = n ? `${n} list${n > 1 ? 's' : ''} loaded` : 'No lists loaded';
@@ -583,13 +643,23 @@ class BlocklistApp {
 
   /* ---------------- Render ---------------- */
   #run() {
+    const t0 = performance.now();
     const { items, total, err, matcher } = this.#compute();
+    const elapsed = performance.now() - t0;
     const q = this.el.search.value;
 
     this.el.statTotal.textContent  = total.toLocaleString();
     this.el.statMatch.textContent  = items.length.toLocaleString();
     this.el.exportCnt.textContent  = items.length.toLocaleString();
+    this.el.hTotal.textContent     = total.toLocaleString();
+    this.el.hMatch.textContent     = items.length.toLocaleString();
     this.el.clear.style.display    = q ? 'grid' : 'none';
+    this.#updateOptionsBadge();
+
+    // timing readout (only meaningful while searching)
+    this.el.timing.textContent = (q && !err)
+      ? `${items.length.toLocaleString()} matches · ${elapsed < 1 ? '<1' : Math.round(elapsed)} ms`
+      : '';
 
     const { results } = this.el;
     if (err)               return void (results.innerHTML = this.#placeholder('⚠️', 'Invalid regular expression', 'Check your regex syntax and try again.', '#f06a5c'));
@@ -621,6 +691,20 @@ class BlocklistApp {
     const bigStyle = color ? ' style="opacity:.7"' : '';
     const headStyle = color ? ` style="color:${color}"` : '';
     return `<div class="placeholder"><div class="big"${bigStyle}>${big}</div><h3${headStyle}>${head}</h3><p>${body}</p></div>`;
+  }
+
+  // Default-on options (parse, dedup) aren't counted; only "active" extras show in the badge.
+  #updateOptionsBadge() {
+    const { opt, optsBadge } = this.el;
+    let count = 0;
+    if (!opt.parse.checked) count++;
+    if (!opt.dedup.checked) count++;
+    if (opt.case.checked)   count++;
+    if (opt.whole.checked)  count++;
+    if (opt.regex.checked)  count++;
+    if (opt.invert.checked) count++;
+    optsBadge.textContent = count;
+    optsBadge.classList.toggle('show', count > 0);
   }
 
   #highlight(text, re) {
@@ -674,5 +758,5 @@ class BlocklistApp {
 
 new BlocklistApp();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a06deb646c4934e9',t:'MTc4MDY0OTMxOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
