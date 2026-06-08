@@ -6,184 +6,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- SEO Meta Tags -->
-    <title>OPML Feed Manager - Free RSS Feed Editor & OPML File Manager</title>
+    <title>OPML Feed Manager — Sleek RSS Feed Editor</title>
     <meta name="description"
         content="Free online OPML editor and RSS feed manager. Upload, edit, organize, and export OPML files with ease. Manage your RSS feeds, podcasts, and news subscriptions efficiently.">
     <meta name="keywords"
         content="OPML editor, RSS feed manager, OPML file editor, RSS organizer, feed management tool, podcast manager, news feed organizer, XML editor">
-    <meta name="author" content="Your Name">
     <meta name="robots" content="index, follow">
-    <meta name="language" content="en">
 
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://toolz1.netlify.app/opml-editor/">
-
-    <!-- Favicon -->
-    <link rel="icon" href="../favicon.ico" sizes="any">
-    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-
-    <link rel="stylesheet" href="css/styles-min.css">
-    <script src="js/app-min.js" defer></script>
+    <!-- Stylesheets & Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles-min.css">
+    <script src="/js/app-min.js" defer></script>
 </head>
 
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>📡 OPML Feed Manager</h1>
-            <p>Manage your RSS feeds with style and simplicity</p>
+    <div class="app-container">
+        <!-- Top Sticky Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
+                </div>
+                <div>
+                    <h1>OPML Feed Manager</h1>
+                    <p>Subtle, fast, and feature-rich feed editor</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportOPML()" aria-label="Export collection">
+                    <span id="exportText">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download OPML
+                    </span>
+                </button>
+            </div>
         </header>
 
-        <main class="main-content">
-            <section class="upload-section" aria-label="File Upload">
-                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">Click to upload or drag & drop</div>
-                    <div class="upload-subtext">Select your OPML file to get started</div>
+        <!-- Main Workspace -->
+        <main class="dashboard-layout">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <!-- Section 1: Upload Collection -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Import Feeds</div>
+                    <div class="upload-area upload-card" id="uploadArea">
+                        <div class="upload-card-icon">
+                            <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </div>
+                        <div class="upload-card-title">Upload OPML or XML</div>
+                        <div class="upload-card-sub">Drag & drop or click to browse</div>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".opml,.xml" aria-label="Upload OPML file" />
                 </div>
-                <input type="file" id="fileInput" class="file-input" accept=".opml,.xml"
-                    aria-label="Upload OPML file" />
-            </section>
 
-            <section id="feedsSection" style="display: none;" aria-label="Feed Management">
-                <div class="controls">
+                <!-- Section 2: Collection Stats -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Statistics</div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-value" id="totalFeeds">0</span>
+                            <span class="stat-desc">Total loaded</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="selectedFeeds">0</span>
+                            <span class="stat-desc">Selected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Hotkeys Legend -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Keyboard Shortcuts</div>
+                    <div class="shortcuts-panel">
+                        <span class="shortcut-key">Ctrl+N</span> <span>Add Feed</span>
+                        <span class="shortcut-key">Ctrl+A</span> <span>Select All</span>
+                        <span class="shortcut-key">Ctrl+D</span> <span>Deselect All</span>
+                        <span class="shortcut-key">Ctrl+S</span> <span>Export OPML</span>
+                        <span class="shortcut-key">Ctrl+F</span> <span>Search</span>
+                        <span class="shortcut-key">Esc</span> <span>Close Modal</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Work Area -->
+            <div class="main-pane">
+                <!-- Search & Actions Bar -->
+                <section class="control-bar" aria-label="Search and Actions">
                     <div class="search-box">
-                        <div class="search-icon">🔍</div>
+                        <span class="search-icon">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
                         <input type="text" class="search-input" id="searchInput"
-                            placeholder="Search feeds by title, URL, category..." aria-label="Search feeds" />
-                    </div>
-                    <div class="bulk-actions">
-                        <button class="btn primary" onclick="showAddFeedModal()" aria-label="Add new RSS feed">
-                            ➕ Add Feed
+                            placeholder="Search by title, URL, description, tag..." aria-label="Search feeds" />
+                        <button id="clearSearchBtn" class="clear-search-btn" title="Clear Search" style="display: none;">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
-                        <button class="btn secondary" onclick="validateAllFeeds()" aria-label="Validate all feeds">
-                            ✓ Validate Feeds
+                    </div>
+                    <div class="control-actions">
+                        <button class="btn btn-primary" onclick="showAddFeedModal()" aria-label="Add new RSS feed">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Feed
                         </button>
-                        <button class="btn secondary" onclick="selectAll()" aria-label="Select all feeds">Select
-                            All</button>
-                        <button class="btn secondary" onclick="deselectAll()" aria-label="Deselect all feeds">Deselect
-                            All</button>
-                        <button class="btn secondary" onclick="removeSelected()"
-                            aria-label="Remove selected feeds">Remove Selected</button>
-                    </div>
-                </div>
-
-                <div class="feeds-header">
-                    <h2>Your RSS Feeds</h2>
-                    <div class="feeds-count" id="feedsCount">0 feeds loaded</div>
-                </div>
-
-                <div class="feeds-grid" id="feedsGrid" role="grid" aria-label="Feed collection"></div>
-
-                <section class="export-section" aria-label="Export Options">
-                    <div class="export-title">Export Your Feed Collection</div>
-                    <div class="export-description">
-                        Download your customized RSS feed collection as an OPML file
-                    </div>
-                    <div class="stats">
-                        <div class="stat-item">
-                            <span class="stat-number" id="totalFeeds">0</span>
-                            <div class="stat-label">Total Feeds</div>
+                        <div class="btn-group">
+                            <button class="btn btn-secondary" onclick="selectAll()" aria-label="Select all feeds">Select All</button>
+                            <button class="btn btn-secondary" onclick="deselectAll()" aria-label="Deselect all feeds">Deselect All</button>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="selectedFeeds">0</span>
-                            <div class="stat-label">Selected</div>
-                        </div>
+                        <button class="btn btn-danger" onclick="removeSelected()" aria-label="Remove selected feeds">
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Remove Selected
+                        </button>
                     </div>
-                    <button class="btn" onclick="exportOPML()" aria-label="Download OPML file">
-                        <span id="exportText">📥 Download OPML</span>
+                </section>
+
+                <!-- Feed Grid Section -->
+                <section id="feedsSection" style="display: none; width: 100%;" aria-label="Feed collection list">
+                    <div class="feeds-section-header">
+                        <h2>Your Feeds</h2>
+                        <div class="feeds-count" id="feedsCount">0 feeds loaded</div>
+                    </div>
+                    <br>
+                    <div class="feeds-grid" id="feedsGrid" role="grid" aria-label="Feed collection grid"></div>
+                </section>
+
+                <!-- Empty State (Shown when no feeds are loaded) -->
+                <section id="emptyState" class="empty-state" aria-label="Empty state">
+                    <div class="empty-state-icon">
+                        <svg class="icon-svg icon-svg-xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+                    </div>
+                    <h2 class="empty-state-title">No Feeds Loaded Yet</h2>
+                    <p class="empty-state-sub">Upload an OPML/XML file or start by adding a custom feed manually.</p>
+                    <button class="btn btn-primary" onclick="showAddFeedModal()">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add First Feed
                     </button>
                 </section>
-            </section>
-
-            <section id="emptyState" class="empty-state" aria-label="Empty state">
-                <div class="empty-icon">📭</div>
-                <div class="empty-text">No RSS feeds loaded yet</div>
-                <div class="empty-subtext">Upload an OPML file to get started managing your feeds</div>
-            </section>
+            </div>
         </main>
     </div>
 
     <!-- Add/Edit Feed Modal -->
-    <div id="feedModal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="feedModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-container">
             <div class="modal-header">
                 <h3 id="modalTitle">Add New RSS Feed</h3>
-                <button class="modal-close" onclick="closeFeedModal()">&times;</button>
+                <button class="modal-close" onclick="closeFeedModal()">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
-            <div class="modal-body">
-                <form id="feedForm">
+            <form id="feedForm">
+                <div class="modal-body">
                     <div class="form-group">
                         <label for="feedTitle">Feed Title *</label>
-                        <input type="text" id="feedTitle" name="title" placeholder="Enter feed title" required>
+                        <input type="text" id="feedTitle" name="title" placeholder="e.g., Hacker News" required>
                     </div>
                     <div class="form-group">
                         <label for="feedUrl">RSS Feed URL *</label>
                         <input type="url" id="feedUrl" name="xmlUrl" placeholder="https://example.com/feed.xml" required>
-                        <button type="button" class="btn secondary small" onclick="validateFeedUrl()">
-                            🔍 Validate URL
-                        </button>
                     </div>
                     <div class="form-group">
                         <label for="feedWebsite">Website URL</label>
-                        <input type="url" id="feedWebsite" name="htmlUrl" placeholder="https://example.com">
-                        <button type="button" class="btn secondary small" onclick="autoFillWebsite()">
-                            🔗 Auto-fill
-                        </button>
+                        <div class="form-input-helper-row">
+                            <input type="url" id="feedWebsite" name="htmlUrl" placeholder="https://example.com">
+                            <button type="button" class="btn btn-secondary" onclick="autoFillWebsite()">
+                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Auto-fill
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="feedDescription">Description</label>
-                        <textarea id="feedDescription" name="description" placeholder="Brief description of the feed" rows="3"></textarea>
+                        <textarea id="feedDescription" name="description" placeholder="Short description of this feed" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="feedCategory">Category/Tag</label>
-                        <input type="text" id="feedCategory" name="category" placeholder="e.g., News, Tech, Sports" list="categoryList">
+                        <label for="feedCategory">Category / Tag</label>
+                        <input type="text" id="feedCategory" name="category" placeholder="e.g., Tech, News, Science" list="categoryList">
                         <datalist id="categoryList"></datalist>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn secondary" onclick="closeFeedModal()">Cancel</button>
-                        <button type="submit" class="btn primary">
-                            <span id="saveButtonText">Add Feed</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Feed Preview Modal -->
-    <div id="previewModal" class="modal" style="display: none;">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3 id="previewTitle">Feed Preview</h3>
-                <button class="modal-close" onclick="closePreviewModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="previewContent" class="preview-content">
-                    <div class="loading-spinner">Loading feed preview...</div>
                 </div>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeFeedModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span id="saveButtonText">Add Feed</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Validation Results Modal -->
-    <div id="validationModal" class="modal" style="display: none;">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3>Feed Validation Results</h3>
-                <button class="modal-close" onclick="closeValidationModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="validationResults" class="validation-results"></div>
-            </div>
-        </div>
-    </div>
+    <!-- Shared Notification Host -->
+    <div id="notificationsHost" class="notifications-host"></div>
 
-    <footer>
-        <p>Free online OPML editor for RSS feeds, podcasts, and news subscriptions. No registration required.</p>
-        <p>Keyboard shortcuts: Ctrl+N (Add Feed), Ctrl+A (Select All), Ctrl+D (Deselect All), Ctrl+S (Export), Ctrl+F (Search), Esc (Close Modals)</p>
-        <p>Made with ❤️ by <a href="http://github.com/fynks">Fynks</a></p>
+    <footer class="app-footer">
+        <p>Free, local-first OPML & RSS Subscription collection builder. All processing happens locally in your browser.</p>
+        <p>Created by <a href="https://github.com/fynks" target="_blank" rel="noopener">Fynks</a>. Engineered with absolute performance in mind.</p>
     </footer>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0856c5339d997a4',t:'MTc4MDg5NTc3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
 </html>

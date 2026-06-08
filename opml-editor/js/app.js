@@ -1,13 +1,72 @@
-        let feeds = [];
-        let filteredFeeds = [];
-        let editingFeedId = null;
-        let feedValidationCache = new Map();
+// OPML Feed Manager Core JS
+// Engineered with modern syntax, enhanced UX flows, and robust error safety.
 
-        // File handling
-        const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.querySelector('.upload-area');
+// Inline professional high-grade SVGs (Lucide-inspired)
+const SVG = {
+    rss: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>`,
+    upload: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+    search: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+    plus: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+    check: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    close: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    trash: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+    pencil: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+    link: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+    copy: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+    warning: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+    info: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+};
 
+let feeds = [];
+let filteredFeeds = [];
+let editingFeedId = null;
+
+// DOM Elements cache
+const DOM = {
+    fileInput: () => document.getElementById('fileInput'),
+    uploadArea: () => document.getElementById('uploadArea'),
+    searchInput: () => document.getElementById('searchInput'),
+    clearSearchBtn: () => document.getElementById('clearSearchBtn'),
+    feedsSection: () => document.getElementById('feedsSection'),
+    feedsGrid: () => document.getElementById('feedsGrid'),
+    feedsCount: () => document.getElementById('feedsCount'),
+    totalFeeds: () => document.getElementById('totalFeeds'),
+    selectedFeeds: () => document.getElementById('selectedFeeds'),
+    emptyState: () => document.getElementById('emptyState'),
+    
+    // Modals
+    feedModal: () => document.getElementById('feedModal'),
+    modalTitle: () => document.getElementById('modalTitle'),
+    saveButtonText: () => document.getElementById('saveButtonText'),
+    feedForm: () => document.getElementById('feedForm'),
+    feedTitle: () => document.getElementById('feedTitle'),
+    feedUrl: () => document.getElementById('feedUrl'),
+    feedWebsite: () => document.getElementById('feedWebsite'),
+    feedDescription: () => document.getElementById('feedDescription'),
+    feedCategory: () => document.getElementById('feedCategory'),
+    categoryList: () => document.getElementById('categoryList')
+};
+
+// Initialize Application
+document.addEventListener('DOMContentLoaded', () => {
+    initEvents();
+    updateStats();
+});
+
+function initEvents() {
+    // File Upload handling
+    const fileInput = DOM.fileInput();
+    const uploadArea = DOM.uploadArea();
+
+    if (fileInput) {
         fileInput.addEventListener('change', handleFileUpload);
+    }
+
+    if (uploadArea) {
+        // Browse on click
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
 
         // Drag and drop
         uploadArea.addEventListener('dragover', (e) => {
@@ -27,210 +86,342 @@
                 handleFile(files[0]);
             }
         });
+    }
 
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
+    // Search and filters
+    const searchInput = DOM.searchInput();
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const clearBtn = DOM.clearSearchBtn();
+            if (clearBtn) {
+                clearBtn.style.display = searchInput.value ? 'flex' : 'none';
             }
+            filterFeeds();
+        });
+    }
+
+    const clearSearchBtn = DOM.clearSearchBtn();
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            filterFeeds();
+            searchInput.focus();
+        });
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Esc close modal
+        if (e.key === 'Escape') {
+            closeFeedModal();
+            return;
         }
 
-        function handleFile(file) {
-            if (!file.name.toLowerCase().endsWith('.opml') && !file.name.toLowerCase().endsWith('.xml')) {
-                showNotification('Please select an OPML or XML file', 'error');
-                return;
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'a':
+                    // Only run if active element isn't an input/textarea
+                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        selectAll();
+                    }
+                    break;
+                case 'd':
+                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        deselectAll();
+                    }
+                    break;
+                case 's':
+                    e.preventDefault();
+                    if (feeds.length > 0) exportOPML();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    searchInput?.focus();
+                    break;
+                case 'n':
+                    e.preventDefault();
+                    showAddFeedModal();
+                    break;
             }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    parseOPML(e.target.result);
-                    showNotification('OPML file loaded successfully!', 'success');
-                } catch (error) {
-                    showNotification('Error parsing OPML file: ' + error.message, 'error');
-                }
-            };
-            reader.readAsText(file);
         }
+    });
 
-        function parseOPML(opmlContent) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(opmlContent, 'text/xml');
-            
-            // Check for parsing errors
-            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-                throw new Error('Invalid XML format');
+    // Modal click out to close
+    window.addEventListener('click', (e) => {
+        const backdrops = ['.modal-backdrop'];
+        backdrops.forEach(selector => {
+            const el = e.target.closest(selector);
+            if (el && e.target === el) {
+                closeFeedModal();
             }
+        });
+    });
 
-            const outlines = xmlDoc.getElementsByTagName('outline');
-            feeds = [];
+    // Form submit listener
+    const feedForm = DOM.feedForm();
+    if (feedForm) {
+        feedForm.addEventListener('submit', handleFeedFormSubmit);
+    }
+}
 
-            for (let i = 0; i < outlines.length; i++) {
-                const outline = outlines[i];
-                const xmlUrl = outline.getAttribute('xmlUrl');
-                const htmlUrl = outline.getAttribute('htmlUrl');
-                
-                if (xmlUrl) {
-                    feeds.push({
-                        id: i,
-                        title: outline.getAttribute('title') || outline.getAttribute('text') || 'Untitled Feed',
-                        xmlUrl: xmlUrl,
-                        htmlUrl: htmlUrl || xmlUrl,
-                        description: outline.getAttribute('description') || '',
-                        category: outline.getAttribute('category') || outline.getAttribute('type') || '',
-                        selected: true,
-                        validationStatus: 'unknown'
-                    });
-                }
-            }
-
-            if (feeds.length === 0) {
-                throw new Error('No valid feeds found in OPML file');
-            }
-
-            filteredFeeds = [...feeds];
-            renderFeeds();
-            showFeedsSection();
-            updateStats();
+// Background scrolling lock helper
+function toggleBodyScroll(lock) {
+    if (lock) {
+        document.body.classList.add('modal-open');
+    } else {
+        // Unlock only if no other backdrops are active
+        const openBackdrops = Array.from(document.querySelectorAll('.modal-backdrop')).filter(b => b.style.display === 'flex');
+        if (openBackdrops.length === 0) {
+            document.body.classList.remove('modal-open');
         }
+    }
+}
 
-        function renderFeeds() {
-            const feedsGrid = document.getElementById('feedsGrid');
-            feedsGrid.innerHTML = '';
+// File handling logic
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        handleFile(file);
+    }
+}
 
-            if (filteredFeeds.length === 0) {
-                feedsGrid.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🔍</div>
-                        <div class="empty-text">No feeds match your search</div>
-                        <div class="empty-subtext">Try adjusting your search terms</div>
-                    </div>
-                `;
-                return;
-            }
+function handleFile(file) {
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.opml') && !fileName.endsWith('.xml')) {
+        showNotification('Please select a valid OPML or XML file', 'error');
+        return;
+    }
 
-            filteredFeeds.forEach(feed => {
-                const feedCard = document.createElement('div');
-                feedCard.className = `feed-card ${feed.selected ? 'selected' : ''} fade-in`;
-                
-                const validationStatus = getValidationStatusHtml(feed);
-                const categoryHtml = feed.category ? `<div class="feed-category">${escapeHtml(feed.category)}</div>` : '';
-                
-                feedCard.innerHTML = `
-                    <div class="feed-header">
-                        <div class="feed-title">
-                            ${escapeHtml(feed.title)}
-                            ${validationStatus}
-                        </div>
-                        <div class="checkbox ${feed.selected ? 'checked' : ''}" onclick="toggleFeed(${feed.id})"></div>
-                    </div>
-                    <div class="feed-url">${escapeHtml(feed.xmlUrl)}</div>
-                    ${feed.description ? `<div class="feed-description">${escapeHtml(feed.description)}</div>` : ''}
-                    ${categoryHtml}
-                    <div class="feed-actions">
-                        <button class="btn feed-edit-btn" onclick="editFeed(${feed.id})">✏️ Edit</button>
-                        <button class="btn feed-preview-btn" onclick="previewFeed(${feed.id})">👀 Preview</button>
-                        <a href="${escapeHtml(feed.htmlUrl)}" target="_blank" class="btn secondary">🔗 Visit</a>
-                        <a href="${escapeHtml(feed.xmlUrl)}" target="_blank" class="btn secondary">📡 RSS</a>
-                    </div>
-                `;
-                feedsGrid.appendChild(feedCard);
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            parseOPML(e.target.result);
+            showNotification('OPML file loaded successfully!', 'success');
+        } catch (error) {
+            showNotification('Error parsing OPML file: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function parseOPML(opmlContent) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(opmlContent, 'text/xml');
+    
+    // Check for parsing errors
+    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+        throw new Error('Invalid XML format');
+    }
+
+    const outlines = xmlDoc.getElementsByTagName('outline');
+    feeds = [];
+
+    for (let i = 0; i < outlines.length; i++) {
+        const outline = outlines[i];
+        const xmlUrl = outline.getAttribute('xmlUrl');
+        const htmlUrl = outline.getAttribute('htmlUrl');
+        if (xmlUrl) {
+            feeds.push({
+                id: i + 1, // Start IDs from 1
+                title: outline.getAttribute('title') || outline.getAttribute('text') || 'Untitled Feed',
+                xmlUrl: xmlUrl,
+                htmlUrl: htmlUrl || xmlUrl,
+                description: outline.getAttribute('description') || '',
+                category: outline.getAttribute('category') || outline.getAttribute('type') || '',
+                selected: true
             });
-
-            updateFeedsCount();
         }
+    }
 
-        function toggleFeed(feedId) {
-            const feed = feeds.find(f => f.id === feedId);
-            if (feed) {
-                feed.selected = !feed.selected;
-                renderFeeds();
-                updateStats();
+    if (feeds.length === 0) {
+        throw new Error('No valid feeds found in OPML file');
+    }
+
+    filteredFeeds = [...feeds];
+    renderFeeds();
+    showFeedsSection();
+    updateStats();
+}
+
+function renderFeeds() {
+    const feedsGrid = DOM.feedsGrid();
+    if (!feedsGrid) return;
+    
+    feedsGrid.innerHTML = '';
+
+    if (filteredFeeds.length === 0) {
+        feedsGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; margin: 2rem auto;">
+                <div class="empty-state-icon">
+                    ${SVG.search}
+                </div>
+                <div class="empty-state-title">No matching feeds found</div>
+                <p class="empty-state-sub">Try modifying your query</p>
+            </div>
+        `;
+        updateFeedsCount();
+        return;
+    }
+
+    filteredFeeds.forEach(feed => {
+        const feedCard = document.createElement('div');
+        feedCard.className = `feed-card ${feed.selected ? 'selected' : ''}`;
+        feedCard.dataset.id = feed.id;
+        
+        // Feed selection clicking the card body (excluding actions/buttons)
+        feedCard.addEventListener('click', (e) => {
+            const isInteractive = e.target.closest('button') || e.target.closest('a') || e.target.closest('.copy-badge');
+            if (!isInteractive) {
+                toggleFeed(feed.id);
             }
-        }
+        });
 
-        function selectAll() {
-            feeds.forEach(feed => feed.selected = true);
-            renderFeeds();
-            updateStats();
-            showNotification('All feeds selected', 'info');
-        }
-
-        function deselectAll() {
-            feeds.forEach(feed => feed.selected = false);
-            renderFeeds();
-            updateStats();
-            showNotification('All feeds deselected', 'info');
-        }
-
-        function removeSelected() {
-            const selectedCount = feeds.filter(f => f.selected).length;
-            if (selectedCount === 0) {
-                showNotification('No feeds selected for removal', 'error');
-                return;
-            }
-
-            if (confirm(`Are you sure you want to remove ${selectedCount} selected feed(s)?`)) {
-                feeds = feeds.filter(f => !f.selected);
-                filterFeeds();
-                updateStats();
-                showNotification(`${selectedCount} feed(s) removed`, 'success');
-            }
-        }
-
-        function filterFeeds() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            filteredFeeds = feeds.filter(feed => 
-                feed.title.toLowerCase().includes(searchTerm) ||
-                feed.xmlUrl.toLowerCase().includes(searchTerm) ||
-                feed.description.toLowerCase().includes(searchTerm) ||
-                (feed.category && feed.category.toLowerCase().includes(searchTerm))
-            );
-            renderFeeds();
-        }
-
-        function showFeedsSection() {
-            document.getElementById('feedsSection').style.display = 'block';
-            document.getElementById('emptyState').style.display = 'none';
-        }
-
-        function updateFeedsCount() {
-            const count = filteredFeeds.length;
-            const total = feeds.length;
-            document.getElementById('feedsCount').textContent = 
-                count === total ? `${count} feeds loaded` : `${count} of ${total} feeds shown`;
-        }
-
-        function updateStats() {
-            const totalCount = feeds.length;
-            const selectedCount = feeds.filter(f => f.selected).length;
+        const categoryHtml = feed.category ? `<span class="badge badge-category">${escapeHtml(feed.category)}</span>` : '';
+        
+        feedCard.innerHTML = `
+            <div class="feed-card-header">
+                <div class="feed-card-title-container">
+                    <h3 class="feed-card-title" title="${escapeHtml(feed.title)}">${escapeHtml(feed.title)}</h3>
+                    <div class="feed-meta">
+                        ${categoryHtml}
+                    </div>
+                </div>
+                <div class="feed-card-checkbox" title="Toggle selection"></div>
+            </div>
             
-            document.getElementById('totalFeeds').textContent = totalCount;
-            document.getElementById('selectedFeeds').textContent = selectedCount;
-        }
-
-        function exportOPML() {
-            const selectedFeeds = feeds.filter(f => f.selected);
+            <div class="feed-card-url" title="Click to copy feed URL" onclick="copyToClipboard('${escapeJs(feed.xmlUrl)}')">
+                <span style="cursor: pointer;" class="copy-badge">${SVG.copy} ${escapeHtml(feed.xmlUrl)}</span>
+            </div>
             
-            if (selectedFeeds.length === 0) {
-                showNotification('No feeds selected for export', 'error');
-                return;
-            }
+            <p class="feed-card-desc" title="${escapeHtml(feed.description)}">
+                ${feed.description ? escapeHtml(feed.description) : '<span style="color: var(--text-muted); font-style: italic;">No description provided</span>'}
+            </p>
+            
+            <div class="feed-card-actions">
+                <button class="btn btn-secondary btn-small" onclick="editFeed(${feed.id})" title="Edit feed details">
+                    ${SVG.pencil} Edit
+                </button>
+                <a href="${escapeHtml(feed.htmlUrl)}" target="_blank" rel="noopener" class="btn btn-secondary btn-small" title="Visit website">
+                    ${SVG.link} Link
+                </a>
+                <a href="${escapeHtml(feed.xmlUrl)}" target="_blank" rel="noopener" class="btn btn-secondary btn-small" title="Direct RSS Feed">
+                    ${SVG.rss} Feed
+                </a>
+            </div>
+        `;
+        feedsGrid.appendChild(feedCard);
+    });
 
-            const exportBtn = document.getElementById('exportText');
-            exportBtn.innerHTML = '<span class="loading"></span>Generating...';
+    updateFeedsCount();
+}
 
-            setTimeout(() => {
-                const opml = generateOPML(selectedFeeds);
-                downloadOPML(opml);
-                exportBtn.innerHTML = '📥 Download OPML';
-                showNotification(`${selectedFeeds.length} feeds exported successfully!`, 'success');
-            }, 1000);
-        }
+function toggleFeed(feedId) {
+    const feed = feeds.find(f => f.id === feedId);
+    if (feed) {
+        feed.selected = !feed.selected;
+        renderFeeds();
+        updateStats();
+    }
+}
 
-        function generateOPML(feedsToExport) {
-            const now = new Date().toUTCString();
-            let opml = `<?xml version="1.0" encoding="UTF-8"?>
+function selectAll() {
+    feeds.forEach(feed => feed.selected = true);
+    renderFeeds();
+    updateStats();
+    showNotification('All feeds selected', 'info');
+}
+
+function deselectAll() {
+    feeds.forEach(feed => feed.selected = false);
+    renderFeeds();
+    updateStats();
+    showNotification('All feeds deselected', 'info');
+}
+
+function removeSelected() {
+    const selectedCount = feeds.filter(f => f.selected).length;
+    if (selectedCount === 0) {
+        showNotification('No feeds selected for removal', 'error');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to remove the ${selectedCount} selected feed(s)?`)) {
+        feeds = feeds.filter(f => !f.selected);
+        filterFeeds();
+        updateStats();
+        showNotification(`${selectedCount} feed(s) removed successfully`, 'success');
+    }
+}
+
+function filterFeeds() {
+    const searchTerm = DOM.searchInput() ? DOM.searchInput().value.toLowerCase().trim() : '';
+    
+    filteredFeeds = feeds.filter(feed => {
+        if (!searchTerm) return true;
+        
+        return (
+            feed.title.toLowerCase().includes(searchTerm) ||
+            feed.xmlUrl.toLowerCase().includes(searchTerm) ||
+            feed.description.toLowerCase().includes(searchTerm) ||
+            (feed.category && feed.category.toLowerCase().includes(searchTerm))
+        );
+    });
+    
+    renderFeeds();
+}
+
+function showFeedsSection() {
+    DOM.feedsSection().style.display = 'block';
+    DOM.emptyState().style.display = 'none';
+}
+
+function updateFeedsCount() {
+    const count = filteredFeeds.length;
+    const total = feeds.length;
+    DOM.feedsCount().textContent = 
+        count === total ? `${count} feeds loaded` : `${count} of ${total} feeds shown`;
+}
+
+function updateStats() {
+    const totalCount = feeds.length;
+    const selectedCount = feeds.filter(f => f.selected).length;
+    
+    DOM.totalFeeds().textContent = totalCount;
+    DOM.selectedFeeds().textContent = selectedCount;
+
+    // Toggle Empty State view if entire collection was deleted
+    if (totalCount === 0) {
+        DOM.feedsSection().style.display = 'none';
+        DOM.emptyState().style.display = 'flex';
+    }
+}
+
+// Feed export handling
+function exportOPML() {
+    const selectedFeeds = feeds.filter(f => f.selected);
+    if (selectedFeeds.length === 0) {
+        showNotification('No feeds selected for export', 'error');
+        return;
+    }
+
+    const exportBtn = document.getElementById('exportText');
+    const originalHtml = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:1.5px;margin-right:5px;"></span> Generating...';
+
+    setTimeout(() => {
+        const opml = generateOPML(selectedFeeds);
+        downloadOPML(opml);
+        exportBtn.innerHTML = originalHtml;
+        showNotification(`${selectedFeeds.length} feeds exported successfully!`, 'success');
+    }, 800);
+}
+
+function generateOPML(feedsToExport) {
+    const now = new Date().toUTCString();
+    let opml = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
     <head>
         <title>My RSS Feeds</title>
@@ -241,459 +432,213 @@
     <body>
 `;
 
-            feedsToExport.forEach(feed => {
-                opml += `        <outline text="${escapeXml(feed.title)}" title="${escapeXml(feed.title)}" type="rss" xmlUrl="${escapeXml(feed.xmlUrl)}" htmlUrl="${escapeXml(feed.htmlUrl)}"`;
-                if (feed.description) {
-                    opml += ` description="${escapeXml(feed.description)}"`;
-                }
-                if (feed.category) {
-                    opml += ` category="${escapeXml(feed.category)}"`;
-                }
-                opml += '/>\n';
-            });
+    feedsToExport.forEach(feed => {
+        opml += `        <outline text="${escapeXml(feed.title)}" title="${escapeXml(feed.title)}" type="rss" xmlUrl="${escapeXml(feed.xmlUrl)}" htmlUrl="${escapeXml(feed.htmlUrl)}"`;
+        if (feed.description) {
+            opml += ` description="${escapeXml(feed.description)}"`;
+        }
+        if (feed.category) {
+            opml += ` category="${escapeXml(feed.category)}"`;
+        }
+        opml += '/>\n';
+    });
 
-            opml += `    </body>
+    opml += `    </body>
 </opml>`;
 
-            return opml;
+    return opml;
+}
+
+function downloadOPML(opmlContent) {
+    const blob = new Blob([opmlContent], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `feeds_${new Date().toISOString().split('T')[0]}.opml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Notification Banner System
+function showNotification(message, type = 'info') {
+    const host = document.getElementById('notificationsHost');
+    if (!host) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    const icons = {
+        success: SVG.check,
+        error: SVG.warning,
+        info: SVG.info
+    };
+
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || SVG.info}</span>
+        <span class="toast-message">${escapeHtml(message)}</span>
+    `;
+
+    host.appendChild(toast);
+
+    // Fade out and remove element
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 250);
+    }, 3500);
+}
+
+// Add/Edit Modals handling
+function showAddFeedModal() {
+    editingFeedId = null;
+    DOM.modalTitle().innerHTML = `${SVG.plus} Add New RSS Feed`;
+    DOM.saveButtonText().textContent = 'Add Feed';
+    DOM.feedForm().reset();
+    updateCategoryList();
+    
+    // Show and lock scrolling
+    DOM.feedModal().style.display = 'flex';
+    toggleBodyScroll(true);
+}
+
+function editFeed(feedId) {
+    const feed = feeds.find(f => f.id === feedId);
+    if (!feed) return;
+
+    editingFeedId = feedId;
+    DOM.modalTitle().innerHTML = `${SVG.pencil} Edit RSS Feed`;
+    DOM.saveButtonText().textContent = 'Save Changes';
+    
+    DOM.feedTitle().value = feed.title;
+    DOM.feedUrl().value = feed.xmlUrl;
+    DOM.feedWebsite().value = feed.htmlUrl || '';
+    DOM.feedDescription().value = feed.description || '';
+    DOM.feedCategory().value = feed.category || '';
+    
+    updateCategoryList();
+    
+    // Show and lock scrolling
+    DOM.feedModal().style.display = 'flex';
+    toggleBodyScroll(true);
+}
+
+function closeFeedModal() {
+    DOM.feedModal().style.display = 'none';
+    editingFeedId = null;
+    toggleBodyScroll(false);
+}
+
+function updateCategoryList() {
+    const categories = [...new Set(feeds.map(f => f.category).filter(Boolean))];
+    const datalist = DOM.categoryList();
+    if (datalist) {
+        datalist.innerHTML = categories.map(cat => `<option value="${escapeHtml(cat)}">`).join('');
+    }
+}
+
+// Add/Edit Submit Logic
+function handleFeedFormSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const feedData = {
+        title: formData.get('title').trim(),
+        xmlUrl: formData.get('xmlUrl').trim(),
+        htmlUrl: formData.get('htmlUrl').trim() || formData.get('xmlUrl').trim(),
+        description: formData.get('description').trim(),
+        category: formData.get('category').trim()
+    };
+
+    if (!feedData.title || !feedData.xmlUrl) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+
+    if (editingFeedId !== null) {
+        const feed = feeds.find(f => f.id === editingFeedId);
+        if (feed) {
+            Object.assign(feed, feedData);
+            showNotification('Feed updated successfully!', 'success');
         }
-
-        function downloadOPML(opmlContent) {
-            const blob = new Blob([opmlContent], { type: 'application/xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `feeds_${new Date().toISOString().split('T')[0]}.opml`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function escapeXml(text) {
-            return text.replace(/[<>&'"]/g, function(c) {
-                switch (c) {
-                    case '<': return '&lt;';
-                    case '>': return '&gt;';
-                    case '&': return '&amp;';
-                    case '\'': return '&apos;';
-                    case '"': return '&quot;';
-                }
-            });
-        }
-
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', filterFeeds);
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'a':
-                        e.preventDefault();
-                        selectAll();
-                        break;
-                    case 'd':
-                        e.preventDefault();
-                        deselectAll();
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        if (feeds.length > 0) exportOPML();
-                        break;
-                    case 'f':
-                        e.preventDefault();
-                        document.getElementById('searchInput').focus();
-                        break;
-                }
-            }
+    } else {
+        const newId = Math.max(...feeds.map(f => f.id), 0) + 1;
+        feeds.push({
+            id: newId,
+            selected: true,
+            ...feedData
         });
+        showNotification('Feed added successfully!', 'success');
+    }
 
-        // Initialize
-        updateStats();
+    filterFeeds();
+    updateStats();
+    closeFeedModal();
+}
 
-        // New Feed Management Functions
-        function showAddFeedModal() {
-            editingFeedId = null;
-            document.getElementById('modalTitle').textContent = 'Add New RSS Feed';
-            document.getElementById('saveButtonText').textContent = 'Add Feed';
-            document.getElementById('feedForm').reset();
-            updateCategoryList();
-            document.getElementById('feedModal').style.display = 'flex';
+function autoFillWebsite() {
+    const feedUrl = DOM.feedUrl().value.trim();
+    if (!feedUrl) {
+        showNotification('Please enter a feed URL first', 'error');
+        return;
+    }
+
+    try {
+        const url = new URL(feedUrl);
+        const baseUrl = `${url.protocol}//${url.host}`;
+        DOM.feedWebsite().value = baseUrl;
+        showNotification('Website URL auto-filled', 'info');
+    } catch (error) {
+        showNotification('Could not extract website URL', 'error');
+    }
+}
+
+// Helpers
+function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('Feed URL copied to clipboard!', 'success');
+        } catch (e) {
+            showNotification('Failed to copy feed URL', 'error');
         }
+        document.body.removeChild(textarea);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('Feed URL copied to clipboard!', 'success');
+    }).catch(() => {
+        showNotification('Failed to copy feed URL', 'error');
+    });
+}
 
-        function editFeed(feedId) {
-            const feed = feeds.find(f => f.id === feedId);
-            if (!feed) return;
+// Global safe html escaper
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
 
-            editingFeedId = feedId;
-            document.getElementById('modalTitle').textContent = 'Edit RSS Feed';
-            document.getElementById('saveButtonText').textContent = 'Save Changes';
-            
-            document.getElementById('feedTitle').value = feed.title;
-            document.getElementById('feedUrl').value = feed.xmlUrl;
-            document.getElementById('feedWebsite').value = feed.htmlUrl || '';
-            document.getElementById('feedDescription').value = feed.description || '';
-            document.getElementById('feedCategory').value = feed.category || '';
-            
-            updateCategoryList();
-            document.getElementById('feedModal').style.display = 'flex';
+function escapeXml(text) {
+    if (!text) return '';
+    return String(text).replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
         }
+    });
+}
 
-        function closeFeedModal() {
-            document.getElementById('feedModal').style.display = 'none';
-            editingFeedId = null;
-        }
-
-        function updateCategoryList() {
-            const categories = [...new Set(feeds.map(f => f.category).filter(Boolean))];
-            const datalist = document.getElementById('categoryList');
-            datalist.innerHTML = categories.map(cat => `<option value="${escapeHtml(cat)}">`).join('');
-        }
-
-        // Form submission handler
-        document.getElementById('feedForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const feedData = {
-                title: formData.get('title').trim(),
-                xmlUrl: formData.get('xmlUrl').trim(),
-                htmlUrl: formData.get('htmlUrl').trim() || formData.get('xmlUrl').trim(),
-                description: formData.get('description').trim(),
-                category: formData.get('category').trim()
-            };
-
-            if (!feedData.title || !feedData.xmlUrl) {
-                showNotification('Please fill in required fields', 'error');
-                return;
-            }
-
-            if (editingFeedId !== null) {
-                // Update existing feed
-                const feed = feeds.find(f => f.id === editingFeedId);
-                if (feed) {
-                    Object.assign(feed, feedData);
-                    showNotification('Feed updated successfully!', 'success');
-                }
-            } else {
-                // Add new feed
-                const newId = Math.max(...feeds.map(f => f.id), 0) + 1;
-                feeds.push({
-                    id: newId,
-                    selected: true,
-                    validationStatus: 'unknown',
-                    ...feedData
-                });
-                showNotification('Feed added successfully!', 'success');
-            }
-
-            filterFeeds();
-            updateStats();
-            closeFeedModal();
-        });
-
-        function validateFeedUrl() {
-            const url = document.getElementById('feedUrl').value.trim();
-            if (!url) {
-                showNotification('Please enter a feed URL first', 'error');
-                return;
-            }
-
-            const button = event.target;
-            const originalText = button.textContent;
-            button.textContent = '⏳ Checking...';
-            button.disabled = true;
-
-            validateSingleFeed(url)
-                .then(result => {
-                    if (result.valid) {
-                        showNotification('Feed URL is valid!', 'success');
-                        if (result.title && !document.getElementById('feedTitle').value) {
-                            document.getElementById('feedTitle').value = result.title;
-                        }
-                        if (result.htmlUrl && !document.getElementById('feedWebsite').value) {
-                            document.getElementById('feedWebsite').value = result.htmlUrl;
-                        }
-                    } else {
-                        showNotification(`Feed validation failed: ${result.error}`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showNotification(`Validation error: ${error.message}`, 'error');
-                })
-                .finally(() => {
-                    button.textContent = originalText;
-                    button.disabled = false;
-                });
-        }
-
-        function autoFillWebsite() {
-            const feedUrl = document.getElementById('feedUrl').value.trim();
-            if (!feedUrl) {
-                showNotification('Please enter a feed URL first', 'error');
-                return;
-            }
-
-            try {
-                const url = new URL(feedUrl);
-                const baseUrl = `${url.protocol}//${url.host}`;
-                document.getElementById('feedWebsite').value = baseUrl;
-                showNotification('Website URL auto-filled', 'info');
-            } catch (error) {
-                showNotification('Could not extract website URL', 'error');
-            }
-        }
-
-        // Feed validation
-        async function validateSingleFeed(feedUrl) {
-            try {
-                // Check if URL is accessible and appears to be a feed
-                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
-                const data = await response.json();
-                
-                if (!data.contents) {
-                    throw new Error('Unable to fetch feed content');
-                }
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/xml');
-                
-                // Check for RSS/Atom elements
-                const isRSS = doc.querySelector('rss, feed, channel');
-                if (!isRSS) {
-                    throw new Error('Not a valid RSS/Atom feed');
-                }
-
-                // Extract feed information
-                const title = doc.querySelector('title, channel > title')?.textContent?.trim();
-                const link = doc.querySelector('link, channel > link')?.textContent?.trim();
-                
-                return {
-                    valid: true,
-                    title: title,
-                    htmlUrl: link
-                };
-            } catch (error) {
-                return {
-                    valid: false,
-                    error: error.message
-                };
-            }
-        }
-
-        function validateAllFeeds() {
-            if (feeds.length === 0) {
-                showNotification('No feeds to validate', 'info');
-                return;
-            }
-
-            document.getElementById('validationResults').innerHTML = '<div class="loading-spinner">Validating feeds...</div>';
-            document.getElementById('validationModal').style.display = 'flex';
-
-            const validationPromises = feeds.map(feed => 
-                validateSingleFeed(feed.xmlUrl)
-                    .then(result => ({
-                        feed: feed,
-                        result: result
-                    }))
-            );
-
-            Promise.all(validationPromises).then(results => {
-                displayValidationResults(results);
-                
-                // Update feed validation status
-                results.forEach(({feed, result}) => {
-                    feed.validationStatus = result.valid ? 'valid' : 'invalid';
-                    feed.validationError = result.error;
-                    feedValidationCache.set(feed.xmlUrl, result);
-                });
-                
-                renderFeeds();
-            });
-        }
-
-        function displayValidationResults(results) {
-            const validFeeds = results.filter(r => r.result.valid);
-            const invalidFeeds = results.filter(r => !r.result.valid);
-
-            let html = `
-                <div style="margin-bottom: 20px;">
-                    <h4>Validation Summary</h4>
-                    <p>✅ ${validFeeds.length} valid feeds | ❌ ${invalidFeeds.length} invalid feeds</p>
-                </div>
-            `;
-
-            results.forEach(({feed, result}) => {
-                html += `
-                    <div class="validation-item">
-                        <div class="validation-icon">${result.valid ? '✅' : '❌'}</div>
-                        <div class="validation-details">
-                            <h4>${escapeHtml(feed.title)}</h4>
-                            <p>${escapeHtml(feed.xmlUrl)}</p>
-                            ${result.error ? `<p style="color: #d32f2f; font-weight: 500;">${escapeHtml(result.error)}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('validationResults').innerHTML = html;
-        }
-
-        function closeValidationModal() {
-            document.getElementById('validationModal').style.display = 'none';
-        }
-
-        function getValidationStatusHtml(feed) {
-            if (!feed.validationStatus || feed.validationStatus === 'unknown') return '';
-            
-            const statusMap = {
-                valid: { text: 'Valid', class: 'status-valid' },
-                invalid: { text: 'Invalid', class: 'status-invalid' },
-                checking: { text: 'Checking', class: 'status-checking' }
-            };
-            
-            const status = statusMap[feed.validationStatus];
-            return status ? `<span class="feed-validation-status ${status.class}">${status.text}</span>` : '';
-        }
-
-        // Feed preview functionality
-        async function previewFeed(feedId) {
-            const feed = feeds.find(f => f.id === feedId);
-            if (!feed) return;
-
-            document.getElementById('previewTitle').textContent = `Preview: ${feed.title}`;
-            document.getElementById('previewContent').innerHTML = '<div class="loading-spinner">Loading feed preview...</div>';
-            document.getElementById('previewModal').style.display = 'flex';
-
-            try {
-                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.xmlUrl)}`);
-                const data = await response.json();
-                
-                if (!data.contents) {
-                    throw new Error('Unable to fetch feed content');
-                }
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/xml');
-                
-                displayFeedPreview(feed, doc);
-            } catch (error) {
-                document.getElementById('previewContent').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #d32f2f;">
-                        <p>❌ Failed to load feed preview</p>
-                        <p style="font-size: 14px; color: #666;">${escapeHtml(error.message)}</p>
-                    </div>
-                `;
-            }
-        }
-
-        function displayFeedPreview(feed, doc) {
-            const title = doc.querySelector('title, channel > title')?.textContent?.trim() || feed.title;
-            const description = doc.querySelector('description, channel > description')?.textContent?.trim() || '';
-            const items = doc.querySelectorAll('item, entry');
-
-            let html = `
-                <div class="preview-feed-info">
-                    <h3>${escapeHtml(title)}</h3>
-                    ${description ? `<p>${escapeHtml(description.substring(0, 200))}...</p>` : ''}
-                    <p><strong>Feed URL:</strong> <a href="${escapeHtml(feed.xmlUrl)}" target="_blank">${escapeHtml(feed.xmlUrl)}</a></p>
-                    ${feed.htmlUrl ? `<p><strong>Website:</strong> <a href="${escapeHtml(feed.htmlUrl)}" target="_blank">${escapeHtml(feed.htmlUrl)}</a></p>` : ''}
-                </div>
-            `;
-
-            if (items.length > 0) {
-                html += '<div class="preview-articles">';
-                html += `<h4>Recent Articles (${Math.min(items.length, 5)} of ${items.length})</h4>`;
-                
-                Array.from(items).slice(0, 5).forEach(item => {
-                    const itemTitle = item.querySelector('title')?.textContent?.trim() || 'Untitled';
-                    const itemDescription = item.querySelector('description, summary')?.textContent?.trim() || '';
-                    const itemDate = item.querySelector('pubDate, published, updated')?.textContent?.trim() || '';
-                    
-                    html += `
-                        <div class="preview-article">
-                            <h4>${escapeHtml(itemTitle)}</h4>
-                            ${itemDescription ? `<p>${escapeHtml(itemDescription.substring(0, 150))}...</p>` : ''}
-                            ${itemDate ? `<div class="article-meta">Published: ${escapeHtml(new Date(itemDate).toLocaleDateString())}</div>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div>';
-            } else {
-                html += '<p>No recent articles found in this feed.</p>';
-            }
-
-            document.getElementById('previewContent').innerHTML = html;
-        }
-
-        function closePreviewModal() {
-            document.getElementById('previewModal').style.display = 'none';
-        }
-
-        // Close modals when clicking outside
-        window.addEventListener('click', function(event) {
-            const modals = ['feedModal', 'previewModal', 'validationModal'];
-            modals.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-
-        // Enhanced keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Close modals with Escape key
-            if (e.key === 'Escape') {
-                const openModal = document.querySelector('.modal[style*="flex"]');
-                if (openModal) {
-                    openModal.style.display = 'none';
-                    return;
-                }
-            }
-
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'a':
-                        e.preventDefault();
-                        selectAll();
-                        break;
-                    case 'd':
-                        e.preventDefault();
-                        deselectAll();
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        if (feeds.length > 0) exportOPML();
-                        break;
-                    case 'f':
-                        e.preventDefault();
-                        document.getElementById('searchInput').focus();
-                        break;
-                    case 'n':
-                        e.preventDefault();
-                        showAddFeedModal();
-                        break;
-                }
-            }
-        });
+function escapeJs(text) {
+    if (!text) return '';
+    return String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
