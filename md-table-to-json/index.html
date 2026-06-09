@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Markdown/JSON Toolkit</title>
-      <link rel="icon" href="../favicon.ico" sizes="any">
-    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/app-min.js" defer></script>
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app-min.js" defer></script>
 </head>
 <body>
   <header>
@@ -27,10 +27,14 @@
         <label for="markdownInput">Paste your GitHub flavored Markdown table:</label>
         <textarea id="markdownInput" placeholder="Paste Markdown table here..."></textarea>
       </div>
-      <button id="convertToJsonBtn">Convert to JSON</button>
+      <div class="action-row">
+        <button id="convertToJsonBtn">Convert to JSON</button>
+      </div>
       <div class="output-area">
-        <h3>JSON Output</h3>
-        <button id="selectJsonBtn" class="copy-button" style="display: none;">Copy JSON</button>
+        <div class="output-header">
+          <h3>JSON Output</h3>
+          <button id="selectJsonBtn" class="copy-button" style="display: none;">Copy JSON</button>
+        </div>
         <pre id="jsonOutput"></pre>
       </div>
     </section>
@@ -52,10 +56,14 @@
         <input type="text" id="supportedServices" placeholder="e.g., 1Fichier, 4Shared (comma-separated)">
       </div>
 
-      <button id="updateJsonBtn">Update JSON</button>
+      <div class="action-row">
+        <button id="updateJsonBtn">Update JSON</button>
+      </div>
       <div class="output-area">
-        <h3>Updated JSON Output</h3>
-        <button id="selectUpdatedJsonBtn" class="copy-button" style="display: none;">Copy JSON</button>
+        <div class="output-header">
+          <h3>Updated JSON Output</h3>
+          <button id="selectUpdatedJsonBtn" class="copy-button" style="display: none;">Copy JSON</button>
+        </div>
         <pre id="updatedJsonOutput"></pre>
       </div>
     </section>
@@ -66,10 +74,14 @@
         <label for="inputJsonForMarkdown">Paste your JSON data:</label>
         <textarea id="inputJsonForMarkdown" placeholder="Paste JSON data here..."></textarea>
       </div>
-      <button id="convertToMarkdownBtn">Convert to Markdown</button>
+      <div class="action-row">
+        <button id="convertToMarkdownBtn">Convert to Markdown</button>
+      </div>
       <div class="output-area">
-        <h3>Markdown Table Output</h3>
-        <button id="selectMarkdownBtn" class="copy-button" style="display: none;">Copy Markdown</button>
+        <div class="output-header">
+          <h3>Markdown Table Output</h3>
+          <button id="selectMarkdownBtn" class="copy-button" style="display: none;">Copy Markdown</button>
+        </div>
         <pre id="markdownOutput"></pre>
       </div>
     </section>
